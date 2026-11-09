@@ -42,7 +42,7 @@ export function VistaAbituali({
 
   return (
     <div className="mt-8">
-      <div className="flex flex-col gap-5 md:flex-row md:items-end">
+      <div className="flex items-center gap-3 md:gap-5">
         <label className="flex flex-1 items-center gap-3 border-b-2 border-linea-forte pb-1 focus-within:border-becco">
           <Search className="size-5 text-tenue" />
           <input
@@ -56,11 +56,11 @@ export function VistaAbituali({
           onClick={() => setSoloPreferiti((s) => !s)}
           aria-pressed={soloPreferiti}
           className={cn(
-            "anello-focus flex h-11 items-center gap-2 rounded-full px-5 text-[0.9375rem] font-semibold transition",
+            "anello-focus flex h-11 shrink-0 items-center justify-center gap-2 rounded-full text-[0.9375rem] font-semibold transition max-sm:w-11 sm:px-5",
             soloPreferiti ? "bg-becco text-su-becco" : "text-inchiostro-2 ring-[1.5px] ring-linea-forte hover:ring-inchiostro",
           )}
         >
-          <Star className="size-4" fill={soloPreferiti ? "currentColor" : "none"} /> Solo i preferiti
+          <Star className="size-4" fill={soloPreferiti ? "currentColor" : "none"} /> <span className="max-sm:sr-only">Solo i preferiti</span>
         </button>
       </div>
 

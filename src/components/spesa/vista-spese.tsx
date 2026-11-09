@@ -7,7 +7,7 @@ import type { Lista, Spesa } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 import { apriScontrino } from "@/lib/scontrini";
 import type { MembroCasa } from "@/lib/sessione";
-import { Avatar, Pulsante } from "@/components/ui";
+import { Avatar } from "@/components/ui";
 import { Mascotte } from "@/components/mascotte";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
@@ -80,17 +80,15 @@ export function VistaSpese({
   return (
     <div>
       {nuova ? (
-        <NuovaSpesa liste={liste} giornoIniziale={giorno} azioni={azioni} onChiudi={() => setNuova(false)} />
-      ) : (
-        <Pulsante onClick={() => setNuova(true)} className="mt-5">
-          <Plus className="size-[18px]" strokeWidth={2.4} /> Nuova spesa
-        </Pulsante>
-      )}
+        <div className="mt-5">
+          <NuovaSpesa liste={liste} giornoIniziale={giorno} azioni={azioni} onChiudi={() => setNuova(false)} />
+        </div>
+      ) : null}
     <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0">
         {/* Mese e totale */}
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex items-center gap-1">
+          <div className="flex w-full items-center gap-1 sm:w-auto">
             <button onClick={() => cambiaMese(-1)} aria-label="Mese precedente" className="anello-focus grid size-9 place-items-center rounded-full text-tenue hover:bg-superficie-3 hover:text-inchiostro">
               <ChevronLeft className="size-5" />
             </button>
@@ -98,13 +96,29 @@ export function VistaSpese({
             <button onClick={() => cambiaMese(1)} aria-label="Mese successivo" className="anello-focus grid size-9 place-items-center rounded-full text-tenue hover:bg-superficie-3 hover:text-inchiostro">
               <ChevronRight className="size-5" />
             </button>
+            <button
+              onClick={() => setNuova(true)}
+              aria-label="Nuova spesa"
+              className="anello-focus ml-auto grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95 sm:hidden"
+            >
+              <Plus className="size-6" strokeWidth={2.4} />
+            </button>
           </div>
+          <div className="flex items-center gap-5">
           <div className="sm:text-right">
             <p className="titolo-normale numeri text-[1.75rem] leading-none">{euro(totaleMese)}</p>
             <p className="mt-1.5 text-[0.8125rem] text-tenue">
               {speseMese.length} {speseMese.length === 1 ? "spesa" : "spese"}
               {totalePrec > 0 ? `, a ${nomeMesePrec} ${euro(totalePrec, false)}` : ""}
             </p>
+          </div>
+          <button
+            onClick={() => setNuova(true)}
+            aria-label="Nuova spesa"
+            className="anello-focus hidden size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95 sm:grid"
+          >
+            <Plus className="size-6" strokeWidth={2.4} />
+          </button>
           </div>
         </div>
 
