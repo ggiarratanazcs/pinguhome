@@ -10,6 +10,7 @@ import { applicaTema, TEMI, temaValido, type IdTema } from "@/lib/temi";
 import { Avatar, Campo, Messaggio, Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { Mascotte, type SceltaMascotte } from "@/components/mascotte";
+import { GestioneNotifiche } from "@/components/notifiche";
 
 const COLORI = ["#1d2340", "#ff9f1c", "#f2789b", "#23885a", "#3f6fd8", "#7a5cc2", "#d2394a", "#0f8b8d"];
 
@@ -116,6 +117,10 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
       </div>
 
       {esito ? <div className="mt-6"><Messaggio tipo="ok">{esito}</Messaggio></div> : null}
+
+      <Sezione titolo="notifiche" descrizione="I promemoria dell'agenda, sul telefono o sul computer.">
+        <GestioneNotifiche />
+      </Sezione>
 
       <Sezione titolo="aspetto" descrizione="Il tema vale su tutti i tuoi dispositivi.">
         <div className="grid gap-4 sm:grid-cols-3">

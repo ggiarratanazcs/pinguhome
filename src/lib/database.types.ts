@@ -115,17 +115,29 @@ export type Spesa = {
 };
 
 export type Impegno = {
-  categoria: "casa" | "appuntamento" | "bolletta" | "viaggio" | "altro";
+  categoria: "casa" | "appuntamento" | "scadenza" | "viaggio" | "altro";
   creato_da: string | null;
   creato_il: string;
   data: string;
   famiglia_id: string;
   id: string;
+  importo: number | null;
   note: string | null;
   ora: string | null;
   per_chi: string | null;
+  promemoria: number | null;
   ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale";
   titolo: string;
+};
+
+export type PushIscrizione = {
+  auth: string;
+  creata_il: string;
+  dispositivo: string | null;
+  endpoint: string;
+  id: string;
+  p256dh: string;
+  user_id: string;
 };
 
 export type ImpegnoFatto = {
@@ -148,7 +160,8 @@ export type Database = {
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
       profili: Tabella<Profilo, Opz<Profilo, "colore" | "creato_il" | "email" | "famiglia_attiva" | "mascotte" | "mascotte_path" | "nome" | "tema">>;
-      impegni: Tabella<Impegno, Opz<Impegno, "categoria" | "creato_da" | "creato_il" | "id" | "note" | "ora" | "per_chi" | "ricorrenza">>;
+      impegni: Tabella<Impegno, Opz<Impegno, "categoria" | "creato_da" | "creato_il" | "id" | "importo" | "note" | "ora" | "per_chi" | "promemoria" | "ricorrenza">>;
+      push_iscrizioni: Tabella<PushIscrizione, Opz<PushIscrizione, "id" | "user_id" | "dispositivo" | "creata_il">>;
       impegni_fatti: Tabella<ImpegnoFatto, Opz<ImpegnoFatto, "fatto_da" | "fatto_il">>;
       spese: Tabella<Spesa, Opz<Spesa, "creata_il" | "data" | "id" | "lista_id" | "negozio" | "note" | "num_prodotti" | "origine" | "pagata_da" | "prodotti" | "scontrino_path">>;
       reparti: Tabella<Reparto, Opz<Reparto, "icona" | "id" | "ordine">>;
@@ -162,6 +175,8 @@ export type Database = {
       crea_famiglia: { Args: { p_nome: string }; Returns: string };
       segna_presa: { Args: { p_presa: boolean; p_voce: string }; Returns: undefined };
       unisciti_famiglia: { Args: { p_codice: string }; Returns: string };
+      promemoria_dati: { Args: { p_segreto: string }; Returns: Json };
+      promemoria_registra: { Args: { p_segreto: string; p_inviati: Json; p_scadute: string[] }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

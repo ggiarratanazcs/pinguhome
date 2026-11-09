@@ -2,11 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Plus, Repeat, Trash2 } from "lucide-react";
+import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Plus, Repeat, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Impegno, ImpegnoFatto } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
-import { CATEGORIE, RICORRENZE, daData, giornoSettimana, interpretaImpegno, occorrenze, oggiRoma, piuGiorni } from "@/lib/agenda";
+import {
+  CATEGORIE,
+  PROMEMORIA_CON_ORA,
+  PROMEMORIA_SENZA_ORA,
+  RICORRENZE,
+  daData,
+  formattaEuro,
+  giornoSettimana,
+  interpretaImpegno,
+  occorrenze,
+  oggiRoma,
+  piuGiorni,
+  promemoriaPredefinito,
+} from "@/lib/agenda";
 import { Avatar, Pulsante } from "@/components/ui";
 import { Mascotte } from "@/components/mascotte";
 import { cn } from "@/lib/utils";
@@ -110,6 +123,9 @@ export function AppAgenda({
   const fineMese = piuGiorni(inizioMese, giorniNelMese - 1);
   const delMese = useMemo(() => occorrenzeTra(inizioMese, fineMese), [occorrenzeTra, inizioMese, fineMese]);
   const nomeMese = daData(inizioMese).toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "UTC" });
+  const scadenzeMese = delMese.filter((o) => o.impegno.importo !== null);
+  const totaleScadenze = scadenzeMese.reduce((t, o) => t + Number(o.impegno.importo), 0);
+  const daPagare = scadenzeMese.filter((o) => !o.fatto).reduce((t, o) => t + Number(o.impegno.importo), 0);
 
   function cambiaMese(delta: number) {
     const d = new Date(Date.UTC(anno, mese + delta, 1));
@@ -248,6 +264,26 @@ export function AppAgenda({
             })}
           </div>
 
+          {totaleScadenze > 0 ? (
+            <div className="mt-6 flex items-baseline justify-between gap-4 rounded-[20px] bg-becco-tenue px-5 py-4">
+              <div>
+                <p className="text-[0.8125rem] text-becco-scuro">Scadenze di {nomeMese.split(" ")[0]}</p>
+                <p className="titolo-normale numeri mt-1 text-[1.5rem] leading-none">{formattaEuro(totaleScadenze)}</p>
+              </div>
+              <p className="text-right text-[0.8125rem] text-inchiostro-2">
+                {daPagare > 0 ? (
+                  <>
+                    ancora da pagare
+                    <br />
+                    <span className="numeri font-semibold text-inchiostro">{formattaEuro(daPagare)}</span>
+                  </>
+                ) : (
+                  "tutto pagato"
+                )}
+              </p>
+            </div>
+          ) : null}
+
           <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-[0.75rem] text-tenue">
             {CATEGORIE.map((c) => (
               <li key={c.id} className="flex items-center gap-1.5">
@@ -358,6 +394,8 @@ function AggiuntaVeloce({
       per_chi: perChi,
       categoria: letto.categoria,
       ricorrenza: letto.ricorrenza,
+      importo: letto.importo,
+      promemoria: promemoriaPredefinito(letto.categoria, letto.ora),
     });
     setTesto("");
     campo.current?.focus();
@@ -389,6 +427,7 @@ function AggiuntaVeloce({
           <p className="flex flex-wrap items-center gap-1.5 text-[0.8125rem]">
             <span className="rounded-full bg-guancia-tenue px-2.5 py-0.5 font-semibold first-letter:uppercase">{etichettaBreve(data, oggi)}</span>
             {letto.ora ? <span className="rounded-full bg-guancia-tenue px-2.5 py-0.5 font-semibold">{letto.ora}</span> : null}
+            {letto.importo !== null ? <span className="numeri rounded-full bg-becco-tenue px-2.5 py-0.5 font-semibold text-becco-scuro">{formattaEuro(letto.importo)}</span> : null}
             {letto.ricorrenza !== "nessuna" ? (
               <span className="flex items-center gap-1 rounded-full bg-guancia-tenue px-2.5 py-0.5 font-semibold">
                 <Repeat className="size-3" /> {RICORRENZE.find((r) => r.id === letto.ricorrenza)?.nome.toLowerCase()}
@@ -401,7 +440,7 @@ function AggiuntaVeloce({
             <CornerDownLeft className="ml-1 hidden size-3.5 text-tenue sm:block" />
           </p>
         ) : (
-          <p className="text-[0.8125rem] text-tenue">Scrivi come parli: “domani alle 18 dentista”, “il 5 affitto ogni mese”.</p>
+          <p className="text-[0.8125rem] text-tenue">Scrivi come parli: “domani alle 18 dentista”, “il 5 affitto 650 € ogni mese”.</p>
         )}
         <div className="ml-auto flex items-center gap-3 text-[0.8125rem]" role="group" aria-label="Per chi">
           <span className="text-tenue">per</span>
@@ -450,7 +489,7 @@ function RigaImpegno({
       <div className="flex items-center gap-3 py-3">
         <button
           onClick={onFatto}
-          aria-label={o.fatto ? "Segna come da fare" : "Segna come fatto"}
+          aria-label={o.fatto ? "Segna come da fare" : imp.importo !== null ? "Segna come pagata" : "Segna come fatto"}
           className={cn(
             "anello-focus grid size-[24px] shrink-0 place-items-center rounded-full border-2 transition-colors",
             o.fatto ? "border-becco bg-becco text-su-becco" : "border-linea-forte hover:border-becco",
@@ -464,9 +503,13 @@ function RigaImpegno({
             <span className="size-2 shrink-0 rounded-full" style={{ background: coloreCategoria(imp.categoria) }} />
             <span className="truncate">{imp.titolo}</span>
             {imp.ricorrenza !== "nessuna" ? <Repeat className="size-3.5 shrink-0 text-tenue" aria-label="si ripete" /> : null}
+            {imp.promemoria !== null ? <Bell className="size-3.5 shrink-0 text-tenue" aria-label="con promemoria" /> : null}
           </span>
           {imp.note ? <span className="mt-0.5 block truncate pl-4 text-[0.8125rem] text-tenue">{imp.note}</span> : null}
         </button>
+        {imp.importo !== null ? (
+          <span className={cn("numeri shrink-0 text-[0.9375rem] font-semibold", o.fatto ? "text-tenue line-through" : "text-inchiostro")}>{formattaEuro(Number(imp.importo))}</span>
+        ) : null}
         {chi ? (
           <Avatar nome={chi.nome} colore={chi.colore} className="size-6 text-[0.5625rem]" />
         ) : (
@@ -522,6 +565,39 @@ function RigaImpegno({
                   {membri.map((m) => (
                     <option key={m.id} value={m.id}>{m.id === userId ? `${m.nome} (io)` : m.nome}</option>
                   ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1">
+                Importo
+                <span className="flex items-baseline gap-1 border-b-[1.5px] border-linea-forte focus-within:border-becco">
+                  <span>€</span>
+                  <input
+                    defaultValue={imp.importo === null ? "" : String(imp.importo).replace(".", ",")}
+                    inputMode="decimal"
+                    placeholder="—"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      const n = Number(v.replace(",", "."));
+                      if (v === "") onModifica({ importo: null });
+                      else if (Number.isFinite(n) && n >= 0) onModifica({ importo: Math.round(n * 100) / 100, categoria: imp.categoria === "altro" ? "scadenza" : imp.categoria });
+                    }}
+                    className="numeri h-9 w-full bg-transparent text-inchiostro outline-none"
+                  />
+                </span>
+              </label>
+              <label className="flex flex-col gap-1">
+                Promemoria
+                <select
+                  value={imp.promemoria === null ? "" : String(imp.promemoria)}
+                  onChange={(e) => onModifica({ promemoria: e.target.value === "" ? null : Number(e.target.value) })}
+                  className="campo-linea h-9 text-inchiostro"
+                >
+                  {(imp.ora ? PROMEMORIA_CON_ORA : PROMEMORIA_SENZA_ORA).map((p) => (
+                    <option key={p.nome} value={p.valore === null ? "" : String(p.valore)}>{p.nome}</option>
+                  ))}
+                  {imp.promemoria !== null && !(imp.ora ? PROMEMORIA_CON_ORA : PROMEMORIA_SENZA_ORA).some((p) => p.valore === imp.promemoria) ? (
+                    <option value={String(imp.promemoria)}>{Math.round(imp.promemoria / 60)} ore prima</option>
+                  ) : null}
                 </select>
               </label>
               <label className="col-span-2 flex flex-col gap-1 sm:col-span-2">

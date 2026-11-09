@@ -30,7 +30,7 @@ function giorniNelMese(anno: number, mese0: number) {
 export const CATEGORIE = [
   { id: "appuntamento", nome: "Appuntamento", colore: "#3f6fd8" },
   { id: "casa", nome: "Casa", colore: "#23885a" },
-  { id: "bolletta", nome: "Bolletta", colore: "#e08a2e" },
+  { id: "scadenza", nome: "Scadenza", colore: "#e08a2e" },
   { id: "viaggio", nome: "Viaggio", colore: "#7a5cc2" },
   { id: "altro", nome: "Altro", colore: "#737a99" },
 ] as const;
@@ -80,10 +80,10 @@ const GIORNI = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato"
 const MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
 
 const PAROLE_CATEGORIA: [Impegno["categoria"], RegExp][] = [
-  ["bolletta", /\b(bollett\w*|luce|gas|acqua|tari|bollo|affitto|rata|canone|assicurazion\w*|abbonament\w*)\b/i],
+  ["scadenza", /\b(bollett\w*|luce|gas|acqua|tari|imu|bollo|affitto|rata|mutuo|canone|assicurazion\w*|abbonament\w*|condominio|f24|tasse?)\b/i],
   ["appuntamento", /\b(dentista|medic\w*|visita|dottor\w*|parrucchier\w*|barbiere|veterinari\w*|commercialista|appuntament\w*|colloquio|riunione)\b/i],
   ["viaggio", /\b(volo|treno|aereo|viaggio|hotel|partenza|vacanza|traghetto)\b/i],
-  ["casa", /\b(pulizi\w*|caldaia|idraulico|elettricista|condominio|lavatrice|spazzatura|rifiuti|bucato|giardino|trasloco|manutenzion\w*)\b/i],
+  ["casa", /\b(pulizi\w*|caldaia|idraulico|elettricista|lavatrice|spazzatura|rifiuti|bucato|giardino|trasloco|manutenzion\w*)\b/i],
 ];
 
 function senzaAccenti(s: string) {
@@ -91,6 +91,7 @@ function senzaAccenti(s: string) {
 }
 
 export type ImpegnoInterpretato = {
+  importo: number | null;
   titolo: string;
   data: string;
   ora: string | null;
@@ -123,6 +124,11 @@ export function interpretaImpegno(testo: string, oggi: string): ImpegnoInterpret
     if (m) ricorrenza = "settimanale"; // il giorno lo prende il blocco sotto
     if (m) t = t.replace(/\bogni\s+/i, " ");
   }
+
+  // Importo: "650 €", "€ 65,50", "120 euro" (prima dell'ora, per non confondere 65.50 con un orario)
+  let importo: number | null = null;
+  const mi = togli(/(?:€\s*(\d+(?:[.,]\d{1,2})?))|(?:\b(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro\b))/);
+  if (mi) importo = Number((mi[1] ?? mi[2]).replace(",", "."));
 
   // Ora: "alle 18", "alle 18:30", "ore 9.15", "18:30"
   let m = togli(/\b(?:alle|ore|h)\s*(\d{1,2})(?:[:.](\d{2}))?\b/) ?? togli(/\b(\d{1,2})[:.](\d{2})\b/);
@@ -173,6 +179,55 @@ export function interpretaImpegno(testo: string, oggi: string): ImpegnoInterpret
     .replace(/^\s*(?:a|il|la|di|da|per)\s+/i, "")
     .trim();
   const titolo = titoloGrezzo.charAt(0).toUpperCase() + titoloGrezzo.slice(1);
-  const categoria = PAROLE_CATEGORIA.find(([, re]) => re.test(senzaAccenti(titolo)))?.[0] ?? "altro";
-  return { titolo, data: data ?? oggi, ora, ricorrenza, categoria, dataTrovata: data !== null };
+  const categoria = PAROLE_CATEGORIA.find(([, re]) => re.test(senzaAccenti(titolo)))?.[0] ?? (importo !== null ? "scadenza" : "altro");
+  return { importo, titolo, data: data ?? oggi, ora, ricorrenza, categoria, dataTrovata: data !== null };
+}
+
+/* =====================================================================
+   Promemoria: minuti prima dell'inizio. Senza ora l'impegno "inizia" alle 9.
+   ===================================================================== */
+
+export const PROMEMORIA_CON_ORA = [
+  { valore: null, nome: "Nessun promemoria" },
+  { valore: 0, nome: "All'ora dell'impegno" },
+  { valore: 15, nome: "15 minuti prima" },
+  { valore: 60, nome: "1 ora prima" },
+  { valore: 180, nome: "3 ore prima" },
+  { valore: 1440, nome: "Il giorno prima" },
+] as const;
+
+export const PROMEMORIA_SENZA_ORA = [
+  { valore: null, nome: "Nessun promemoria" },
+  { valore: 0, nome: "La mattina alle 9" },
+  { valore: 1440, nome: "Il giorno prima alle 9" },
+  { valore: 4320, nome: "3 giorni prima" },
+  { valore: 10080, nome: "Una settimana prima" },
+] as const;
+
+export function promemoriaPredefinito(categoria: Impegno["categoria"], ora: string | null): number | null {
+  if (categoria === "scadenza") return ora ? 1440 : 1440;
+  return ora ? 60 : 0;
+}
+
+export function nomePromemoria(valore: number | null, ora: string | null) {
+  const elenco = ora ? PROMEMORIA_CON_ORA : PROMEMORIA_SENZA_ORA;
+  return elenco.find((p) => p.valore === valore)?.nome ?? (valore === null ? "Nessun promemoria" : `${Math.round(valore / 60)} ore prima`);
+}
+
+/** Istante (UTC, ms) di un'ora locale di Roma: "2026-11-10" + "18:00". */
+export function istanteRoma(data: string, ora: string | null) {
+  const [a, m, g] = data.split("-").map(Number);
+  const [h, mi] = (ora ?? "09:00").slice(0, 5).split(":").map(Number);
+  const ipotesi = Date.UTC(a, m - 1, g, h, mi);
+  const parti = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Rome", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+      .formatToParts(new Date(ipotesi))
+      .map((p) => [p.type, p.value]),
+  );
+  const comeLocale = Date.UTC(Number(parti.year), Number(parti.month) - 1, Number(parti.day), Number(parti.hour), Number(parti.minute));
+  return ipotesi - (comeLocale - ipotesi);
+}
+
+export function formattaEuro(n: number) {
+  return n.toLocaleString("it-IT", { style: "currency", currency: "EUR" });
 }
