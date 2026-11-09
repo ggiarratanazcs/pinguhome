@@ -6,7 +6,7 @@ export const metadata = { title: "Spesa" };
 
 export default async function PaginaSpesa({ searchParams }: PageProps<"/spesa">) {
   const { vista } = await searchParams;
-  const vistaIniziale = (["lista", "dispensa", "abituali", "spese"] as const).find((v) => v === vista) ?? "lista";
+  const vistaIniziale = (["lista", "dispensa", "abituali", "spese", "analisi"] as const).find((v) => v === vista) ?? "lista";
   const { profilo, famiglia, membri } = await getContesto();
   const supabase = await createClient();
   const f = famiglia.id;

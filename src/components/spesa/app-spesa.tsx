@@ -14,6 +14,7 @@ import { VistaLista } from "./vista-lista";
 import { VistaDispensa } from "./vista-dispensa";
 import { VistaAbituali } from "./vista-abituali";
 import { VistaSpese } from "./vista-spese";
+import { VistaAnalisi } from "./vista-analisi";
 
 export type DatiSpesa = {
   liste: Lista[];
@@ -24,7 +25,7 @@ export type DatiSpesa = {
   spese: Spesa[];
 };
 
-export type Vista = "lista" | "dispensa" | "abituali" | "spese";
+export type Vista = "lista" | "dispensa" | "abituali" | "spese" | "analisi";
 
 export type AzioniSpesa = ReturnType<typeof useAzioni>;
 
@@ -491,6 +492,7 @@ export function AppSpesa({
     { id: "dispensa", nome: "In casa" },
     { id: "abituali", nome: "Abituali" },
     { id: "spese", nome: "Spese" },
+    { id: "analisi", nome: "Analisi" },
   ];
 
   return (
@@ -555,6 +557,7 @@ export function AppSpesa({
           {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "spese" ? <VistaSpese dati={dati} liste={liste} membri={membri} userId={userId} azioni={azioni} /> : null}
+          {vista === "analisi" ? <VistaAnalisi dati={dati} liste={liste} membri={membri} /> : null}
       </motion.div>
 
       {/* Avvisi brevi */}
