@@ -23,6 +23,7 @@ export type DatiHome = {
   ultimaSpesa: { importo: number; quando: string; dove: string; chi: string } | null;
   inCasa: Record<string, number>;
   reparti: Reparto[];
+  impegniSettimana: number;
 };
 
 function euro(n: number, decimali = true) {
@@ -101,11 +102,11 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
         </dl>
       </section>
 
-      <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa })} />
+      <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa, impegniSettimana: dati.impegniSettimana })} />
 
       <div className="mt-10 grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
-        {/* Liste con avanzamento */}
-        <section>
+        {/* Liste con avanzamento: su telefono ci sono già le carte, qui resta solo il grafico */}
+        <section className="hidden md:block">
           <h2 className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
             <span className="titolo text-[1.125rem]">spesa</span>
             <Link href="/spesa" className="anello-focus flex items-center gap-1 text-[0.875rem] font-semibold underline decoration-becco decoration-2 underline-offset-4">
@@ -191,7 +192,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           )}
         </section>
       </div>
-      <p className="mt-12 pb-6 text-[0.875rem] text-tenue">Presto qui anche finanze e agenda di casa.</p>
+      <div className="pb-6" />
     </main>
   );
 }

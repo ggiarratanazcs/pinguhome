@@ -114,6 +114,28 @@ export type Spesa = {
   scontrino_path: string | null;
 };
 
+export type Impegno = {
+  categoria: "casa" | "appuntamento" | "bolletta" | "viaggio" | "altro";
+  creato_da: string | null;
+  creato_il: string;
+  data: string;
+  famiglia_id: string;
+  id: string;
+  note: string | null;
+  ora: string | null;
+  per_chi: string | null;
+  ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale";
+  titolo: string;
+};
+
+export type ImpegnoFatto = {
+  data: string;
+  famiglia_id: string;
+  fatto_da: string | null;
+  fatto_il: string;
+  impegno_id: string;
+};
+
 type Opz<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type Database = {
@@ -126,6 +148,8 @@ export type Database = {
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
       profili: Tabella<Profilo, Opz<Profilo, "colore" | "creato_il" | "email" | "famiglia_attiva" | "mascotte" | "mascotte_path" | "nome" | "tema">>;
+      impegni: Tabella<Impegno, Opz<Impegno, "categoria" | "creato_da" | "creato_il" | "id" | "note" | "ora" | "per_chi" | "ricorrenza">>;
+      impegni_fatti: Tabella<ImpegnoFatto, Opz<ImpegnoFatto, "fatto_da" | "fatto_il">>;
       spese: Tabella<Spesa, Opz<Spesa, "creata_il" | "data" | "id" | "lista_id" | "negozio" | "note" | "num_prodotti" | "origine" | "pagata_da" | "prodotti" | "scontrino_path">>;
       reparti: Tabella<Reparto, Opz<Reparto, "icona" | "id" | "ordine">>;
       voci_lista: Tabella<

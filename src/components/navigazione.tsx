@@ -13,7 +13,7 @@ const VOCI = [
   { href: "/", nome: "Home", icona: House, attiva: true },
   { href: "/spesa", nome: "Spesa", icona: ShoppingBasket, attiva: true },
   { href: "/finanze", nome: "Finanze", icona: Wallet, attiva: false },
-  { href: "/agenda", nome: "Agenda", icona: CalendarCheck, attiva: false },
+  { href: "/agenda", nome: "Agenda", icona: CalendarCheck, attiva: true },
   { href: "/impostazioni", nome: "Impostazioni", icona: Settings2, attiva: true },
 ] as const;
 

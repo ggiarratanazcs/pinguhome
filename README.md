@@ -9,7 +9,8 @@ La casa, la spesa e le cose di tutti i giorni, in due.
 - **In casa** — frigo, freezer e dispensa con le quantità e "rimetti in lista"
 - **Abituali** — i prodotti della casa e i preferiti
 - **Spese** — chiusura del carrello con importo, giorno e scontrino facoltativo; "+ Nuova spesa" a mano o leggendo uno scontrino (Claude via API, serve ANTHROPIC_API_KEY su Vercel); calendario mensile con totali
-- In arrivo: Finanze, Agenda
+- **Agenda** — impegni condivisi o personali, aggiunta veloce in linguaggio naturale ("domani alle 18 dentista", "il 5 affitto ogni mese"), ricorrenze, calendario mensile e prossimi giorni
+- In arrivo: Finanze
 
 ## Temi
 Banchisa (predefinito), Notte polare, Aurora. L’interfaccia è il pinguino: barra laterale = dorso, foglio dei contenuti = pancia, arancio = becco. Cliccando la mascotte la barra si richiude. Per aggiungerne uno: blocco in `src/app/globals.css` + voce in `src/lib/temi.ts`.
