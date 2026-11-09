@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CornerDownLeft, Plus, Repeat, Trash2 } from "lucide-react";
+import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, Plus, Repeat, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Impegno, ImpegnoFatto } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -75,6 +75,20 @@ export function AppAgenda({
   const [anno, setAnno] = useState(Number(oggi.slice(0, 4)));
   const [mese, setMese] = useState(Number(oggi.slice(5, 7)) - 1);
   const [giorno, setGiorno] = useState<string | null>(null);
+  const [maschera, setMaschera] = useState<string | null>(null); // giorno proposto nella maschera di inserimento
+  const ultimoTocco = useRef<{ giorno: string; quando: number } | null>(null);
+
+  /** Un tocco sceglie il giorno; due tocchi ravvicinati aprono la maschera per aggiungere un impegno. */
+  function toccaGiorno(d: string, adesso: number) {
+    const prima = ultimoTocco.current;
+    ultimoTocco.current = { giorno: d, quando: adesso };
+    if (prima && prima.giorno === d && adesso - prima.quando < 350) {
+      ultimoTocco.current = null;
+      setMaschera(d);
+      return;
+    }
+    setGiorno(d);
+  }
   const [avviso, setAvviso] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -192,11 +206,19 @@ export function AppAgenda({
 
   return (
     <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
-      <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
+        <p className="text-[0.8125rem] text-tenue lg:hidden">Due tocchi su un giorno per aggiungere</p>
+        <button
+          onClick={() => setMaschera(giorno ?? oggi)}
+          aria-label="Nuovo impegno"
+          className="anello-focus grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
+        >
+          <Plus className="size-6" strokeWidth={2.4} />
+        </button>
+      </div>
 
-      <AggiuntaVeloce oggi={oggi} giornoScelto={giorno} membri={membri} userId={userId} onCrea={crea} />
-
-      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mt-6 grid gap-10 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* Calendario */}
         <section className="min-w-0">
           <div className="flex items-center gap-1">
@@ -237,7 +259,7 @@ export function AppAgenda({
               return (
                 <button
                   key={d}
-                  onClick={() => setGiorno(selezionato ? null : d)}
+                  onClick={(e) => toccaGiorno(d, e.timeStamp)}
                   aria-pressed={selezionato}
                   aria-label={`${i + 1} ${nomeMese}${delGiorno.length ? `: ${delGiorno.length} impegni` : ""}`}
                   className={cn(
@@ -308,7 +330,7 @@ export function AppAgenda({
           {vuota ? (
             <div className="mt-8 flex items-center gap-4">
               <Mascotte className="w-16" />
-              <p className="text-[0.9375rem] text-tenue">L&apos;agenda è vuota. Scrivi qui sopra, ad esempio “venerdì alle 20 cena da Mara”.</p>
+              <p className="text-[0.9375rem] text-tenue">L&apos;agenda è vuota. Tocca + in alto, oppure due volte su un giorno del calendario.</p>
             </div>
           ) : perGiorno.length === 0 ? (
             <p className="py-6 text-[0.9375rem] text-tenue">{giorno ? "Niente in questo giorno." : "Niente in programma nei prossimi 30 giorni."}</p>
@@ -345,6 +367,24 @@ export function AppAgenda({
       <div className="pb-16" />
 
       <AnimatePresence>
+        {maschera ? (
+          <MascheraImpegno
+            key="maschera"
+            oggi={oggi}
+            giornoIniziale={maschera}
+            membri={membri}
+            userId={userId}
+            onAnnulla={() => setMaschera(null)}
+            onSalva={async (n) => {
+              setMaschera(null);
+              setGiorno(n.data);
+              await crea(n);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {avviso ? (
           <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -360,108 +400,187 @@ export function AppAgenda({
   );
 }
 
-/* ---------- Aggiunta veloce ---------- */
+/* ---------- Maschera di inserimento ---------- */
 
-function AggiuntaVeloce({
+type NuovoImpegno = Omit<Impegno, "id" | "creato_il" | "creato_da" | "famiglia_id">;
+
+function MascheraImpegno({
   oggi,
-  giornoScelto,
+  giornoIniziale,
   membri,
   userId,
-  onCrea,
+  onAnnulla,
+  onSalva,
 }: {
   oggi: string;
-  giornoScelto: string | null;
+  giornoIniziale: string;
   membri: MembroCasa[];
   userId: string;
-  onCrea: (n: Omit<Impegno, "id" | "creato_il" | "creato_da" | "famiglia_id">) => Promise<void>;
+  onAnnulla: () => void;
+  onSalva: (n: NuovoImpegno) => Promise<void>;
 }) {
-  const [testo, setTesto] = useState("");
+  const [titolo, setTitolo] = useState("");
+  const [data, setData] = useState(giornoIniziale);
+  const [ora, setOra] = useState("");
+  const [categoria, setCategoria] = useState<Impegno["categoria"]>("altro");
+  const [importo, setImporto] = useState("");
+  const [ricorrenza, setRicorrenza] = useState<Impegno["ricorrenza"]>("nessuna");
   const [perChi, setPerChi] = useState<string | null>(null);
-  const [fuoco, setFuoco] = useState(false);
-  const campo = useRef<HTMLInputElement>(null);
-  const letto = testo.trim() ? interpretaImpegno(testo, oggi) : null;
-  // Se non scrivi una data, l'impegno va nel giorno scelto sul calendario (o oggi)
-  const data = letto ? (letto.dataTrovata ? letto.data : (giornoScelto ?? oggi)) : null;
+  const [promemoria, setPromemoria] = useState<string>("auto");
+  const [toccati, setToccati] = useState<Set<string>>(new Set());
+  const tocca = (campo: string) => setToccati((t) => new Set(t).add(campo));
 
-  async function invia(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!letto || !letto.titolo || !data) return;
-    await onCrea({
-      titolo: letto.titolo,
-      data,
-      ora: letto.ora,
-      note: null,
-      per_chi: perChi,
-      categoria: letto.categoria,
-      ricorrenza: letto.ricorrenza,
-      importo: letto.importo,
-      promemoria: promemoriaPredefinito(letto.categoria, letto.ora),
-    });
-    setTesto("");
-    campo.current?.focus();
+  // Mentre scrivi ("alle 18 dentista", "affitto 650 € ogni mese") compila i campi che non hai già cambiato a mano
+  function scrivi(t: string) {
+    setTitolo(t);
+    const l = interpretaImpegno(t, oggi);
+    if (l.dataTrovata && !toccati.has("data")) setData(l.data);
+    if (l.ora && !toccati.has("ora")) setOra(l.ora);
+    if (l.importo !== null && !toccati.has("importo")) setImporto(String(l.importo).replace(".", ","));
+    if (l.ricorrenza !== "nessuna" && !toccati.has("ricorrenza")) setRicorrenza(l.ricorrenza);
+    if (!toccati.has("categoria")) setCategoria(l.categoria);
   }
 
+  function salva(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const l = interpretaImpegno(titolo, oggi);
+    const nome = (l.titolo || titolo).trim();
+    if (!nome) return;
+    const n = Number(importo.replace(",", "."));
+    const oraFinale = ora || null;
+    onSalva({
+      titolo: nome,
+      data,
+      ora: oraFinale,
+      note: null,
+      per_chi: perChi,
+      categoria,
+      ricorrenza,
+      importo: importo.trim() && Number.isFinite(n) ? Math.round(n * 100) / 100 : null,
+      promemoria: promemoria === "auto" ? promemoriaPredefinito(categoria, oraFinale) : promemoria === "" ? null : Number(promemoria),
+    });
+  }
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onAnnulla();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onAnnulla]);
+
+  const opzioniPromemoria = ora ? PROMEMORIA_CON_ORA : PROMEMORIA_SENZA_ORA;
   const scelte = [{ id: null as string | null, nome: "Entrambi" }, ...membri.map((m) => ({ id: m.id as string | null, nome: m.id === userId ? "Io" : m.nome.split(" ")[0] }))];
 
   return (
-    <form onSubmit={invia} className="lg:mt-6">
-      <div className={cn("flex items-center gap-3 border-b-2 pb-1 transition-colors", fuoco ? "border-becco" : "border-linea-forte")}>
-        <input
-          ref={campo}
-          value={testo}
-          onChange={(e) => setTesto(e.target.value)}
-          onFocus={() => setFuoco(true)}
-          onBlur={() => setFuoco(false)}
-          placeholder="Cosa c'è in programma?"
-          enterKeyHint="done"
-          autoComplete="off"
-          className="h-12 min-w-0 flex-1 bg-transparent text-[1.125rem] outline-none placeholder:text-tenue/70"
-        />
-        <button type="submit" disabled={!letto?.titolo} aria-label="Aggiungi all'agenda" className="anello-focus grid size-10 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:bg-superficie-3 disabled:text-tenue">
-          <Plus className="size-5" strokeWidth={2.4} />
-        </button>
-      </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-dorso/45 p-3 backdrop-blur-[2px] sm:items-center"
+      onClick={onAnnulla}
+    >
+      <motion.form
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nuovo impegno"
+        onSubmit={salva}
+        onClick={(e) => e.stopPropagation()}
+        initial={{ y: 24, scale: 0.98 }}
+        animate={{ y: 0, scale: 1 }}
+        exit={{ y: 24, scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+        className="pb-sicuro w-full max-w-md rounded-[28px] bg-superficie p-5 shadow-2xl"
+      >
+        <div className="flex items-center justify-between">
+          <p className="titolo text-[1.125rem]">nuovo impegno</p>
+          <p className="text-[0.8125rem] text-tenue first-letter:uppercase">{etichettaBreve(data, oggi)}</p>
+        </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
-        {letto && data ? (
-          <p className="flex flex-wrap items-center gap-1.5 text-[0.8125rem]">
-            <span className="rounded-full bg-guancia-tenue px-2.5 py-0.5 font-semibold first-letter:uppercase">{etichettaBreve(data, oggi)}</span>
-            {letto.ora ? <span className="rounded-full bg-guancia-tenue px-2.5 py-0.5 font-semibold">{letto.ora}</span> : null}
-            {letto.importo !== null ? <span className="numeri rounded-full bg-becco-tenue px-2.5 py-0.5 font-semibold text-becco-scuro">{formattaEuro(letto.importo)}</span> : null}
-            {letto.ricorrenza !== "nessuna" ? (
-              <span className="flex items-center gap-1 rounded-full bg-guancia-tenue px-2.5 py-0.5 font-semibold">
-                <Repeat className="size-3" /> {RICORRENZE.find((r) => r.id === letto.ricorrenza)?.nome.toLowerCase()}
+        <input
+          autoFocus
+          value={titolo}
+          onChange={(e) => scrivi(e.target.value)}
+          placeholder="Es. dentista alle 18"
+          required
+          className="campo-linea mt-4 h-12 w-full text-[1.125rem] text-inchiostro placeholder:text-tenue/60"
+        />
+
+        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-[0.8125rem] text-tenue">
+          <label className="flex flex-col gap-1">
+            Giorno
+            <input type="date" value={data} onChange={(e) => (tocca("data"), setData(e.target.value || data))} required className="campo-linea h-10 text-inchiostro" />
+          </label>
+          <label className="flex flex-col gap-1">
+            Ora
+            <input type="time" value={ora} onChange={(e) => (tocca("ora"), setOra(e.target.value))} className="campo-linea h-10 text-inchiostro" />
+          </label>
+          <label className="flex flex-col gap-1">
+            Tipo
+            <select value={categoria} onChange={(e) => (tocca("categoria"), setCategoria(e.target.value as Impegno["categoria"]))} className="campo-linea h-10 text-inchiostro">
+              {CATEGORIE.map((c) => (
+                <option key={c.id} value={c.id}>{c.nome}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            Si ripete
+            <select value={ricorrenza} onChange={(e) => (tocca("ricorrenza"), setRicorrenza(e.target.value as Impegno["ricorrenza"]))} className="campo-linea h-10 text-inchiostro">
+              {RICORRENZE.map((r) => (
+                <option key={r.id} value={r.id}>{r.nome}</option>
+              ))}
+            </select>
+          </label>
+          {categoria === "scadenza" || importo ? (
+            <label className="flex flex-col gap-1">
+              Importo
+              <span className="flex items-baseline gap-1 border-b-[1.5px] border-linea-forte focus-within:border-becco">
+                <span>€</span>
+                <input value={importo} onChange={(e) => (tocca("importo"), setImporto(e.target.value))} inputMode="decimal" placeholder="0,00" className="numeri h-10 w-full bg-transparent text-inchiostro outline-none" />
               </span>
-            ) : null}
-            <span className="flex items-center gap-1 text-tenue">
-              <span className="size-2 rounded-full" style={{ background: coloreCategoria(letto.categoria) }} />
-              {CATEGORIE.find((c) => c.id === letto.categoria)?.nome}
-            </span>
-            <CornerDownLeft className="ml-1 hidden size-3.5 text-tenue sm:block" />
-          </p>
-        ) : (
-          <p className="text-[0.8125rem] text-tenue">Scrivi come parli: “domani alle 18 dentista”, “il 5 affitto 650 € ogni mese”.</p>
-        )}
-        <div className="ml-auto flex items-center gap-3 text-[0.8125rem]" role="group" aria-label="Per chi">
+            </label>
+          ) : null}
+          <label className={cn("flex flex-col gap-1", !(categoria === "scadenza" || importo) && "col-span-2")}>
+            Promemoria
+            <select value={promemoria} onChange={(e) => setPromemoria(e.target.value)} className="campo-linea h-10 text-inchiostro">
+              <option value="auto">{nomeAuto(categoria, ora || null)}</option>
+              {opzioniPromemoria.map((p) => (
+                <option key={p.nome} value={p.valore === null ? "" : String(p.valore)}>{p.nome}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 flex items-center gap-3 text-[0.875rem]" role="group" aria-label="Per chi">
           <span className="text-tenue">per</span>
-          {scelte.map((s) => (
+          {scelte.map((c) => (
             <button
-              key={s.id ?? "entrambi"}
+              key={c.id ?? "entrambi"}
               type="button"
-              onClick={() => setPerChi(s.id)}
-              aria-pressed={perChi === s.id}
+              onClick={() => setPerChi(c.id)}
+              aria-pressed={perChi === c.id}
               className={cn(
                 "anello-focus underline-offset-4 transition",
-                perChi === s.id ? "font-semibold text-inchiostro underline decoration-becco decoration-2" : "text-tenue hover:text-inchiostro",
+                perChi === c.id ? "font-semibold text-inchiostro underline decoration-becco decoration-2" : "text-tenue hover:text-inchiostro",
               )}
             >
-              {s.nome}
+              {c.nome}
             </button>
           ))}
         </div>
-      </div>
-    </form>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <Pulsante type="button" variante="fantasma" onClick={onAnnulla}>Annulla</Pulsante>
+          <Pulsante type="submit" disabled={!titolo.trim()}>Aggiungi</Pulsante>
+        </div>
+      </motion.form>
+    </motion.div>
   );
+}
+
+function nomeAuto(categoria: Impegno["categoria"], ora: string | null) {
+  const v = promemoriaPredefinito(categoria, ora);
+  const elenco = ora ? PROMEMORIA_CON_ORA : PROMEMORIA_SENZA_ORA;
+  const nome = elenco.find((p) => p.valore === v)?.nome ?? "Nessun promemoria";
+  return `${nome} (consigliato)`;
 }
 
 /* ---------- Riga impegno ---------- */
