@@ -549,13 +549,6 @@ export function AppSpesa({
         <header className="mt-5 flex items-end justify-between gap-4 md:mt-8">
           <div className="min-w-0">
           <h1 className="titolo titolo-pagina">{vista === "dispensa" ? "in casa" : vista === "abituali" ? "abituali" : "spese"}</h1>
-          <p className="mt-2 max-w-xl text-[0.9375rem] text-tenue">
-            {vista === "dispensa"
-              ? "Quello che avete in frigo, nel freezer e in dispensa."
-              : vista === "abituali"
-                ? "I prodotti che comprate. Un tocco e tornano nella lista."
-                : "Carrelli chiusi e spese aggiunte a mano o da uno scontrino, giorno per giorno."}
-          </p>
           </div>
         </header>
       )}

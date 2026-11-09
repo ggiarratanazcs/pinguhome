@@ -286,12 +286,12 @@ export function AppAgenda({
           </div>
 
           {totaleScadenze > 0 ? (
-            <div className="mt-6 flex items-baseline justify-between gap-4 rounded-[20px] bg-becco-tenue px-5 py-4">
+            <div className={cn("mt-6 flex items-baseline justify-between gap-4 rounded-[20px] px-5 py-4", daPagare > 0 ? "bg-becco-tenue" : "bg-eco-tenue")}>
               <div>
-                <p className="text-[0.8125rem] text-becco-scuro">Scadenze di {nomeMese.split(" ")[0]}</p>
+                <p className={cn("text-[0.8125rem]", daPagare > 0 ? "text-becco-scuro" : "text-eco")}>Scadenze di {nomeMese.split(" ")[0]}</p>
                 <p className="titolo-normale numeri mt-1 text-[1.5rem] leading-none">{formattaEuro(totaleScadenze)}</p>
               </div>
-              <p className="text-right text-[0.8125rem] text-inchiostro-2">
+              <p className={cn("text-right text-[0.8125rem]", daPagare > 0 ? "text-inchiostro-2" : "flex items-center gap-1.5 font-semibold text-eco")}>
                 {daPagare > 0 ? (
                   <>
                     ancora da pagare
@@ -299,7 +299,9 @@ export function AppAgenda({
                     <span className="numeri font-semibold text-inchiostro">{formattaEuro(daPagare)}</span>
                   </>
                 ) : (
-                  "tutto pagato"
+                  <>
+                    <Check className="size-4" strokeWidth={2.8} /> tutto pagato
+                  </>
                 )}
               </p>
             </div>
