@@ -3,13 +3,12 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import type { Lista, Spesa } from "@/lib/database.types";
-import type { MembroCasa } from "@/lib/sessione";
 import { indovinaReparto } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import type { DatiSpesa } from "./app-spesa";
 
 type Periodo = "mese" | "trimestre" | "anno";
-type Vista = "lista" | "reparto" | "chi" | "negozio";
+type Vista = "lista" | "reparto" | "negozio";
 type Fetta = { id: string; nome: string; valore: number; colore: string; euro?: number };
 
 const PERIODI: { id: Periodo; nome: string }[] = [
@@ -21,7 +20,6 @@ const PERIODI: { id: Periodo; nome: string }[] = [
 const VISTE: { id: Vista; nome: string }[] = [
   { id: "lista", nome: "Lista" },
   { id: "reparto", nome: "Reparto" },
-  { id: "chi", nome: "Chi paga" },
   { id: "negozio", nome: "Negozio" },
 ];
 
@@ -44,6 +42,14 @@ function maiuscola(t: string) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+function chiaveNegozio(n: string | null) {
+  return (n ?? "").toLowerCase().replace(/[.,;:'"]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function nomeNegozio(chiave: string) {
+  return chiave.replace(/(^|\s)(\p{L})/gu, (_, sp: string, l: string) => sp + l.toUpperCase());
+}
+
 /** Intervallo del periodo scelto e di quello precedente, come date "aaaa-mm-gg". */
 function intervalli(periodo: Periodo, oggi: Date) {
   const a = oggi.getFullYear();
@@ -61,7 +67,7 @@ function intervalli(periodo: Periodo, oggi: Date) {
   return { inizio: iso(inizio), fine: iso(fine), inizioPrima: iso(inizioPrima), finePrima: iso(finePrima), giorni, mesi };
 }
 
-export function VistaAnalisi({ dati, liste, membri }: { dati: DatiSpesa; liste: Lista[]; membri: MembroCasa[] }) {
+export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] }) {
   const [periodo, setPeriodo] = useState<Periodo>("mese");
   const [vista, setVista] = useState<Vista>("lista");
 
@@ -114,20 +120,11 @@ export function VistaAnalisi({ dati, liste, membri }: { dati: DatiSpesa; liste: 
         .sort((a, b) => b.valore - a.valore);
     }
 
-    if (vista === "chi") {
-      const m = somma((s) => s.pagata_da ?? "");
-      return [...m.entries()]
-        .map(([id, valore]) => {
-          const p = membri.find((x) => x.id === id);
-          return { id, nome: p ? p.nome : "Non indicato", valore, colore: p ? p.colore : GRIGIO };
-        })
-        .sort((a, b) => b.valore - a.valore);
-    }
-
     if (vista === "negozio") {
-      const m = somma((s) => s.negozio?.trim() || "");
+      // Lo stesso negozio scritto in modi diversi ("esselunga", "Esselunga ") conta una volta sola
+      const m = somma((s) => chiaveNegozio(s.negozio));
       const ordinate = [...m.entries()].sort((a, b) => (a[0] === "" ? 1 : b[0] === "" ? -1 : b[1] - a[1]));
-      return ordinate.map(([id, valore], i) => ({ id, nome: id || "Non indicato", valore, colore: id ? COLORI[i % COLORI.length] : GRIGIO }));
+      return ordinate.map(([id, valore], i) => ({ id, nome: id ? nomeNegozio(id) : "Non indicato", valore, colore: id ? COLORI[i % COLORI.length] : GRIGIO }));
     }
 
     // Reparto: quanti prodotti comprati per reparto, e gli euro quando lo scontrino ha i prezzi
@@ -153,7 +150,7 @@ export function VistaAnalisi({ dati, liste, membri }: { dati: DatiSpesa; liste: 
         };
       })
       .sort((a, b) => b.valore - a.valore);
-  }, [vista, spese, liste, membri, dati.reparti, repartoDi]);
+  }, [vista, spese, liste, dati.reparti, repartoDi]);
 
   /* ---------- Barre ---------- */
 

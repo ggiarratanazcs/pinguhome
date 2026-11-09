@@ -557,7 +557,7 @@ export function AppSpesa({
           {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "spese" ? <VistaSpese dati={dati} liste={liste} membri={membri} userId={userId} azioni={azioni} /> : null}
-          {vista === "analisi" ? <VistaAnalisi dati={dati} liste={liste} membri={membri} /> : null}
+          {vista === "analisi" ? <VistaAnalisi dati={dati} liste={liste} /> : null}
       </motion.div>
 
       {/* Avvisi brevi */}
