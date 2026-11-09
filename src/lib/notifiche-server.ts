@@ -1,5 +1,5 @@
 import "server-only";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { VAPID_PUBLIC_KEY } from "@/lib/notifiche-config";
 
 export type Iscrizione = { id: string; endpoint: string; p256dh: string; auth: string };
