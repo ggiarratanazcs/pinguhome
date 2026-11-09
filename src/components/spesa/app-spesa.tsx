@@ -91,7 +91,7 @@ function useAzioni(params: {
         quantita,
         unita,
         note: null,
-        eco: prodotto?.eco ?? false,
+        eco: false,
         urgente: false,
         presa: false,
         presa_da: null,
@@ -124,14 +124,12 @@ function useAzioni(params: {
   );
 
   const modificaVoce = useCallback(
-    async (voce: VoceLista, modifiche: Partial<Pick<VoceLista, "quantita" | "unita" | "eco" | "urgente" | "note" | "reparto_id" | "nome">>) => {
+    async (voce: VoceLista, modifiche: Partial<Pick<VoceLista, "quantita" | "unita" | "urgente" | "note" | "reparto_id" | "nome">>) => {
       setDati((d) => ({ ...d, voci: aggiornaPerId(d.voci, { ...voce, ...modifiche }) }));
       await supabase.from("voci_lista").update(modifiche).eq("id", voce.id);
-      // Eco e reparto restano sul prodotto, così valgono anche la prossima volta
-      if (voce.prodotto_id && ("eco" in modifiche || "reparto_id" in modifiche)) {
-        const perProdotto: Partial<Prodotto> = {};
-        if ("eco" in modifiche) perProdotto.eco = modifiche.eco;
-        if ("reparto_id" in modifiche) perProdotto.reparto_id = modifiche.reparto_id ?? null;
+      // Il reparto resta sul prodotto, così vale anche la prossima volta
+      if (voce.prodotto_id && "reparto_id" in modifiche) {
+        const perProdotto: Partial<Prodotto> = { reparto_id: modifiche.reparto_id ?? null };
         setDati((d) => ({ ...d, prodotti: d.prodotti.map((p) => (p.id === voce.prodotto_id ? { ...p, ...perProdotto } : p)) }));
         await supabase.from("prodotti").update(perProdotto).eq("id", voce.prodotto_id);
       }
@@ -211,7 +209,7 @@ function useAzioni(params: {
   );
 
   const modificaProdotto = useCallback(
-    async (p: Prodotto, modifiche: Partial<Pick<Prodotto, "abituale" | "eco" | "reparto_id" | "unita">>) => {
+    async (p: Prodotto, modifiche: Partial<Pick<Prodotto, "abituale" | "reparto_id" | "unita">>) => {
       setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, { ...p, ...modifiche }) }));
       await supabase.from("prodotti").update(modifiche).eq("id", p.id);
     },
@@ -237,8 +235,8 @@ function useAzioni(params: {
         quantita: riga.quantita ?? 1,
         unita: riga.unita ?? prodotto?.unita ?? "pz",
         posizione: riga.posizione ?? "dispensa",
-        scadenza: riga.scadenza ?? null,
-        scorta_minima: riga.scorta_minima ?? null,
+        scadenza: null,
+        scorta_minima: null,
         aggiornata_il: new Date().toISOString(),
       };
       setDati((d) => ({ ...d, dispensa: aggiornaPerId(d.dispensa, nuova) }));
@@ -388,7 +386,7 @@ export function AppSpesa({
           <h1 className="titolo text-[clamp(2.25rem,9vw,4.25rem)]">{vista === "dispensa" ? "in casa" : "abituali"}</h1>
           <p className="mt-3 max-w-xl text-tenue">
             {vista === "dispensa"
-              ? "Quello che avete in frigo, nel freezer e in dispensa. Le scadenze vicine salgono in cima."
+              ? "Quello che avete in frigo, nel freezer e in dispensa."
               : "I prodotti che comprate. Un tocco e tornano nella lista."}
           </p>
         </header>

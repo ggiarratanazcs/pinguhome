@@ -4,13 +4,11 @@ import { useMemo, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import type { Dispensa, Lista } from "@/lib/database.types";
-import { etichettaScadenza, giorniAScadenza, interpretaVoce, POSIZIONI, UNITA } from "@/lib/spesa";
+import { interpretaVoce, POSIZIONI, UNITA } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
 import { Pinguino } from "@/components/pinguino";
-import { cn, formattaQuantita } from "@/lib/utils";
+import { formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
-
-type Filtro = "tutto" | "scadenza" | "scorta";
 
 export function VistaDispensa({
   dati,
@@ -23,17 +21,7 @@ export function VistaDispensa({
   azioni: AzioniSpesa;
   avvisa: (t: string) => void;
 }) {
-  const [filtro, setFiltro] = useState<Filtro>("tutto");
-
-  const righe = useMemo(() => {
-    let r = dati.dispensa.slice();
-    if (filtro === "scadenza") r = r.filter((x) => (giorniAScadenza(x.scadenza) ?? 99) <= 3);
-    if (filtro === "scorta") r = r.filter((x) => x.scorta_minima !== null && Number(x.quantita) <= Number(x.scorta_minima));
-    return r.sort((a, b) => (giorniAScadenza(a.scadenza) ?? 9999) - (giorniAScadenza(b.scadenza) ?? 9999) || a.nome.localeCompare(b.nome));
-  }, [dati.dispensa, filtro]);
-
-  const inScadenza = dati.dispensa.filter((x) => (giorniAScadenza(x.scadenza) ?? 99) <= 3).length;
-  const sottoScorta = dati.dispensa.filter((x) => x.scorta_minima !== null && Number(x.quantita) <= Number(x.scorta_minima)).length;
+  const righe = useMemo(() => dati.dispensa.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [dati.dispensa]);
 
   async function ricompra(r: Dispensa) {
     if (!lista) return;
@@ -41,32 +29,9 @@ export function VistaDispensa({
     avvisa(`${r.nome} aggiunto a ${lista.nome}`);
   }
 
-  const filtri: { id: Filtro; nome: string; n: number }[] = [
-    { id: "tutto", nome: "Tutto", n: dati.dispensa.length },
-    { id: "scadenza", nome: "Scade a breve", n: inScadenza },
-    { id: "scorta", nome: "Sta finendo", n: sottoScorta },
-  ];
-
   return (
     <div className="mt-8">
       <NuovaInDispensa onSalva={azioni.salvaDispensa} />
-
-      <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.9375rem]">
-        {filtri.map((f) => {
-          const attivo = filtro === f.id;
-          return (
-            <button
-              key={f.id}
-              onClick={() => setFiltro(f.id)}
-              className={cn("anello-focus relative flex items-baseline gap-1.5 pb-1 transition-colors", attivo ? "font-semibold text-inchiostro" : "text-tenue hover:text-inchiostro")}
-            >
-              {f.nome}
-              <span className={cn("numeri text-[0.8125rem]", f.id !== "tutto" && f.n > 0 ? "text-becco-scuro" : "text-tenue")}>{f.n}</span>
-              {attivo ? <motion.span layoutId="filtro-dispensa" className="absolute inset-x-0 -bottom-0.5 h-[2px] rounded-full bg-inchiostro" /> : null}
-            </button>
-          );
-        })}
-      </div>
 
       {dati.dispensa.length === 0 ? (
         <div className="mt-14 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -74,12 +39,12 @@ export function VistaDispensa({
           <div>
             <p className="titolo-normale text-2xl">La casa è ancora vuota.</p>
             <p className="mt-2 max-w-md text-tenue">
-              Chiudi una spesa con “metti in casa”, oppure aggiungi qui quello che avete già con la sua scadenza: ve lo ricordo prima che vada buttato.
+              Chiudi una spesa con “metti in casa”, oppure aggiungi qui quello che avete già.
             </p>
           </div>
         </div>
       ) : (
-        <div className="mt-8 grid gap-10 md:grid-cols-3 md:gap-8">
+        <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
           {POSIZIONI.map((pos) => {
             const elenco = righe.filter((r) => r.posizione === pos.id);
             return (
@@ -106,11 +71,8 @@ export function VistaDispensa({
 }
 
 function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: AzioniSpesa; onRicompra: () => void }) {
-  const giorni = giorniAScadenza(riga.scadenza);
-  const etichetta = etichettaScadenza(giorni);
   const q = Number(riga.quantita);
   const passo = ["kg", "l"].includes(riga.unita) ? 0.5 : ["g", "ml"].includes(riga.unita) ? 100 : 1;
-  const sotto = riga.scorta_minima !== null && q <= Number(riga.scorta_minima);
   const [modifica, setModifica] = useState(false);
 
   return (
@@ -122,17 +84,8 @@ function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: Az
       className="border-b border-linea py-3"
     >
       <div className="flex items-center gap-3">
-        <button onClick={() => setModifica((m) => !m)} className="anello-focus min-w-0 flex-1 text-left">
-          <p className="truncate text-[1rem]">{riga.nome}</p>
-          <p
-            className={cn(
-              "mt-0.5 text-[0.8125rem]",
-              giorni !== null && giorni < 0 ? "font-semibold text-pericolo" : giorni !== null && giorni <= 3 ? "font-semibold text-becco-scuro" : "text-tenue",
-            )}
-          >
-            {etichetta ?? "Senza scadenza"}
-            {sotto ? <span className="font-semibold text-pericolo"> e sta finendo</span> : null}
-          </p>
+        <button onClick={() => setModifica((m) => !m)} className="anello-focus min-w-0 flex-1 truncate text-left text-[1rem]">
+          {riga.nome}
         </button>
         <div className="flex items-center">
           <button
@@ -155,38 +108,11 @@ function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: Az
         </div>
       </div>
 
-      {sotto ? (
-        <button onClick={onRicompra} className="anello-focus mt-2 flex items-center gap-1.5 text-[0.875rem] font-semibold text-inchiostro underline decoration-becco decoration-2 underline-offset-4">
-          <ShoppingCart className="size-4" /> Rimetti in lista
-        </button>
-      ) : null}
-
       <AnimatePresence initial={false}>
         {modifica ? (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 rounded-[20px] bg-superficie-2 p-4 text-sm">
-              <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
-                Scadenza
-                <input
-                  type="date"
-                  defaultValue={riga.scadenza ?? ""}
-                  onChange={(e) => azioni.salvaDispensa({ id: riga.id, nome: riga.nome, scadenza: e.target.value || null })}
-                  className="campo-linea h-9 text-inchiostro"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
-                Avvisami sotto
-                <input
-                  type="number"
-                  min={0}
-                  step="any"
-                  placeholder="quantità"
-                  defaultValue={riga.scorta_minima ?? ""}
-                  onBlur={(e) => azioni.salvaDispensa({ id: riga.id, nome: riga.nome, scorta_minima: e.target.value === "" ? null : Number(e.target.value) })}
-                  className="campo-linea h-9 text-inchiostro"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
+            <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-3 rounded-[20px] bg-superficie-2 p-4 text-sm">
+              <label className="flex min-w-32 flex-1 flex-col gap-1 text-[0.8125rem] text-tenue">
                 Dove
                 <select
                   value={riga.posizione}
@@ -198,11 +124,12 @@ function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: Az
                   ))}
                 </select>
               </label>
-              <div className="flex items-end justify-end">
-                <Pulsante variante="pericolo" onClick={() => azioni.eliminaDispensa(riga)} className="h-9 px-4 text-sm">
-                  <Trash2 className="size-4" /> Finito
-                </Pulsante>
-              </div>
+              <Pulsante variante="secondario" onClick={onRicompra} className="h-9 px-4 text-sm">
+                <ShoppingCart className="size-4" /> Rimetti in lista
+              </Pulsante>
+              <Pulsante variante="pericolo" onClick={() => azioni.eliminaDispensa(riga)} className="h-9 px-4 text-sm">
+                <Trash2 className="size-4" /> Finito
+              </Pulsante>
             </div>
           </motion.div>
         ) : null}
@@ -225,7 +152,6 @@ function NuovaInDispensa({ onSalva }: { onSalva: AzioniSpesa["salvaDispensa"] })
       quantita: v.quantita,
       unita: v.unita ?? String(f.get("unita") ?? "pz"),
       posizione: String(f.get("posizione") ?? "dispensa"),
-      scadenza: String(f.get("scadenza") ?? "") || null,
     });
     form.reset();
   }
@@ -239,7 +165,7 @@ function NuovaInDispensa({ onSalva }: { onSalva: AzioniSpesa["salvaDispensa"] })
   }
 
   return (
-    <form onSubmit={invia} className="grid gap-5 rounded-[28px] bg-superficie-2 p-5 md:grid-cols-[minmax(0,2fr)_90px_130px_150px] md:items-end md:p-6">
+    <form onSubmit={invia} className="grid gap-5 rounded-[28px] bg-superficie-2 p-5 md:grid-cols-[minmax(0,2fr)_100px_150px] md:items-end md:p-6">
       <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
         Prodotto
         <input name="nome" required autoFocus placeholder="Es. 1 l latte" className="campo-linea h-10 text-[1rem] text-inchiostro" />
@@ -256,11 +182,7 @@ function NuovaInDispensa({ onSalva }: { onSalva: AzioniSpesa["salvaDispensa"] })
           {POSIZIONI.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
-        Scadenza
-        <input name="scadenza" type="date" className="campo-linea h-10 text-inchiostro" />
-      </label>
-      <div className="flex gap-2 md:col-span-4">
+      <div className="flex gap-2 md:col-span-3">
         <Pulsante type="submit">Metti in casa</Pulsante>
         <Pulsante type="button" variante="fantasma" onClick={() => setAperta(false)}>Chiudi</Pulsante>
       </div>

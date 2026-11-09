@@ -73,24 +73,6 @@ export function indovinaReparto(nome: string, reparti: Reparto[]): string | null
   return reparti.find((x) => x.nome === "Altro")?.id ?? null;
 }
 
-/** Giorni da oggi alla scadenza (negativo se già scaduto). */
-export function giorniAScadenza(scadenza: string | null): number | null {
-  if (!scadenza) return null;
-  const oggi = new Date();
-  oggi.setHours(0, 0, 0, 0);
-  const s = new Date(`${scadenza}T00:00:00`);
-  return Math.round((s.getTime() - oggi.getTime()) / 86_400_000);
-}
-
-export function etichettaScadenza(giorni: number | null) {
-  if (giorni === null) return null;
-  if (giorni < 0) return giorni === -1 ? "Scaduto ieri" : `Scaduto da ${-giorni} gg`;
-  if (giorni === 0) return "Scade oggi";
-  if (giorni === 1) return "Scade domani";
-  if (giorni <= 7) return `Scade tra ${giorni} gg`;
-  return new Date(Date.now() + giorni * 86_400_000).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
-}
-
 export const POSIZIONI = [
   { id: "frigo", nome: "Frigo" },
   { id: "freezer", nome: "Freezer" },

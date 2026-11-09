@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Check, Leaf, Plus, Search, Star } from "lucide-react";
+import { Check, Plus, Search, Star } from "lucide-react";
 import type { Lista, Prodotto } from "@/lib/database.types";
 import { cn } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
@@ -34,10 +34,6 @@ export function VistaAbituali({
       .sort((a, b) => Number(b.abituale) - Number(a.abituale) || b.volte_acquistato - a.volte_acquistato || a.nome.localeCompare(b.nome));
   }, [cerca, dati.prodotti, soloPreferiti]);
 
-  const totaleAcquisti = dati.prodotti.reduce((s, p) => s + p.volte_acquistato, 0);
-  const acquistiGreen = dati.prodotti.filter((p) => p.eco).reduce((s, p) => s + p.volte_acquistato, 0);
-  const quotaGreen = totaleAcquisti ? Math.round((acquistiGreen / totaleAcquisti) * 100) : 0;
-
   async function aggiungi(p: Prodotto) {
     if (!lista) return;
     await azioni.aggiungi(p.nome, { unita: p.unita, quantita: 1 });
@@ -68,15 +64,6 @@ export function VistaAbituali({
         </button>
       </div>
 
-      {totaleAcquisti > 0 ? (
-        <p className="mt-5 flex items-center gap-2 text-[0.9375rem] text-inchiostro-2">
-          <Leaf className="size-4 text-eco" />
-          <span>
-            <span className="font-semibold text-eco">{quotaGreen}%</span> di quello che avete comprato è green.
-          </span>
-        </p>
-      ) : null}
-
       {prodotti.length === 0 ? (
         <p className="mt-10 max-w-md text-tenue">
           {dati.prodotti.length === 0
@@ -97,14 +84,6 @@ export function VistaAbituali({
                     {p.volte_acquistato > 0 ? `Preso ${p.volte_acquistato} ${p.volte_acquistato === 1 ? "volta" : "volte"}` : reparto?.nome ?? "Altro"}
                   </p>
                 </div>
-                <button
-                  onClick={() => azioni.modificaProdotto(p, { eco: !p.eco })}
-                  aria-label={p.eco ? "Togli green" : "Segna green"}
-                  aria-pressed={p.eco}
-                  className={cn("anello-focus grid size-9 place-items-center rounded-full transition", p.eco ? "text-eco" : "text-linea-forte hover:text-tenue")}
-                >
-                  <Leaf className="size-[18px]" />
-                </button>
                 <button
                   onClick={() => azioni.modificaProdotto(p, { abituale: !p.abituale })}
                   aria-label={p.abituale ? "Togli dai preferiti" : "Metti nei preferiti"}

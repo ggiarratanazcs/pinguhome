@@ -5,9 +5,9 @@ La casa, la spesa e le cose di tutti i giorni, in due.
 **Stack**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 · Supabase (database, autenticazione, tempo reale) · Vercel (regione Dublino, vicino al database).
 
 ## Moduli
-- **Spesa** — liste condivise in tempo reale, aggiunta rapida in linguaggio naturale ("2 kg mele"), reparto automatico, voci urgenti e green, carrello che finisce in dispensa
-- **Dispensa** — frigo, freezer e dispensa, scadenze, scorta minima con "rimetti in lista"
-- **Abituali** — i prodotti della casa, preferiti, statistiche green
+- **Spesa** — liste condivise in tempo reale, aggiunta rapida in linguaggio naturale ("2 kg mele"), reparto automatico, voci urgenti, carrello che finisce in casa
+- **In casa** — frigo, freezer e dispensa con le quantità e "rimetti in lista"
+- **Abituali** — i prodotti della casa e i preferiti
 - In arrivo: Finanze, Agenda
 
 ## Temi

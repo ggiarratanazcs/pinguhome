@@ -10,7 +10,7 @@ export default function LayoutAccesso({ children }: LayoutProps<"/">) {
           <div aria-hidden className="absolute inset-x-[-10%] bottom-[-6%] top-[42%] rounded-[50%] bg-lastra" />
           <Pinguino className="relative w-full" />
         </div>
-        <p className="titolo max-w-md text-[2.5rem] leading-[1.05]">la casa, in due. senza sprechi.</p>
+        <p className="titolo max-w-md text-[2.5rem] leading-[1.05]">la casa, in due.</p>
       </aside>
 
       <main className="foglio pt-sicuro flex flex-col justify-center px-6 py-12 md:px-16">

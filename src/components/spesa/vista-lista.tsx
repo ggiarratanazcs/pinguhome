@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
-import { Check, ChevronDown, CornerDownLeft, Flame, Leaf, Minus, MoreHorizontal, PackageCheck, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, CornerDownLeft, Flame, Minus, MoreHorizontal, PackageCheck, Plus, Trash2 } from "lucide-react";
 import type { Lista, Reparto, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { interpretaVoce, UNITA } from "@/lib/spesa";
@@ -47,8 +47,6 @@ export function VistaLista({
     if (senza) risultato.push({ reparto: null, voci: ordina(senza) });
     return risultato;
   }, [daPrendere, dati.reparti]);
-
-  const ecoQuota = voci.length ? Math.round((voci.filter((v) => v.eco).length / voci.length) * 100) : 0;
 
   return (
     <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_260px]">
@@ -134,13 +132,6 @@ export function VistaLista({
             <Dato etichetta="reparti da girare" valore={gruppi.length} />
             <Dato etichetta="già presi" valore={prese.length} />
           </dl>
-          <div className="relative overflow-hidden rounded-[28px] bg-eco-tenue p-5">
-            <p className="titolo-normale numeri text-[2.5rem] leading-none text-eco">{ecoQuota}%</p>
-            <p className="mt-2 text-[0.875rem] text-inchiostro-2">
-              della lista è green: sfuso, locale o senza plastica. Lo segni con la foglia nei dettagli di una voce.
-            </p>
-            <Leaf className="absolute -right-3 -top-3 size-20 rotate-12 text-eco opacity-15" />
-          </div>
         </div>
       </aside>
     </div>
@@ -287,7 +278,6 @@ function AggiuntaRapida({
                   >
                     <IconaReparto icona={reparto?.icona} className="size-4 text-tenue" />
                     <span className="flex-1">{p.nome}</span>
-                    {p.eco ? <Leaf className="size-3.5 text-eco" /> : null}
                     {p.volte_acquistato > 0 ? <span className="numeri text-xs text-tenue">preso {p.volte_acquistato} volte</span> : null}
                     {i === indice ? <CornerDownLeft className="size-3.5 text-tenue" /> : null}
                   </button>
@@ -369,7 +359,6 @@ function RigaVoce({
                 {voce.nome}
               </span>
               {voce.urgente && !voce.presa ? <span className="shrink-0 rounded-full bg-becco-tenue px-2 py-0.5 text-[0.6875rem] font-semibold text-becco-scuro">urgente</span> : null}
-              {voce.eco ? <Leaf className="size-3.5 shrink-0 text-eco" /> : null}
             </span>
             {voce.note || (voce.presa && chiPresa) ? (
               <span className="mt-0.5 block truncate text-xs text-tenue">
@@ -452,10 +441,7 @@ function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpes
             </option>
           ))}
       </select>
-      <Interruttore attivo={voce.eco} onClick={() => azioni.modificaVoce(voce, { eco: !voce.eco })} colore="eco">
-        <Leaf className="size-3.5" /> Green
-      </Interruttore>
-      <Interruttore attivo={voce.urgente} onClick={() => azioni.modificaVoce(voce, { urgente: !voce.urgente })} colore="becco">
+      <Interruttore attivo={voce.urgente} onClick={() => azioni.modificaVoce(voce, { urgente: !voce.urgente })}>
         <Flame className="size-3.5" /> Urgente
       </Interruttore>
       <input
@@ -474,12 +460,10 @@ function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpes
 function Interruttore({
   attivo,
   onClick,
-  colore,
   children,
 }: {
   attivo: boolean;
   onClick: () => void;
-  colore: "eco" | "becco";
   children: React.ReactNode;
 }) {
   return (
@@ -488,11 +472,7 @@ function Interruttore({
       aria-pressed={attivo}
       className={cn(
         "anello-focus flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition",
-        attivo
-          ? colore === "eco"
-            ? "bg-eco text-white"
-            : "bg-becco text-su-becco"
-          : "bg-superficie text-tenue ring-1 ring-linea hover:text-inchiostro",
+        attivo ? "bg-becco text-su-becco" : "bg-superficie text-tenue ring-1 ring-linea hover:text-inchiostro",
       )}
     >
       {children}

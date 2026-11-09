@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getContesto } from "@/lib/sessione";
-import { etichettaScadenza, giorniAScadenza } from "@/lib/spesa";
+import { POSIZIONI } from "@/lib/spesa";
 import { Pinguino } from "@/components/pinguino";
 import { cn } from "@/lib/utils";
 
@@ -20,15 +20,11 @@ export default async function Home() {
   const [{ data: voci }, { data: liste }, { data: dispensa }] = await Promise.all([
     supabase.from("voci_lista").select("lista_id, presa, urgente").eq("famiglia_id", famiglia.id),
     supabase.from("liste").select("id, nome, colore").eq("famiglia_id", famiglia.id).eq("archiviata", false).order("ordine"),
-    supabase.from("dispensa").select("id, nome, scadenza").eq("famiglia_id", famiglia.id).not("scadenza", "is", null),
+    supabase.from("dispensa").select("posizione").eq("famiglia_id", famiglia.id),
   ]);
 
   const daPrendere = (voci ?? []).filter((v) => !v.presa);
   const urgenti = daPrendere.filter((v) => v.urgente).length;
-  const inScadenza = (dispensa ?? [])
-    .map((d) => ({ ...d, giorni: giorniAScadenza(d.scadenza) }))
-    .filter((d) => d.giorni !== null && d.giorni <= 3)
-    .sort((a, b) => a.giorni! - b.giorni!);
   const data = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Rome" });
   const nome = profilo.nome.split(" ")[0] || "pinguino";
 
@@ -49,7 +45,6 @@ export default async function Home() {
         {daPrendere.length === 0
           ? "Nessuna spesa in sospeso: le liste sono vuote."
           : `${daPrendere.length} ${daPrendere.length === 1 ? "cosa" : "cose"} da comprare${urgenti ? `, di cui ${urgenti} ${urgenti === 1 ? "urgente" : "urgenti"}` : ""}.`}
-        {inScadenza.length > 0 ? ` In casa ${inScadenza.length === 1 ? "c'è 1 cosa" : `ci sono ${inScadenza.length} cose`} da consumare presto.` : ""}
       </p>
 
       <div className="mt-14 grid gap-14 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -78,22 +73,19 @@ export default async function Home() {
 
         <section>
           <h2 className="border-b-2 border-inchiostro pb-2">
-            <span className="titolo text-[1.5rem]">da consumare</span>
+            <span className="titolo text-[1.5rem]">in casa</span>
           </h2>
-          {inScadenza.length === 0 ? (
-            <p className="py-4 text-tenue">Niente in scadenza nei prossimi tre giorni.</p>
-          ) : (
-            <ul>
-              {inScadenza.slice(0, 6).map((d) => (
-                <li key={d.id} className="flex items-center justify-between gap-3 border-b border-linea py-3.5">
-                  <span className="truncate text-[1.0625rem]">{d.nome}</span>
-                  <span className={cn("shrink-0 text-[0.875rem] font-semibold", d.giorni! < 0 ? "text-pericolo" : "text-becco-scuro")}>
-                    {etichettaScadenza(d.giorni)}
-                  </span>
+          <ul>
+            {POSIZIONI.map((p) => {
+              const n = (dispensa ?? []).filter((d) => d.posizione === p.id).length;
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-3 border-b border-linea py-4">
+                  <span className="text-[1.0625rem]">{p.nome}</span>
+                  <span className={cn("titolo-normale numeri text-[1.5rem] leading-none", n ? "text-inchiostro" : "text-linea-forte")}>{n}</span>
                 </li>
-              ))}
-            </ul>
-          )}
+              );
+            })}
+          </ul>
           <p className="mt-10 text-[0.875rem] text-tenue">Presto qui anche finanze e agenda di casa.</p>
         </section>
       </div>
