@@ -1,14 +1,19 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
 import type { Dispensa, Lista } from "@/lib/database.types";
 import { interpretaVoce, POSIZIONI, UNITA } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
-import { Mascotte } from "@/components/mascotte";
 import { formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
+
+const IMMAGINI: Record<string, string> = {
+  frigo: "/casa/frigo.webp",
+  freezer: "/casa/freezer.webp",
+  dispensa: "/casa/dispensa.webp",
+};
 
 export function VistaDispensa({
   dati,
@@ -22,6 +27,15 @@ export function VistaDispensa({
   avvisa: (t: string) => void;
 }) {
   const righe = useMemo(() => dati.dispensa.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [dati.dispensa]);
+  const [aperta, setAperta] = useState<string | null>(null);
+  const posAperta = POSIZIONI.find((p) => p.id === aperta);
+
+  useEffect(() => {
+    if (!aperta) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAperta(null);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [aperta]);
 
   async function ricompra(r: Dispensa) {
     if (!lista) return;
@@ -33,39 +47,93 @@ export function VistaDispensa({
     <div className="mt-8">
       <NuovaInDispensa onSalva={azioni.salvaDispensa} />
 
-      {dati.dispensa.length === 0 ? (
-        <div className="mt-14 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
-          <Mascotte className="w-28" />
-          <div>
-            <p className="titolo-normale text-2xl">La casa è ancora vuota.</p>
-            <p className="mt-2 max-w-md text-tenue">
-              Chiudi una spesa con “metti in casa”, oppure aggiungi qui quello che avete già.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
-          {POSIZIONI.map((pos) => {
-            const elenco = righe.filter((r) => r.posizione === pos.id);
-            return (
-              <section key={pos.id} className="min-w-0">
-                <h2 className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
-                  <span className="titolo text-[1.125rem]">{pos.nome}</span>
-                  <span className="numeri text-[0.8125rem] text-tenue">{elenco.length}</span>
-                </h2>
-                <ul>
-                  <AnimatePresence initial={false}>
-                    {elenco.map((r) => (
+      <div className="mt-8 grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
+        {POSIZIONI.map((pos) => {
+          const n = righe.filter((r) => r.posizione === pos.id).length;
+          return (
+            <button
+              key={pos.id}
+              onClick={() => setAperta(pos.id)}
+              className="anello-focus group flex flex-col items-center rounded-[24px] bg-superficie-2 px-2 pb-3 pt-4 transition-transform active:scale-[0.97] md:rounded-[32px] md:px-6 md:pb-5 md:pt-6"
+            >
+              <div className="relative aspect-[3/4] w-full">
+                {aperta !== pos.id ? (
+                  <motion.img
+                    layoutId={`casa-${pos.id}`}
+                    src={IMMAGINI[pos.id]}
+                    alt=""
+                    draggable={false}
+                    className="absolute inset-0 size-full object-contain object-bottom drop-shadow-[0_14px_18px_rgba(var(--ombra),0.18)] transition-transform duration-300 group-hover:-translate-y-1"
+                  />
+                ) : null}
+              </div>
+              <span className="titolo mt-3 text-[0.9375rem] md:text-[1.125rem]">{pos.nome}</span>
+              <span className="numeri text-[0.8125rem] text-tenue">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence>
+        {posAperta ? (
+          <motion.div
+            key="velo"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-dorso/40 p-3 backdrop-blur-md sm:items-center"
+            onClick={() => setAperta(null)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={posAperta.nome}
+              onClick={(e) => e.stopPropagation()}
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 34 }}
+              className="pb-sicuro flex max-h-[88dvh] w-full max-w-lg flex-col rounded-[32px] bg-superficie shadow-2xl"
+            >
+              <div className="relative flex items-end gap-4 px-5 pt-5">
+                <motion.img
+                  layoutId={`casa-${posAperta.id}`}
+                  src={IMMAGINI[posAperta.id]}
+                  alt=""
+                  draggable={false}
+                  className="h-36 w-auto -mt-16 object-contain drop-shadow-[0_18px_22px_rgba(var(--ombra),0.25)] sm:h-44 sm:-mt-24"
+                />
+                <div className="min-w-0 flex-1 pb-2">
+                  <p className="titolo text-[1.375rem]">{posAperta.nome.toLowerCase()}</p>
+                  <p className="numeri text-[0.875rem] text-tenue">
+                    {righe.filter((r) => r.posizione === posAperta.id).length}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAperta(null)}
+                  className="anello-focus absolute right-4 top-4 grid size-9 place-items-center rounded-full bg-superficie-2 text-tenue hover:text-inchiostro"
+                  aria-label="Chiudi"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <ul className="mt-2 min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+                <AnimatePresence initial={false}>
+                  {righe
+                    .filter((r) => r.posizione === posAperta.id)
+                    .map((r) => (
                       <RigaDispensa key={r.id} riga={r} azioni={azioni} onRicompra={() => ricompra(r)} />
                     ))}
-                  </AnimatePresence>
-                  {elenco.length === 0 ? <li className="py-5 text-[0.875rem] text-tenue">Niente qui.</li> : null}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
-      )}
+                </AnimatePresence>
+                {righe.every((r) => r.posizione !== posAperta.id) ? (
+                  <li className="py-5 text-[0.875rem] text-tenue">Niente qui.</li>
+                ) : null}
+              </ul>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
