@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, Plus, Repeat, Trash2 } from "lucide-react";
+import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, Plus, Repeat, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Impegno, ImpegnoFatto } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -76,19 +76,13 @@ export function AppAgenda({
   const [mese, setMese] = useState(Number(oggi.slice(5, 7)) - 1);
   const [giorno, setGiorno] = useState<string | null>(null);
   const [maschera, setMaschera] = useState<string | null>(null); // giorno proposto nella maschera di inserimento
-  const ultimoTocco = useRef<{ giorno: string; quando: number } | null>(null);
 
-  /** Un tocco sceglie il giorno; due tocchi ravvicinati aprono la maschera per aggiungere un impegno. */
-  function toccaGiorno(d: string, adesso: number) {
-    const prima = ultimoTocco.current;
-    ultimoTocco.current = { giorno: d, quando: adesso };
-    if (prima && prima.giorno === d && adesso - prima.quando < 350) {
-      ultimoTocco.current = null;
-      setMaschera(d);
-      return;
-    }
-    setGiorno(d);
-  }
+  useEffect(() => {
+    if (!giorno) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setGiorno(null);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [giorno]);
   const [avviso, setAvviso] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -148,12 +142,13 @@ export function AppAgenda({
     setGiorno(null);
   }
 
-  // Elenco a destra: il giorno scelto, oppure i prossimi 30 giorni (più quello rimasto indietro)
+  const delGiornoAperto = useMemo(() => (giorno ? occorrenzeTra(giorno, giorno) : []), [giorno, occorrenzeTra]);
+
+  // Elenco: i prossimi 30 giorni (più quello rimasto indietro)
   const elenco = useMemo(() => {
-    if (giorno) return occorrenzeTra(giorno, giorno);
     const indietro = occorrenzeTra(piuGiorni(oggi, -14), piuGiorni(oggi, -1)).filter((o) => !o.fatto && o.impegno.ricorrenza === "nessuna");
     return [...indietro, ...occorrenzeTra(oggi, piuGiorni(oggi, 30))];
-  }, [giorno, occorrenzeTra, oggi]);
+  }, [occorrenzeTra, oggi]);
 
   const perGiorno = useMemo(() => {
     const m = new Map<string, Occorrenza[]>();
@@ -206,18 +201,9 @@ export function AppAgenda({
 
   return (
     <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
-      <div className="flex items-center justify-end gap-4 lg:justify-between">
-        <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
-        <button
-          onClick={() => setMaschera(giorno ?? oggi)}
-          aria-label="Nuovo impegno"
-          className="anello-focus grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
-        >
-          <Plus className="size-6" strokeWidth={2.4} />
-        </button>
-      </div>
+      <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
 
-      <div className="mt-6 grid gap-10 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mt-4 grid gap-10 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* Calendario */}
         <section className="min-w-0">
           <div className="flex items-center gap-1">
@@ -240,6 +226,13 @@ export function AppAgenda({
                 oggi
               </button>
             ) : null}
+            <button
+              onClick={() => setMaschera(oggi)}
+              aria-label="Nuovo impegno"
+              className="anello-focus ml-auto grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
+            >
+              <Plus className="size-6" strokeWidth={2.4} />
+            </button>
           </div>
 
           <div className="mt-5 grid grid-cols-7 gap-1 md:gap-1.5">
@@ -258,7 +251,7 @@ export function AppAgenda({
               return (
                 <button
                   key={d}
-                  onClick={(e) => toccaGiorno(d, e.timeStamp)}
+                  onClick={() => setGiorno(d)}
                   aria-pressed={selezionato}
                   aria-label={`${i + 1} ${nomeMese}${delGiorno.length ? `: ${delGiorno.length} impegni` : ""}`}
                   className={cn(
@@ -307,43 +300,28 @@ export function AppAgenda({
             </div>
           ) : null}
 
-          <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-[0.75rem] text-tenue">
-            {CATEGORIE.map((c) => (
-              <li key={c.id} className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full" style={{ background: c.colore }} />
-                {c.nome}
-              </li>
-            ))}
-          </ul>
         </section>
 
         {/* Elenco */}
         <section className="min-w-0">
           <div className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
-            <h2 className="titolo text-[1.125rem]">{giorno ? etichettaGiorno(giorno, oggi) : "prossimi giorni"}</h2>
-            {giorno ? (
-              <button onClick={() => setGiorno(null)} className="anello-focus text-[0.8125rem] text-tenue underline underline-offset-4 hover:text-inchiostro">
-                prossimi giorni
-              </button>
-            ) : null}
+            <h2 className="titolo text-[1.125rem]">prossimi giorni</h2>
           </div>
 
           {vuota ? (
             <div className="mt-8 flex items-center gap-4">
               <Mascotte className="w-16" />
-              <p className="text-[0.9375rem] text-tenue">L&apos;agenda è vuota. Tocca + in alto, oppure due volte su un giorno del calendario.</p>
+              <p className="text-[0.9375rem] text-tenue">L&apos;agenda è vuota. Tocca + in alto.</p>
             </div>
           ) : perGiorno.length === 0 ? (
-            <p className="py-6 text-[0.9375rem] text-tenue">{giorno ? "Niente in questo giorno." : "Niente in programma nei prossimi 30 giorni."}</p>
+            <p className="py-6 text-[0.9375rem] text-tenue">Niente in programma nei prossimi 30 giorni.</p>
           ) : (
             <div className="flex flex-col">
               {perGiorno.map(([d, elementi]) => (
                 <div key={d} className="pt-4">
-                  {!giorno ? (
-                    <p className={cn("text-[0.8125rem] first-letter:uppercase", d < oggi ? "font-semibold text-pericolo" : d === oggi ? "font-semibold text-becco-scuro" : "text-tenue")}>
-                      {d < oggi ? `Rimasto indietro, ${etichettaGiorno(d, oggi)}` : etichettaGiorno(d, oggi)}
-                    </p>
-                  ) : null}
+                  <p className={cn("text-[0.8125rem] first-letter:uppercase", d < oggi ? "font-semibold text-pericolo" : d === oggi ? "font-semibold text-becco-scuro" : "text-tenue")}>
+                    {d < oggi ? `Rimasto indietro, ${etichettaGiorno(d, oggi)}` : etichettaGiorno(d, oggi)}
+                  </p>
                   <ul>
                     <AnimatePresence initial={false}>
                       {elementi.map((o) => (
@@ -368,6 +346,69 @@ export function AppAgenda({
       <div className="pb-16" />
 
       <AnimatePresence>
+        {giorno ? (
+          <motion.div
+            key="giorno"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-dorso/40 p-3 backdrop-blur-md sm:items-center"
+            onClick={() => setGiorno(null)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={etichettaGiorno(giorno, oggi)}
+              onClick={(e) => e.stopPropagation()}
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 34 }}
+              className="pb-sicuro flex max-h-[85dvh] w-full max-w-lg flex-col rounded-[32px] bg-superficie shadow-2xl"
+            >
+              <div className="flex items-center gap-3 px-5 pt-5">
+                <p className="titolo min-w-0 flex-1 truncate text-[1.25rem]">{etichettaGiorno(giorno, oggi)}</p>
+                <button
+                  onClick={() => {
+                    const d = giorno;
+                    setGiorno(null);
+                    setMaschera(d);
+                  }}
+                  aria-label="Nuovo impegno"
+                  className="anello-focus grid size-9 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95"
+                >
+                  <Plus className="size-5" strokeWidth={2.4} />
+                </button>
+                <button
+                  onClick={() => setGiorno(null)}
+                  aria-label="Chiudi"
+                  className="anello-focus grid size-9 shrink-0 place-items-center rounded-full bg-superficie-2 text-tenue hover:text-inchiostro"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <ul className="mt-2 min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+                <AnimatePresence initial={false}>
+                  {delGiornoAperto.map((o) => (
+                    <RigaImpegno
+                      key={`${o.impegno.id}|${o.data}`}
+                      o={o}
+                      membri={membri}
+                      userId={userId}
+                      onFatto={() => segnaFatto(o)}
+                      onModifica={(m) => modifica(o.impegno, m)}
+                      onElimina={() => elimina(o.impegno)}
+                    />
+                  ))}
+                </AnimatePresence>
+                {delGiornoAperto.length === 0 ? <li className="py-5 text-[0.9375rem] text-tenue">Niente in questo giorno.</li> : null}
+              </ul>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {maschera ? (
           <MascheraImpegno
             key="maschera"
@@ -378,7 +419,6 @@ export function AppAgenda({
             onAnnulla={() => setMaschera(null)}
             onSalva={async (n) => {
               setMaschera(null);
-              setGiorno(n.data);
               await crea(n);
             }}
           />
