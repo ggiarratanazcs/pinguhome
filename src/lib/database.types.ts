@@ -177,6 +177,7 @@ export type Database = {
       unisciti_famiglia: { Args: { p_codice: string }; Returns: string };
       promemoria_dati: { Args: { p_segreto: string }; Returns: Json };
       promemoria_registra: { Args: { p_segreto: string; p_inviati: Json; p_scadute: string[] }; Returns: undefined };
+      attivita_dati: { Args: { p_segreto: string; p_famiglia: string; p_autore: string; p_lista: string | null }; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

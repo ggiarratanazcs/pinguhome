@@ -13,6 +13,7 @@ self.addEventListener("push", (evento) => {
     self.registration.showNotification(dati.title, {
       body: dati.body,
       tag: dati.tag,
+      renotify: Boolean(dati.tag),
       icon: "/notifica-icona.png",
       badge: "/notifica-icona.png",
       data: { url: dati.url },

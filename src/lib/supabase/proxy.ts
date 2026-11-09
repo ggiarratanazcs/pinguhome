@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/supabase/config";
 import type { Database } from "@/lib/database.types";
 
 /** Percorsi raggiungibili senza essere autenticati. */
-const PERCORSI_PUBBLICI = ["/accesso", "/auth", "/api/promemoria"];
+const PERCORSI_PUBBLICI = ["/accesso", "/auth", "/api/promemoria", "/api/attivita"];
 
 /**
  * Aggiorna la sessione Supabase a ogni richiesta e rimanda alla pagina di
