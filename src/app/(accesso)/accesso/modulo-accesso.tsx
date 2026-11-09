@@ -104,7 +104,7 @@ export function ModuloAccesso() {
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
         >
-          <h1 className="titolo text-[3rem]">{titolo}</h1>
+          <h1 className="titolo text-[2.25rem]">{titolo}</h1>
           <p className="mt-3 text-[0.9375rem] text-tenue">{sottotitolo}</p>
 
           <form onSubmit={invia} className="mt-10 flex flex-col gap-6">

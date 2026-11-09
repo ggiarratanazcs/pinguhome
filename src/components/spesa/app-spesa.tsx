@@ -339,7 +339,7 @@ export function AppSpesa({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pt-6 md:px-12 md:pt-12">
+    <div className="mx-auto w-full max-w-[1120px] px-5 pt-4 md:px-12 md:pt-10">
       {/* Sezioni del modulo, come parole */}
       <nav className="flex items-center gap-6 text-[0.9375rem]">
         {schede.map((s) => {
@@ -368,7 +368,7 @@ export function AppSpesa({
 
       {/* Titolo: nome della lista come parola grande, le altre liste accanto più piccole */}
       {vista === "lista" ? (
-        <header className="mt-8 md:mt-10">
+        <header className="mt-5 md:mt-8">
           <SelettoreListe
             liste={liste}
             voci={dati.voci}
@@ -382,9 +382,9 @@ export function AppSpesa({
           {vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
         </header>
       ) : (
-        <header className="mt-8 md:mt-10">
-          <h1 className="titolo text-[clamp(2.25rem,9vw,4.25rem)]">{vista === "dispensa" ? "in casa" : "abituali"}</h1>
-          <p className="mt-3 max-w-xl text-tenue">
+        <header className="mt-5 md:mt-8">
+          <h1 className="titolo titolo-pagina">{vista === "dispensa" ? "in casa" : "abituali"}</h1>
+          <p className="mt-2 max-w-xl text-[0.9375rem] text-tenue">
             {vista === "dispensa"
               ? "Quello che avete in frigo, nel freezer e in dispensa."
               : "I prodotti che comprate. Un tocco e tornano nella lista."}
@@ -431,8 +431,8 @@ export function AppSpesa({
 function Avanzamento({ fatte, totale }: { fatte: number; totale: number }) {
   const quota = totale ? fatte / totale : 0;
   return (
-    <div className="mt-6 flex items-center gap-4">
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-superficie-3">
+    <div className="mt-4 flex items-center gap-4">
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-superficie-3">
         <motion.div
           className={cn("h-full rounded-full", quota === 1 ? "bg-eco" : "bg-becco")}
           initial={false}
@@ -465,8 +465,8 @@ function SelettoreListe({
   const altre = liste.filter((l) => l.id !== corrente);
   return (
     <div>
-      <h1 className="titolo break-words text-[clamp(2.25rem,9vw,4.25rem)]">{attiva?.nome ?? "lista"}</h1>
-      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.9375rem]">
+      <h1 className="titolo titolo-pagina break-words">{attiva?.nome ?? "lista"}</h1>
+      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.9375rem]">
         {altre.map((l) => {
           const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
           return (

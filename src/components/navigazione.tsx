@@ -114,10 +114,10 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
 /** Su mobile: mascotte in alto a sinistra e un dock blu-piuma in basso. */
 export function TestataMobile({ casa }: { casa: string }) {
   return (
-    <header className="pt-sicuro flex items-center gap-3 px-5 pt-4 lg:hidden">
-      <Pinguino className="w-11" alt="PinguHome" />
+    <header className="pt-sicuro flex items-center gap-2.5 px-5 pt-3 lg:hidden">
+      <Pinguino className="w-9" alt="PinguHome" />
       <div className="min-w-0">
-        <p className="titolo text-[1rem]">pinguhome</p>
+        <p className="titolo text-[0.9375rem]">pinguhome</p>
         <p className="truncate text-xs text-tenue">{casa}</p>
       </div>
     </header>

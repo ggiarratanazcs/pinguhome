@@ -49,7 +49,7 @@ export function VistaLista({
   }, [daPrendere, dati.reparti]);
 
   return (
-    <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_260px]">
+    <div className="mt-6 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
       <div className="min-w-0">
         <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} />
 
@@ -64,7 +64,7 @@ export function VistaLista({
           </div>
         ) : null}
 
-        <div className="mt-8 flex flex-col gap-9">
+        <div className="mt-6 flex flex-col gap-7">
           {gruppi.map(({ reparto, voci: elenco }) => (
             <section key={reparto?.id ?? "altro"}>
               <h2 className="flex items-center gap-2 text-[0.8125rem] text-tenue">
@@ -145,7 +145,7 @@ function ordina(elenco: VoceLista[]) {
 function Dato({ etichetta, valore, accento }: { etichetta: string; valore: number; accento?: boolean }) {
   return (
     <div>
-      <dd className={cn("titolo-normale numeri text-[2rem] leading-none", accento ? "text-becco-scuro" : "text-inchiostro")}>{valore}</dd>
+      <dd className={cn("titolo-normale numeri text-[1.5rem] leading-none", accento ? "text-becco-scuro" : "text-inchiostro")}>{valore}</dd>
       <dt className="mt-1.5 text-[0.8125rem] text-tenue">{etichetta}</dt>
     </div>
   );
@@ -238,7 +238,7 @@ function AggiuntaRapida({
           placeholder="Cosa manca?"
           enterKeyHint="done"
           autoComplete="off"
-          className="h-14 min-w-0 flex-1 bg-transparent text-[1.375rem] font-medium outline-none placeholder:font-normal placeholder:text-tenue/70"
+          className="h-12 min-w-0 flex-1 bg-transparent text-[1.125rem] outline-none placeholder:text-tenue/70"
         />
         {testo && (interpretata.quantita !== 1 || interpretata.unita) ? (
           <span className="numeri shrink-0 rounded-full bg-guancia-tenue px-3 py-1 text-[0.8125rem] font-semibold text-inchiostro">
@@ -249,12 +249,12 @@ function AggiuntaRapida({
           onClick={() => conferma()}
           disabled={!testo.trim()}
           aria-label="Aggiungi alla lista"
-          className="anello-focus grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:bg-superficie-3 disabled:text-tenue"
+          className="anello-focus grid size-10 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:bg-superficie-3 disabled:text-tenue"
         >
-          <Plus className="size-6" strokeWidth={2.4} />
+          <Plus className="size-5" strokeWidth={2.4} />
         </button>
       </div>
-      <p className="mt-2 text-[0.8125rem] text-tenue">
+      <p className="mt-2 hidden text-[0.8125rem] text-tenue sm:block">
         Scrivi come parli: “2 kg mele”, “latte x3”. Quantità e reparto li sistemo io.
       </p>
       <AnimatePresence>
@@ -264,7 +264,7 @@ function AggiuntaRapida({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute inset-x-0 top-[66px] z-30 overflow-hidden rounded-[22px] bg-superficie py-2 shadow-[0_24px_60px_-20px_rgba(var(--ombra),0.45)] ring-1 ring-linea"
+            className="absolute inset-x-0 top-[56px] z-30 overflow-hidden rounded-[22px] bg-superficie py-2 shadow-[0_24px_60px_-20px_rgba(var(--ombra),0.45)] ring-1 ring-linea"
           >
             {suggerimenti.map((p, i) => {
               const reparto = dati.reparti.find((r) => r.id === p.reparto_id);

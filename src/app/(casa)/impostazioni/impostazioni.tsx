@@ -67,7 +67,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
 
   return (
     <main className="mx-auto w-full max-w-[920px] px-5 pt-8 md:px-12 md:pt-14">
-      <h1 className="titolo text-[clamp(2.25rem,9vw,4.25rem)]">impostazioni</h1>
+      <h1 className="titolo titolo-pagina">impostazioni</h1>
 
       {esito ? <div className="mt-6"><Messaggio tipo="ok">{esito}</Messaggio></div> : null}
 
@@ -133,7 +133,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
         <div className="mt-8 flex flex-col gap-4 rounded-[28px] bg-dorso p-6 text-su-dorso sm:flex-row sm:items-center">
           <div className="flex-1">
             <p className="text-[0.875rem] text-su-dorso-tenue">Codice per entrare nella casa</p>
-            <p className="titolo-normale numeri mt-1 text-[2.25rem] tracking-[0.18em]">{famiglia.codice_invito}</p>
+            <p className="titolo-normale numeri mt-1 text-[1.75rem] tracking-[0.18em]">{famiglia.codice_invito}</p>
           </div>
           <Pulsante onClick={condividi}>
             {copiato ? <Check className="size-4" /> : <Share2 className="size-4" />}
@@ -170,9 +170,9 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
 
 function Sezione({ titolo, descrizione, children }: { titolo: string; descrizione?: string; children: ReactNode }) {
   return (
-    <section className="mt-14 grid gap-6 md:grid-cols-[200px_minmax(0,1fr)]">
+    <section className="mt-10 grid gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
       <div>
-        <h2 className="titolo text-[1.5rem]">{titolo}</h2>
+        <h2 className="titolo text-[1.125rem]">{titolo}</h2>
         {descrizione ? <p className="mt-2 text-[0.875rem] text-tenue">{descrizione}</p> : null}
       </div>
       <div>{children}</div>

@@ -17,7 +17,7 @@ export default async function Benvenuto() {
       <div className="mx-auto flex max-w-3xl flex-col px-6 py-10 md:py-16">
         <Marchio />
         <div className="mt-14 md:mt-20">
-          <h1 className="titolo text-[2.75rem] md:text-[4rem]">
+          <h1 className="titolo text-[clamp(1.75rem,6vw,2.75rem)]">
             ciao {(profilo.nome || "").toLowerCase()},<br />
             dove vivete?
           </h1>

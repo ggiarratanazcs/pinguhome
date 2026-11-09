@@ -44,7 +44,7 @@ export function SceltaCasa() {
   return (
     <div className="mt-12 grid gap-10 md:grid-cols-2 md:gap-8">
       <form onSubmit={crea} className="flex flex-col rounded-[28px] bg-superficie-2 p-6 md:p-7">
-        <h2 className="titolo text-[1.625rem]">crea la casa</h2>
+        <h2 className="titolo text-[1.25rem]">crea la casa</h2>
         <p className="mt-2 text-[0.9375rem] text-tenue">Trovi già i reparti e due liste: Supermercato e Cose per la casa.</p>
         <input name="nome" placeholder="Es. Casa Firenze" required className="campo-linea mt-6 h-12 text-[1.125rem]" />
         <Pulsante type="submit" disabled={inCorso !== null} className="mt-6 self-start">
@@ -54,7 +54,7 @@ export function SceltaCasa() {
       </form>
 
       <form onSubmit={entra} className="flex flex-col rounded-[28px] bg-dorso p-6 text-su-dorso md:p-7">
-        <h2 className="titolo text-[1.625rem]">ho un codice</h2>
+        <h2 className="titolo text-[1.25rem]">ho un codice</h2>
         <p className="mt-2 text-[0.9375rem] text-su-dorso-tenue">Sono 6 caratteri: chi ha creato la casa li trova in Impostazioni.</p>
         <input
           name="codice"

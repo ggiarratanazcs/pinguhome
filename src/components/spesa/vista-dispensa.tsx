@@ -50,7 +50,7 @@ export function VistaDispensa({
             return (
               <section key={pos.id} className="min-w-0">
                 <h2 className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
-                  <span className="titolo text-[1.375rem]">{pos.nome}</span>
+                  <span className="titolo text-[1.125rem]">{pos.nome}</span>
                   <span className="numeri text-[0.8125rem] text-tenue">{elenco.length}</span>
                 </h2>
                 <ul>
