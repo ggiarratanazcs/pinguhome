@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Plus } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pulsante } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -254,6 +255,31 @@ function useAzioni(params: {
     [dati.liste.length, famigliaId, setDati, supabase],
   );
 
+  const rinominaLista = useCallback(
+    async (l: Lista, nome: string) => {
+      setDati((d) => ({ ...d, liste: aggiornaPerId(d.liste, { ...l, nome }) }));
+      await supabase.from("liste").update({ nome }).eq("id", l.id);
+    },
+    [setDati, supabase],
+  );
+
+  /** Elimina la lista con le sue voci; le spese già registrate restano nel calendario. */
+  const eliminaLista = useCallback(
+    async (l: Lista) => {
+      const prima = dati;
+      setDati((d) => ({ ...d, liste: d.liste.filter((x) => x.id !== l.id), voci: d.voci.filter((v) => v.lista_id !== l.id) }));
+      const { error } = await supabase.from("liste").delete().eq("id", l.id);
+      if (error) {
+        setDati(prima);
+        avvisa("Non sono riuscito a eliminare la lista: riprova.");
+        return false;
+      }
+      avvisa(`Lista "${l.nome}" eliminata`);
+      return true;
+    },
+    [avvisa, dati, setDati, supabase],
+  );
+
   const modificaProdotto = useCallback(
     async (p: Prodotto, modifiche: Partial<Pick<Prodotto, "abituale" | "reparto_id" | "unita">>) => {
       setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, { ...p, ...modifiche }) }));
@@ -373,7 +399,7 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({
@@ -509,6 +535,11 @@ export function AppSpesa({
               const nuova = await azioni.creaLista(nome);
               if (nuova) setListaId(nuova.id);
             }}
+            onRinomina={azioni.rinominaLista}
+            onElimina={async (l) => {
+              const prossima = liste.find((x) => x.id !== l.id);
+              if (await azioni.eliminaLista(l)) setListaId(prossima?.id ?? "");
+            }}
           />
           </div>
           </div>
@@ -583,19 +614,100 @@ function SelettoreListe({
   corrente,
   onScegli,
   onCrea,
+  onRinomina,
+  onElimina,
 }: {
   liste: Lista[];
   voci: VoceLista[];
   corrente: string | undefined;
   onScegli: (id: string) => void;
   onCrea: (nome: string) => void;
+  onRinomina: (l: Lista, nome: string) => void;
+  onElimina: (l: Lista) => void;
 }) {
   const [nuova, setNuova] = useState<string | null>(null);
+  const [gestione, setGestione] = useState<"chiusa" | "menu" | "rinomina" | "conferma">("chiusa");
   const attiva = liste.find((l) => l.id === corrente);
   const altre = liste.filter((l) => l.id !== corrente);
+  const vociAttiva = attiva ? voci.filter((v) => v.lista_id === attiva.id).length : 0;
   return (
     <div>
-      <h1 className="titolo titolo-pagina break-words">{attiva?.nome ?? "lista"}</h1>
+      <div className="flex items-center gap-2">
+        {gestione === "rinomina" && attiva ? (
+          <form
+            className="min-w-0 flex-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const nome = String(new FormData(e.currentTarget).get("nome") ?? "").trim();
+              if (nome && nome !== attiva.nome) onRinomina(attiva, nome);
+              setGestione("chiusa");
+            }}
+          >
+            <input
+              name="nome"
+              autoFocus
+              defaultValue={attiva.nome}
+              onBlur={(e) => e.currentTarget.form?.requestSubmit()}
+              className="campo-linea titolo titolo-pagina h-12 w-full normal-case"
+            />
+          </form>
+        ) : (
+          <h1 className="titolo titolo-pagina min-w-0 break-words">{attiva?.nome ?? "lista"}</h1>
+        )}
+        {attiva && gestione !== "rinomina" ? (
+          <button
+            onClick={() => setGestione((g) => (g === "chiusa" ? "menu" : "chiusa"))}
+            aria-label="Gestisci la lista"
+            aria-expanded={gestione !== "chiusa"}
+            className={cn("anello-focus grid size-9 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro", gestione !== "chiusa" && "bg-superficie-3 text-inchiostro")}
+          >
+            <MoreHorizontal className="size-5" />
+          </button>
+        ) : null}
+      </div>
+
+      {/* Gestione della lista: rinomina o elimina (con conferma, senza finestre del browser) */}
+      <AnimatePresence initial={false}>
+        {attiva && (gestione === "menu" || gestione === "conferma") ? (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            {gestione === "menu" ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Pulsante variante="secondario" onClick={() => setGestione("rinomina")} className="h-9 px-4 text-sm">
+                  <Pencil className="size-4" /> Rinomina
+                </Pulsante>
+                {liste.length > 1 ? (
+                  <Pulsante variante="pericolo" onClick={() => setGestione("conferma")} className="h-9 px-4 text-sm">
+                    <Trash2 className="size-4" /> Elimina la lista
+                  </Pulsante>
+                ) : (
+                  <span className="text-[0.8125rem] text-tenue">È l&apos;unica lista: per eliminarla creane prima un&apos;altra.</span>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 rounded-[20px] bg-pericolo-tenue p-4">
+                <p className="text-[0.9375rem] text-inchiostro">
+                  Eliminare <strong>{attiva.nome}</strong>
+                  {vociAttiva ? ` e ${vociAttiva === 1 ? "la sua voce" : `le sue ${vociAttiva} voci`}` : ""}? Le spese già registrate restano nel calendario.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Pulsante
+                    onClick={() => {
+                      setGestione("chiusa");
+                      onElimina(attiva);
+                    }}
+                    className="h-9 bg-pericolo px-4 text-sm text-white hover:bg-pericolo hover:brightness-95"
+                  >
+                    Sì, elimina
+                  </Pulsante>
+                  <Pulsante variante="fantasma" onClick={() => setGestione("chiusa")} className="h-9 px-4 text-sm">
+                    Annulla
+                  </Pulsante>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.9375rem]">
         {altre.map((l) => {
           const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
