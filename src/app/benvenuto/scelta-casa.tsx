@@ -48,7 +48,7 @@ export function SceltaCasa() {
           <Home className="size-5" />
         </span>
         <h2 className="titolo mt-5 text-xl">Crea la casa</h2>
-        <p className="mt-1.5 text-sm text-tenue">Ti preparo reparti e due liste pronte: Supermercato e Mercato.</p>
+        <p className="mt-1.5 text-sm text-tenue">Ti preparo reparti e due liste pronte: Supermercato e Cose per la casa.</p>
         <input
           name="nome"
           placeholder="Es. Casa Firenze"
