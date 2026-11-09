@@ -4,7 +4,9 @@ import { AppSpesa } from "@/components/spesa/app-spesa";
 
 export const metadata = { title: "Spesa" };
 
-export default async function PaginaSpesa() {
+export default async function PaginaSpesa({ searchParams }: PageProps<"/spesa">) {
+  const { vista } = await searchParams;
+  const vistaIniziale = (["lista", "dispensa", "abituali", "spese"] as const).find((v) => v === vista) ?? "lista";
   const { profilo, famiglia, membri } = await getContesto();
   const supabase = await createClient();
   const f = famiglia.id;
@@ -19,6 +21,7 @@ export default async function PaginaSpesa() {
 
   return (
     <AppSpesa
+      vistaIniziale={vistaIniziale}
       famigliaId={f}
       userId={profilo.id}
       membri={membri}

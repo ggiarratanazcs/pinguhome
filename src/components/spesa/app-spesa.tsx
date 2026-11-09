@@ -23,7 +23,7 @@ export type DatiSpesa = {
   spese: Spesa[];
 };
 
-type Vista = "lista" | "dispensa" | "abituali" | "spese";
+export type Vista = "lista" | "dispensa" | "abituali" | "spese";
 
 export type AzioniSpesa = ReturnType<typeof useAzioni>;
 
@@ -381,14 +381,16 @@ export function AppSpesa({
   famigliaId,
   userId,
   membri,
+  vistaIniziale = "lista",
 }: {
   iniziali: DatiSpesa;
   famigliaId: string;
   userId: string;
   membri: MembroCasa[];
+  vistaIniziale?: Vista;
 }) {
   const [dati, setDati] = useState<DatiSpesa>(iniziali);
-  const [vista, setVista] = useState<Vista>("lista");
+  const [vista, setVista] = useState<Vista>(vistaIniziale);
   const [listaId, setListaId] = useState<string>(iniziali.liste[0]?.id ?? "");
   const [inLinea, setInLinea] = useState<string[]>([]);
   const [avviso, setAvviso] = useState<{ id: number; testo: string } | null>(null);
