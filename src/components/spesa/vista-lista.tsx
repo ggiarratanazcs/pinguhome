@@ -112,7 +112,7 @@ export function VistaLista({
                 </motion.ul>
               ) : null}
             </AnimatePresence>
-            <ChiudiCarrello onChiudi={azioni.chiudiSpesa} />
+            <ChiudiCarrello onChiudi={azioni.chiudiSpesa} onSvuota={azioni.rimettiInLista} />
           </section>
         ) : null}
       </div>
@@ -133,7 +133,7 @@ export function VistaLista({
 }
 
 /** Chiusura del carrello: quanto avete speso, quando, e se mettere i prodotti in casa. */
-function ChiudiCarrello({ onChiudi }: { onChiudi: AzioniSpesa["chiudiSpesa"] }) {
+function ChiudiCarrello({ onChiudi, onSvuota }: { onChiudi: AzioniSpesa["chiudiSpesa"]; onSvuota: AzioniSpesa["rimettiInLista"] }) {
   const [inCorso, setInCorso] = useState(false);
   const [inCasa, setInCasa] = useState(true);
   const [scontrino, setScontrino] = useState<File | null>(null);
@@ -182,6 +182,9 @@ function ChiudiCarrello({ onChiudi }: { onChiudi: AzioniSpesa["chiudiSpesa"] }) 
       <Pulsante type="submit" disabled={inCorso} className="mt-5">
         {inCorso ? <Loader2 className="size-4 animate-spin" /> : null}
         Chiudi il carrello
+      </Pulsante>
+      <Pulsante type="button" variante="fantasma" disabled={inCorso} onClick={onSvuota} className="ml-2 mt-5">
+        Svuota il carrello
       </Pulsante>
     </form>
   );

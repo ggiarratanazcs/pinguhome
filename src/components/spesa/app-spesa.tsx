@@ -148,6 +148,24 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
+  /** Svuota il carrello senza chiudere la spesa: le voci tornano "da prendere", niente viene eliminato. */
+  const rimettiInLista = useCallback(async () => {
+    const prese = dati.voci.filter((v) => v.lista_id === listaId && v.presa);
+    if (prese.length === 0) return;
+    const ids = prese.map((v) => v.id);
+    setDati((d) => ({
+      ...d,
+      voci: d.voci.map((v) => (ids.includes(v.id) ? { ...v, presa: false, presa_da: null, presa_il: null } : v)),
+    }));
+    const { error } = await supabase.from("voci_lista").update({ presa: false, presa_da: null, presa_il: null }).in("id", ids);
+    if (error) {
+      setDati((d) => ({ ...d, voci: d.voci.map((v) => prese.find((p) => p.id === v.id) ?? v) }));
+      avvisa("Non sono riuscito a svuotare il carrello: riprova.");
+      return;
+    }
+    avvisa(`${prese.length} ${prese.length === 1 ? "prodotto rimesso" : "prodotti rimessi"} in lista`);
+  }, [avvisa, dati.voci, listaId, setDati, supabase]);
+
   /** Toglie dalla lista ciò che è nel carrello; se richiesto lo mette in dispensa. */
   const chiudiSpesa = useCallback(
     async ({ importo, data, inDispensa, scontrino }: { importo: number; data: string; inDispensa: boolean; scontrino?: File | null }) => {
@@ -355,7 +373,7 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({
