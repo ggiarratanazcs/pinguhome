@@ -439,23 +439,15 @@ export function AppSpesa({
         </header>
       )}
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={vista}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="pb-16"
-        >
+      {/* Cambio di sezione immediato: nessuna attesa per l'uscita della vista precedente */}
+      <motion.div key={vista} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.12 }} className="pb-16">
           {vista === "lista" && lista ? (
             <VistaLista lista={lista} voci={vociLista} dati={dati} membri={membri} userId={userId} azioni={azioni} />
           ) : null}
           {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "spese" ? <VistaSpese dati={dati} membri={membri} userId={userId} azioni={azioni} /> : null}
-        </motion.div>
-      </AnimatePresence>
+      </motion.div>
 
       {/* Avvisi brevi */}
       <AnimatePresence>
