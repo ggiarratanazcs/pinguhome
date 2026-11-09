@@ -545,13 +545,7 @@ export function AppSpesa({
           </div>
           {vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
         </header>
-      ) : (
-        <header className="mt-5 flex items-end justify-between gap-4 md:mt-8">
-          <div className="min-w-0">
-          <h1 className="titolo titolo-pagina">{vista === "dispensa" ? "in casa" : vista === "abituali" ? "abituali" : "spese"}</h1>
-          </div>
-        </header>
-      )}
+      ) : null}
 
       {/* Cambio di sezione immediato: nessuna attesa per l'uscita della vista precedente */}
       <motion.div key={vista} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.12 }} className="pb-16">
