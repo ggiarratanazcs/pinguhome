@@ -657,28 +657,34 @@ function RigaImpegno({
         >
           {o.fatto ? <Check className="size-3.5" strokeWidth={3.2} /> : null}
         </button>
-        <span className="numeri w-11 shrink-0 text-[0.875rem] font-semibold text-inchiostro-2">{imp.ora ? imp.ora.slice(0, 5) : ""}</span>
         <button onClick={() => setAperta((a) => !a)} className="anello-focus min-w-0 flex-1 text-left">
-          <span className={cn("flex items-center gap-2 text-[1rem]", o.fatto && "text-tenue line-through decoration-tenue/50")}>
-            <span className="size-2 shrink-0 rounded-full" style={{ background: coloreCategoria(imp.categoria) }} />
-            <span className="truncate">{imp.titolo}</span>
-            {imp.ricorrenza !== "nessuna" ? <Repeat className="size-3.5 shrink-0 text-tenue" aria-label="si ripete" /> : null}
-            {imp.promemoria !== null ? <Bell className="size-3.5 shrink-0 text-tenue" aria-label="con promemoria" /> : null}
+          <span className={cn("flex items-start gap-2 text-[1rem] leading-snug", o.fatto && "text-tenue line-through decoration-tenue/50")}>
+            <span className="mt-[0.45em] size-2 shrink-0 rounded-full" style={{ background: coloreCategoria(imp.categoria) }} />
+            <span className="line-clamp-2 break-words">{imp.titolo}</span>
           </span>
-          {imp.note ? <span className="mt-0.5 block truncate pl-4 text-[0.8125rem] text-tenue">{imp.note}</span> : null}
+          {imp.ora || imp.ricorrenza !== "nessuna" || imp.promemoria !== null || imp.note ? (
+            <span className="mt-1 flex items-center gap-2 pl-4 text-[0.8125rem] text-tenue">
+              {imp.ora ? <span className="numeri font-semibold text-inchiostro-2">{imp.ora.slice(0, 5)}</span> : null}
+              {imp.ricorrenza !== "nessuna" ? <Repeat className="size-3.5 shrink-0" aria-label="si ripete" /> : null}
+              {imp.promemoria !== null ? <Bell className="size-3.5 shrink-0" aria-label="con promemoria" /> : null}
+              {imp.note ? <span className="min-w-0 truncate">{imp.note}</span> : null}
+            </span>
+          ) : null}
         </button>
-        {imp.importo !== null ? (
-          <span className={cn("numeri shrink-0 text-[0.9375rem] font-semibold", o.fatto ? "text-tenue line-through" : "text-inchiostro")}>{formattaEuro(Number(imp.importo))}</span>
-        ) : null}
-        {chi ? (
-          <Avatar nome={chi.nome} colore={chi.colore} className="size-6 text-[0.5625rem]" />
-        ) : (
-          <span className="flex -space-x-1.5" title="Per entrambi">
-            {membri.slice(0, 2).map((m) => (
-              <Avatar key={m.id} nome={m.nome} colore={m.colore} className="size-5 text-[0.5rem] opacity-70" />
-            ))}
-          </span>
-        )}
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          {imp.importo !== null ? (
+            <span className={cn("numeri whitespace-nowrap text-[0.9375rem] font-semibold", o.fatto ? "text-tenue line-through" : "text-inchiostro")}>{formattaEuro(Number(imp.importo))}</span>
+          ) : null}
+          {chi ? (
+            <Avatar nome={chi.nome} colore={chi.colore} className="size-6 text-[0.5625rem]" />
+          ) : (
+            <span className="flex -space-x-1.5" title="Per entrambi">
+              {membri.slice(0, 2).map((m) => (
+                <Avatar key={m.id} nome={m.nome} colore={m.colore} className="size-5 text-[0.5rem] opacity-70" />
+              ))}
+            </span>
+          )}
+        </span>
         <button onClick={() => setAperta((a) => !a)} aria-label="Dettagli" className="anello-focus grid size-8 shrink-0 place-items-center rounded-full text-tenue hover:bg-superficie-3">
           <motion.span animate={{ rotate: aperta ? 180 : 0 }} className="inline-flex">
             <ChevronDown className="size-4" />
