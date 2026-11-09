@@ -8,12 +8,13 @@ export default async function PaginaSpesa() {
   const { profilo, famiglia, membri } = await getContesto();
   const supabase = await createClient();
   const f = famiglia.id;
-  const [liste, reparti, voci, prodotti, dispensa] = await Promise.all([
+  const [liste, reparti, voci, prodotti, dispensa, spese] = await Promise.all([
     supabase.from("liste").select("*").eq("famiglia_id", f).order("ordine"),
     supabase.from("reparti").select("*").eq("famiglia_id", f).order("ordine"),
     supabase.from("voci_lista").select("*").eq("famiglia_id", f).order("creata_il"),
     supabase.from("prodotti").select("*").eq("famiglia_id", f),
     supabase.from("dispensa").select("*").eq("famiglia_id", f),
+    supabase.from("spese").select("*").eq("famiglia_id", f).order("data", { ascending: false }),
   ]);
 
   return (
@@ -27,6 +28,7 @@ export default async function PaginaSpesa() {
         voci: voci.data ?? [],
         prodotti: prodotti.data ?? [],
         dispensa: dispensa.data ?? [],
+        spese: spese.data ?? [],
       }}
     />
   );

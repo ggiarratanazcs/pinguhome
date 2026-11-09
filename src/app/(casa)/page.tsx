@@ -17,11 +17,16 @@ function saluto() {
 export default async function Home() {
   const { profilo, famiglia } = await getContesto();
   const supabase = await createClient();
-  const [{ data: voci }, { data: liste }, { data: dispensa }] = await Promise.all([
+  const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+  const inizioMese = `${oggi.slice(0, 7)}-01`;
+  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }] = await Promise.all([
     supabase.from("voci_lista").select("lista_id, presa, urgente").eq("famiglia_id", famiglia.id),
     supabase.from("liste").select("id, nome, colore").eq("famiglia_id", famiglia.id).eq("archiviata", false).order("ordine"),
     supabase.from("dispensa").select("posizione").eq("famiglia_id", famiglia.id),
+    supabase.from("spese").select("importo").eq("famiglia_id", famiglia.id).gte("data", inizioMese).lte("data", oggi),
   ]);
+  const spesoMese = (spese ?? []).reduce((t, s) => t + Number(s.importo), 0);
+  const nomeMese = new Date().toLocaleDateString("it-IT", { month: "long", timeZone: "Europe/Rome" });
 
   const daPrendere = (voci ?? []).filter((v) => !v.presa);
   const urgenti = daPrendere.filter((v) => v.urgente).length;
@@ -44,6 +49,7 @@ export default async function Home() {
         {daPrendere.length === 0
           ? "Nessuna spesa in sospeso: le liste sono vuote."
           : `${daPrendere.length} ${daPrendere.length === 1 ? "cosa" : "cose"} da comprare${urgenti ? `, di cui ${urgenti} ${urgenti === 1 ? "urgente" : "urgenti"}` : ""}.`}
+        {spesoMese > 0 ? ` A ${nomeMese} avete speso ${spesoMese.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}.` : ""}
       </p>
 
       <div className="mt-10 grid gap-12 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">

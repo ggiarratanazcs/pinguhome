@@ -8,6 +8,7 @@ La casa, la spesa e le cose di tutti i giorni, in due.
 - **Spesa** — liste condivise in tempo reale, aggiunta rapida in linguaggio naturale ("2 kg mele"), reparto automatico, voci urgenti, carrello che finisce in casa
 - **In casa** — frigo, freezer e dispensa con le quantità e "rimetti in lista"
 - **Abituali** — i prodotti della casa e i preferiti
+- **Spese** — alla chiusura del carrello si segnano importo e giorno; calendario mensile con totali per giorno e per mese
 - In arrivo: Finanze, Agenda
 
 ## Temi

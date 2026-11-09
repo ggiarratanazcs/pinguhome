@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Dispensa, Lista, Prodotto, Reparto, VoceLista } from "@/lib/database.types";
+import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { indovinaReparto, interpretaVoce, posizioneDaReparto } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
 import { VistaDispensa } from "./vista-dispensa";
 import { VistaAbituali } from "./vista-abituali";
+import { VistaSpese } from "./vista-spese";
 
 export type DatiSpesa = {
   liste: Lista[];
@@ -18,9 +19,10 @@ export type DatiSpesa = {
   voci: VoceLista[];
   prodotti: Prodotto[];
   dispensa: Dispensa[];
+  spese: Spesa[];
 };
 
-type Vista = "lista" | "dispensa" | "abituali";
+type Vista = "lista" | "dispensa" | "abituali" | "spese";
 
 export type AzioniSpesa = ReturnType<typeof useAzioni>;
 
@@ -147,9 +149,29 @@ function useAzioni(params: {
 
   /** Toglie dalla lista ciò che è nel carrello; se richiesto lo mette in dispensa. */
   const chiudiSpesa = useCallback(
-    async (inDispensa: boolean) => {
+    async ({ importo, data, inDispensa }: { importo: number; data: string; inDispensa: boolean }) => {
       const prese = dati.voci.filter((v) => v.lista_id === listaId && v.presa);
       if (prese.length === 0) return;
+      // La spesa resta nel calendario con importo, giorno e cosa avete preso
+      const spesa: Spesa = {
+        id: crypto.randomUUID(),
+        famiglia_id: famigliaId,
+        lista_id: listaId,
+        data,
+        importo,
+        prodotti: prese.map((v) => ({ nome: v.nome, quantita: Number(v.quantita), unita: v.unita })),
+        num_prodotti: prese.length,
+        pagata_da: userId,
+        note: null,
+        creata_il: new Date().toISOString(),
+      };
+      setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, spesa) }));
+      const { error } = await supabase.from("spese").insert(spesa);
+      if (error) {
+        setDati((d) => ({ ...d, spese: d.spese.filter((s) => s.id !== spesa.id) }));
+        avvisa("Non sono riuscito a salvare la spesa: riprova.");
+        return;
+      }
       if (inDispensa) {
         const nuove: Dispensa[] = [];
         const mappaAggiornate = new Map<string, Dispensa>();
@@ -189,9 +211,9 @@ function useAzioni(params: {
       const ids = prese.map((v) => v.id);
       setDati((d) => ({ ...d, voci: d.voci.filter((x) => !ids.includes(x.id)) }));
       await supabase.from("voci_lista").delete().in("id", ids);
-      avvisa(inDispensa ? `${prese.length} prodotti messi in dispensa` : "Carrello svuotato");
+      avvisa(`Carrello chiuso: ${importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}`);
     },
-    [avvisa, dati.dispensa, dati.reparti, dati.voci, famigliaId, listaId, setDati, supabase],
+    [avvisa, dati.dispensa, dati.reparti, dati.voci, famigliaId, listaId, setDati, supabase, userId],
   );
 
   const creaLista = useCallback(
@@ -253,7 +275,23 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa };
+  const modificaSpesa = useCallback(
+    async (s: Spesa, modifiche: Partial<Pick<Spesa, "importo" | "data" | "note">>) => {
+      setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, { ...s, ...modifiche }) }));
+      await supabase.from("spese").update(modifiche).eq("id", s.id);
+    },
+    [setDati, supabase],
+  );
+
+  const eliminaSpesa = useCallback(
+    async (s: Spesa) => {
+      setDati((d) => ({ ...d, spese: d.spese.filter((x) => x.id !== s.id) }));
+      await supabase.from("spese").delete().eq("id", s.id);
+    },
+    [setDati, supabase],
+  );
+
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({
@@ -306,6 +344,12 @@ export function AppSpesa({
           setDati((d) => ({ ...d, liste: d.liste.filter((x) => x.id !== id) }));
         } else setDati((d) => ({ ...d, liste: aggiornaPerId(d.liste, p.new as Lista) }));
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "spese", filter: filtro }, (p) => {
+        if (p.eventType === "DELETE") {
+          const id = (p.old as { id: string }).id;
+          setDati((d) => ({ ...d, spese: d.spese.filter((x) => x.id !== id) }));
+        } else setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, p.new as Spesa) }));
+      })
       .on("presence", { event: "sync" }, () => setInLinea(Object.keys(canale.presenceState())))
       .subscribe((stato) => {
         if (stato === "SUBSCRIBED") canale.track({ da: Date.now() });
@@ -336,12 +380,13 @@ export function AppSpesa({
     { id: "lista", nome: "Da comprare" },
     { id: "dispensa", nome: "In casa" },
     { id: "abituali", nome: "Abituali" },
+    { id: "spese", nome: "Spese" },
   ];
 
   return (
     <div className="mx-auto w-full max-w-[1120px] px-5 pt-4 md:px-12 md:pt-10">
       {/* Sezioni del modulo, come parole */}
-      <nav className="flex items-center gap-6 text-[0.9375rem]">
+      <nav className="senza-barra -mx-5 flex items-center gap-5 overflow-x-auto whitespace-nowrap px-5 text-[0.9375rem] md:mx-0 md:gap-6 md:px-0">
         {schede.map((s) => {
           const attiva = vista === s.id;
           return (
@@ -383,11 +428,13 @@ export function AppSpesa({
         </header>
       ) : (
         <header className="mt-5 md:mt-8">
-          <h1 className="titolo titolo-pagina">{vista === "dispensa" ? "in casa" : "abituali"}</h1>
+          <h1 className="titolo titolo-pagina">{vista === "dispensa" ? "in casa" : vista === "abituali" ? "abituali" : "spese"}</h1>
           <p className="mt-2 max-w-xl text-[0.9375rem] text-tenue">
             {vista === "dispensa"
               ? "Quello che avete in frigo, nel freezer e in dispensa."
-              : "I prodotti che comprate. Un tocco e tornano nella lista."}
+              : vista === "abituali"
+                ? "I prodotti che comprate. Un tocco e tornano nella lista."
+                : "Ogni carrello chiuso finisce qui, nel giorno in cui l'avete pagato."}
           </p>
         </header>
       )}
@@ -406,6 +453,7 @@ export function AppSpesa({
           ) : null}
           {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
+          {vista === "spese" ? <VistaSpese dati={dati} membri={membri} userId={userId} azioni={azioni} /> : null}
         </motion.div>
       </AnimatePresence>
 

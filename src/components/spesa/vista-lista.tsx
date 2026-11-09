@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
-import { Check, ChevronDown, CornerDownLeft, Flame, Minus, MoreHorizontal, PackageCheck, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, CornerDownLeft, Flame, Loader2, Minus, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import type { Lista, Reparto, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { interpretaVoce, UNITA } from "@/lib/spesa";
@@ -59,7 +59,7 @@ export function VistaLista({
             <Pinguino className="w-20" />
             <div>
               <p className="titolo-normale text-xl">Tutto nel carrello</p>
-              <p className="mt-1 text-tenue">Chiudi la spesa qui sotto: quello che hai preso finisce in casa.</p>
+              <p className="mt-1 text-tenue">Chiudi il carrello qui sotto e segna quanto avete speso.</p>
             </div>
           </div>
         ) : null}
@@ -111,14 +111,7 @@ export function VistaLista({
                 </motion.ul>
               ) : null}
             </AnimatePresence>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Pulsante onClick={() => azioni.chiudiSpesa(true)}>
-                <PackageCheck className="size-[18px]" /> Chiudi la spesa e metti in casa
-              </Pulsante>
-              <Pulsante variante="fantasma" onClick={() => azioni.chiudiSpesa(false)}>
-                Svuota il carrello
-              </Pulsante>
-            </div>
+            <ChiudiCarrello onChiudi={azioni.chiudiSpesa} />
           </section>
         ) : null}
       </div>
@@ -135,6 +128,57 @@ export function VistaLista({
         </div>
       </aside>
     </div>
+  );
+}
+
+/** Chiusura del carrello: quanto avete speso, quando, e se mettere i prodotti in casa. */
+function ChiudiCarrello({ onChiudi }: { onChiudi: AzioniSpesa["chiudiSpesa"] }) {
+  const [inCorso, setInCorso] = useState(false);
+  const [inCasa, setInCasa] = useState(true);
+  const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+
+  async function invia(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const importo = Number(String(f.get("importo") ?? "").replace(",", "."));
+    if (!Number.isFinite(importo) || importo < 0) return;
+    setInCorso(true);
+    await onChiudi({ importo: Math.round(importo * 100) / 100, data: String(f.get("data") || oggi), inDispensa: inCasa });
+    setInCorso(false);
+  }
+
+  return (
+    <form onSubmit={invia} className="mt-6 border-t border-linea pt-5">
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+        <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
+          Quanto avete speso
+          <span className="flex items-baseline gap-1.5 border-b-2 border-linea-forte focus-within:border-becco">
+            <span className="text-[1.25rem] text-tenue">€</span>
+            <input
+              name="importo"
+              required
+              inputMode="decimal"
+              pattern="[0-9]+([.,][0-9]{1,2})?"
+              placeholder="0,00"
+              autoComplete="off"
+              className="numeri h-11 w-32 bg-transparent text-[1.5rem] font-semibold text-inchiostro outline-none placeholder:font-normal placeholder:text-tenue/50"
+            />
+          </span>
+        </label>
+        <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
+          Giorno
+          <input name="data" type="date" defaultValue={oggi} max={oggi} className="campo-linea h-11 text-[1rem] text-inchiostro" />
+        </label>
+      </div>
+      <label className="mt-5 flex cursor-pointer items-center gap-3 text-[0.9375rem]">
+        <input type="checkbox" checked={inCasa} onChange={(e) => setInCasa(e.target.checked)} className="size-5 accent-[var(--becco)]" />
+        Metti i prodotti in casa (frigo, freezer, dispensa)
+      </label>
+      <Pulsante type="submit" disabled={inCorso} className="mt-5">
+        {inCorso ? <Loader2 className="size-4 animate-spin" /> : null}
+        Chiudi il carrello
+      </Pulsante>
+    </form>
   );
 }
 

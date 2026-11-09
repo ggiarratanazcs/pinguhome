@@ -94,6 +94,21 @@ export type VoceLista = {
   urgente: boolean;
 };
 
+export type ProdottoSpesa = { nome: string; quantita: number; unita: string };
+
+export type Spesa = {
+  creata_il: string;
+  data: string;
+  famiglia_id: string;
+  id: string;
+  importo: number;
+  lista_id: string | null;
+  note: string | null;
+  num_prodotti: number;
+  pagata_da: string | null;
+  prodotti: ProdottoSpesa[];
+};
+
 type Opz<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type Database = {
@@ -106,6 +121,7 @@ export type Database = {
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
       profili: Tabella<Profilo, Opz<Profilo, "colore" | "creato_il" | "email" | "famiglia_attiva" | "nome" | "tema">>;
+      spese: Tabella<Spesa, Opz<Spesa, "creata_il" | "data" | "id" | "lista_id" | "note" | "num_prodotti" | "pagata_da" | "prodotti">>;
       reparti: Tabella<Reparto, Opz<Reparto, "icona" | "id" | "ordine">>;
       voci_lista: Tabella<
         VoceLista,
