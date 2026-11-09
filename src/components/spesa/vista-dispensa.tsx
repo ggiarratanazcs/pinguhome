@@ -9,10 +9,10 @@ import { Pulsante } from "@/components/ui";
 import { formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 
-const IMMAGINI: Record<string, string> = {
-  frigo: "/casa/frigo.webp",
-  freezer: "/casa/freezer.webp",
-  dispensa: "/casa/dispensa.webp",
+const IMMAGINI: Record<string, { vuoto: string; pinguino: string }> = {
+  frigo: { vuoto: "/casa/frigo-vuoto.webp", pinguino: "/casa/frigo.webp" },
+  freezer: { vuoto: "/casa/freezer-vuoto.webp", pinguino: "/casa/freezer.webp" },
+  dispensa: { vuoto: "/casa/dispensa-vuoto.webp", pinguino: "/casa/dispensa.webp" },
 };
 
 export function VistaDispensa({
@@ -57,15 +57,13 @@ export function VistaDispensa({
               className="anello-focus group flex flex-col items-center rounded-[24px] bg-superficie-2 px-2 pb-3 pt-4 transition-transform active:scale-[0.97] md:rounded-[32px] md:px-6 md:pb-5 md:pt-6"
             >
               <div className="relative aspect-[3/4] w-full">
-                {aperta !== pos.id ? (
-                  <motion.img
-                    layoutId={`casa-${pos.id}`}
-                    src={IMMAGINI[pos.id]}
-                    alt=""
-                    draggable={false}
-                    className="absolute inset-0 size-full object-contain object-bottom drop-shadow-[0_14px_18px_rgba(var(--ombra),0.18)] transition-transform duration-300 group-hover:-translate-y-1"
-                  />
-                ) : null}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={IMMAGINI[pos.id].vuoto}
+                  alt=""
+                  draggable={false}
+                  className="absolute inset-0 size-full object-contain object-bottom drop-shadow-[0_14px_18px_rgba(var(--ombra),0.18)] transition-transform duration-300 group-hover:-translate-y-1"
+                />
               </div>
               <span className="titolo mt-3 text-[0.9375rem] md:text-[1.125rem]">{pos.nome}</span>
               <span className="numeri text-[0.8125rem] text-tenue">{n}</span>
@@ -97,8 +95,10 @@ export function VistaDispensa({
             >
               <div className="relative flex items-end gap-4 px-5 pt-5">
                 <motion.img
-                  layoutId={`casa-${posAperta.id}`}
-                  src={IMMAGINI[posAperta.id]}
+                  src={IMMAGINI[posAperta.id].pinguino}
+                  initial={{ opacity: 0, y: 24, scale: 0.85 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.08 }}
                   alt=""
                   draggable={false}
                   className="h-36 w-auto -mt-16 object-contain drop-shadow-[0_18px_22px_rgba(var(--ombra),0.25)] sm:h-44 sm:-mt-24"
