@@ -6,7 +6,7 @@ import { FornitoreMascotte } from "@/components/mascotte";
 export default async function LayoutCasa({ children }: LayoutProps<"/">) {
   const { profilo, famiglia, membri } = await getContesto();
   return (
-    <FornitoreMascotte mascotte={profilo.mascotte}>
+    <FornitoreMascotte tipo={profilo.mascotte} percorso={profilo.mascotte_path}>
     <div className="flex min-h-dvh bg-dorso">
       <SincronizzaTema tema={profilo.tema} />
       <BarraLaterale casa={famiglia.nome} membri={membri} />

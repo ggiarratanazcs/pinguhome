@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { apriScontrino } from "@/lib/scontrini";
 import type { MembroCasa } from "@/lib/sessione";
 import { Avatar, Pulsante } from "@/components/ui";
-import { PinguinoSezione } from "@/components/mascotte";
+import { Mascotte } from "@/components/mascotte";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 import { NuovaSpesa } from "./nuova-spesa";
@@ -169,7 +169,7 @@ export function VistaSpese({
 
         {dati.spese.length === 0 ? (
           <div className="mt-8 flex items-center gap-4">
-            <PinguinoSezione posa="scontrino" className="w-16" />
+            <Mascotte className="w-16" />
             <p className="text-[0.9375rem] text-tenue">Quando chiudete un carrello e scrivete quanto avete speso, la spesa compare qui.</p>
           </div>
         ) : elenco.length === 0 ? (

@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getContesto } from "@/lib/sessione";
 import { POSIZIONI } from "@/lib/spesa";
-import { PinguinoSezione } from "@/components/mascotte";
+import { Mascotte } from "@/components/mascotte";
 import { cn } from "@/lib/utils";
 
 function saluto() {
@@ -42,7 +42,7 @@ export default async function Home() {
             {saluto()}, {nome.toLowerCase()}
           </h1>
         </div>
-        <PinguinoSezione posa="saluto" className="w-16 shrink-0 md:w-24" />
+        <Mascotte className="hidden w-20 shrink-0 md:block" />
       </div>
 
       <p className="mt-3 max-w-xl text-inchiostro-2">

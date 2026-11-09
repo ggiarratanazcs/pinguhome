@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LogOut, Share2 } from "lucide-react";
+import { Check, Loader2, LogOut, Share2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Famiglia, Profilo } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { applicaTema, TEMI, temaValido, type IdTema } from "@/lib/temi";
 import { Avatar, Campo, Messaggio, Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { MASCOTTE, Mascotte, PinguinoSezione, mascotteValida, type IdMascotte } from "@/components/mascotte";
+import { Mascotte, type SceltaMascotte } from "@/components/mascotte";
 
 const COLORI = ["#1d2340", "#ff9f1c", "#f2789b", "#23885a", "#3f6fd8", "#7a5cc2", "#d2394a", "#0f8b8d"];
 
@@ -18,7 +18,12 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
   const supabase = createClient();
   const [tema, setTema] = useState<IdTema>(temaValido(profilo.tema));
   const [colore, setColore] = useState(profilo.colore);
-  const [mascotte, setMascotte] = useState<IdMascotte>(mascotteValida(profilo.mascotte));
+  const [mascotte, setMascotte] = useState<SceltaMascotte>({
+    tipo: profilo.mascotte === "personale" && profilo.mascotte_path ? "personale" : "originale",
+    percorso: profilo.mascotte_path,
+  });
+  const [caricamento, setCaricamento] = useState(false);
+  const campoMascotte = useRef<HTMLInputElement>(null);
   const [copiato, setCopiato] = useState(false);
   const [esito, setEsito] = useState<string | null>(null);
 
@@ -28,10 +33,40 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
     await supabase.from("profili").update({ tema: t }).eq("id", profilo.id);
   }
 
-  async function scegliMascotte(m: IdMascotte) {
-    setMascotte(m);
-    await supabase.from("profili").update({ mascotte: m }).eq("id", profilo.id);
+  async function scegliMascotte(tipo: SceltaMascotte["tipo"]) {
+    if (tipo === "personale" && !mascotte.percorso) {
+      campoMascotte.current?.click();
+      return;
+    }
+    setMascotte((m) => ({ ...m, tipo }));
+    await supabase.from("profili").update({ mascotte: tipo }).eq("id", profilo.id);
     router.refresh();
+  }
+
+  /** Carica l'immagine della mascotte: ridotta a 512 px, trasparenza conservata. */
+  async function caricaMascotte(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setEsito("Scegli un'immagine (PNG con sfondo trasparente è l'ideale).");
+      return;
+    }
+    setCaricamento(true);
+    try {
+      const blob = await riduciPng(file, 512);
+      const percorso = `${profilo.id}/${crypto.randomUUID()}.png`;
+      const { error } = await supabase.storage.from("mascotte").upload(percorso, blob, { contentType: "image/png" });
+      if (error) throw error;
+      if (mascotte.percorso) await supabase.storage.from("mascotte").remove([mascotte.percorso]);
+      await supabase.from("profili").update({ mascotte: "personale", mascotte_path: percorso }).eq("id", profilo.id);
+      setMascotte({ tipo: "personale", percorso });
+      setEsito("Mascotte aggiornata.");
+      router.refresh();
+    } catch {
+      setEsito("Non sono riuscito a caricare l'immagine: riprova con un PNG più leggero.");
+    } finally {
+      setCaricamento(false);
+      if (campoMascotte.current) campoMascotte.current.value = "";
+    }
   }
 
   async function salvaProfilo(e: FormEvent<HTMLFormElement>) {
@@ -77,7 +112,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
     <main className="mx-auto w-full max-w-[920px] px-5 pt-8 md:px-12 md:pt-14">
       <div className="flex items-end justify-between gap-4">
         <h1 className="titolo titolo-pagina">impostazioni</h1>
-        <PinguinoSezione posa="chiave" className="-mb-1 w-14 shrink-0 md:w-20" />
+        <Mascotte className="-mb-1 hidden w-16 shrink-0 md:block" />
       </div>
 
       {esito ? <div className="mt-6"><Messaggio tipo="ok">{esito}</Messaggio></div> : null}
@@ -112,25 +147,48 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
         </div>
       </Sezione>
 
-      <Sezione titolo="mascotte" descrizione="Il pinguino in alto a sinistra. Quelli delle sezioni si vestono allo stesso modo.">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-          {MASCOTTE.map((m) => {
-            const attiva = mascotte === m.id;
+      <Sezione titolo="mascotte" descrizione="Il pinguino in alto a sinistra. Ognuno sceglie il suo: puoi caricare un'immagine tua, meglio un PNG con sfondo trasparente.">
+        <input ref={campoMascotte} type="file" accept="image/png,image/webp,image/jpeg" className="sr-only" tabIndex={-1} onChange={(e) => caricaMascotte(e.target.files?.[0])} />
+        <div className="flex flex-wrap gap-4">
+          {(
+            [
+              { tipo: "originale", nome: "L'originale" },
+              { tipo: "personale", nome: mascotte.percorso ? "La tua" : "Carica la tua" },
+            ] as const
+          ).map((o) => {
+            const attiva = mascotte.tipo === o.tipo;
             return (
-              <button key={m.id} onClick={() => scegliMascotte(m.id)} aria-pressed={attiva} className="anello-focus group flex flex-col items-center text-center">
+              <button key={o.tipo} onClick={() => scegliMascotte(o.tipo)} aria-pressed={attiva} className="anello-focus group flex w-32 flex-col items-center text-center">
                 <span
                   className={cn(
-                    "grid aspect-square w-full place-items-center rounded-[20px] p-2 transition",
+                    "grid aspect-square w-full place-items-center rounded-[22px] p-3 transition",
                     attiva ? "bg-becco-tenue ring-[3px] ring-becco" : "bg-superficie-2 ring-1 ring-linea group-hover:ring-linea-forte",
                   )}
                 >
-                  <Mascotte scelta={m.id} className="w-full" />
+                  {o.tipo === "originale" ? (
+                    <Mascotte scelta={{ tipo: "originale", percorso: null }} className="w-full" />
+                  ) : mascotte.percorso ? (
+                    <Mascotte scelta={{ tipo: "personale", percorso: mascotte.percorso }} className="max-h-full w-full" />
+                  ) : (
+                    <span className="flex flex-col items-center gap-2 text-tenue">
+                      {caricamento ? <Loader2 className="size-6 animate-spin" /> : <Upload className="size-6" />}
+                    </span>
+                  )}
                 </span>
-                <span className={cn("mt-2 text-[0.8125rem]", attiva ? "font-semibold" : "text-tenue")}>{m.nome}</span>
+                <span className={cn("mt-2 text-[0.8125rem]", attiva ? "font-semibold" : "text-tenue")}>{o.nome}</span>
               </button>
             );
           })}
         </div>
+        {mascotte.percorso ? (
+          <button
+            onClick={() => campoMascotte.current?.click()}
+            disabled={caricamento}
+            className="anello-focus mt-4 flex items-center gap-2 text-[0.875rem] font-semibold underline decoration-becco decoration-2 underline-offset-4"
+          >
+            {caricamento ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} Cambia immagine
+          </button>
+        ) : null}
       </Sezione>
 
       <Sezione titolo="tu" descrizione="Il tuo colore distingue le voci che aggiungi alla lista.">
@@ -210,4 +268,25 @@ function Sezione({ titolo, descrizione, children }: { titolo: string; descrizion
       <div>{children}</div>
     </section>
   );
+}
+
+/** Riduce l'immagine al lato massimo indicato e la esporta in PNG (la trasparenza resta). */
+async function riduciPng(file: File, lato: number): Promise<Blob> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, ko) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => ko(new Error("Immagine non leggibile"));
+      i.src = url;
+    });
+    const scala = Math.min(1, lato / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scala);
+    canvas.height = Math.round(img.naturalHeight * scala);
+    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return await new Promise<Blob>((ok, ko) => canvas.toBlob((b) => (b ? ok(b) : ko(new Error("Conversione non riuscita"))), "image/png"));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }

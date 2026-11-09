@@ -2,49 +2,36 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { Pinguino } from "@/components/pinguino";
-import { PinguinoDisegnato, type Look, type Posa } from "@/components/pinguini";
+import { SUPABASE_URL } from "@/lib/supabase/config";
+import { cn } from "@/lib/utils";
 
-/** Mascotte scelte in Impostazioni: il pinguino originale con gli occhiali o uno della famiglia disegnata. */
-export const MASCOTTE = [
-  { id: "originale", nome: "L'originale" },
-  { id: "occhiali", nome: "Occhiali da sole" },
-  { id: "sciarpa", nome: "Sciarpa" },
-  { id: "cuffie", nome: "Cuffie" },
-  { id: "berretto", nome: "Berretto" },
-  { id: "nudo", nome: "Al naturale" },
-] as const;
+/**
+ * Mascotte di ciascun profilo: il pinguino originale con gli occhiali,
+ * oppure un'immagine caricata dalla persona (Impostazioni → Mascotte).
+ */
+export type SceltaMascotte = { tipo: "originale" | "personale"; percorso: string | null };
 
-export type IdMascotte = (typeof MASCOTTE)[number]["id"];
-
-export function mascotteValida(m: string | null | undefined): IdMascotte {
-  return (MASCOTTE.find((x) => x.id === m)?.id ?? "originale") as IdMascotte;
+export function urlMascotte(percorso: string | null) {
+  return percorso ? `${SUPABASE_URL}/storage/v1/object/public/mascotte/${percorso}` : null;
 }
 
-const ContestoMascotte = createContext<IdMascotte>("originale");
+const ContestoMascotte = createContext<SceltaMascotte>({ tipo: "originale", percorso: null });
 
-export function FornitoreMascotte({ mascotte, children }: { mascotte: string; children: ReactNode }) {
-  return <ContestoMascotte.Provider value={mascotteValida(mascotte)}>{children}</ContestoMascotte.Provider>;
+export function FornitoreMascotte({ tipo, percorso, children }: { tipo: string; percorso: string | null; children: ReactNode }) {
+  const valore: SceltaMascotte = { tipo: tipo === "personale" && percorso ? "personale" : "originale", percorso };
+  return <ContestoMascotte.Provider value={valore}>{children}</ContestoMascotte.Provider>;
 }
 
 export function useMascotte() {
   return useContext(ContestoMascotte);
 }
 
-/** Look dei pinguini delle sezioni: segue la mascotte scelta (l'originale porta gli occhiali). */
-function lookDa(m: IdMascotte): Look {
-  return m === "originale" ? "occhiali" : m;
-}
-
-/** La mascotte in alto a sinistra (barra laterale e testata mobile). */
-export function Mascotte({ className, scelta }: { className?: string; scelta?: IdMascotte }) {
+/** La mascotte scelta: in alto a sinistra e nelle pagine vuote. */
+export function Mascotte({ className, scelta }: { className?: string; scelta?: SceltaMascotte }) {
   const dalContesto = useMascotte();
   const m = scelta ?? dalContesto;
-  if (m === "originale") return <Pinguino className={className} alt="PinguHome" />;
-  return <PinguinoDisegnato look={lookDa(m)} className={className} titolo="PinguHome" />;
-}
-
-/** Il pinguino di ogni sezione, che fa qualcosa di diverso. */
-export function PinguinoSezione({ posa, className }: { posa: Posa; className?: string }) {
-  const m = useMascotte();
-  return <PinguinoDisegnato posa={posa} look={lookDa(m)} className={className} />;
+  const url = m.tipo === "personale" ? urlMascotte(m.percorso) : null;
+  if (!url) return <Pinguino className={className} alt="PinguHome" />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="La tua mascotte" draggable={false} className={cn("h-auto shrink-0 select-none object-contain", className)} />;
 }
