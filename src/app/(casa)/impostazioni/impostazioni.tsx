@@ -9,6 +9,7 @@ import type { MembroCasa } from "@/lib/sessione";
 import { applicaTema, TEMI, temaValido, type IdTema } from "@/lib/temi";
 import { Avatar, Campo, Messaggio, Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { MASCOTTE, Mascotte, PinguinoSezione, mascotteValida, type IdMascotte } from "@/components/mascotte";
 
 const COLORI = ["#1d2340", "#ff9f1c", "#f2789b", "#23885a", "#3f6fd8", "#7a5cc2", "#d2394a", "#0f8b8d"];
 
@@ -17,6 +18,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
   const supabase = createClient();
   const [tema, setTema] = useState<IdTema>(temaValido(profilo.tema));
   const [colore, setColore] = useState(profilo.colore);
+  const [mascotte, setMascotte] = useState<IdMascotte>(mascotteValida(profilo.mascotte));
   const [copiato, setCopiato] = useState(false);
   const [esito, setEsito] = useState<string | null>(null);
 
@@ -24,6 +26,12 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
     setTema(t);
     applicaTema(t);
     await supabase.from("profili").update({ tema: t }).eq("id", profilo.id);
+  }
+
+  async function scegliMascotte(m: IdMascotte) {
+    setMascotte(m);
+    await supabase.from("profili").update({ mascotte: m }).eq("id", profilo.id);
+    router.refresh();
   }
 
   async function salvaProfilo(e: FormEvent<HTMLFormElement>) {
@@ -67,7 +75,10 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
 
   return (
     <main className="mx-auto w-full max-w-[920px] px-5 pt-8 md:px-12 md:pt-14">
-      <h1 className="titolo titolo-pagina">impostazioni</h1>
+      <div className="flex items-end justify-between gap-4">
+        <h1 className="titolo titolo-pagina">impostazioni</h1>
+        <PinguinoSezione posa="chiave" className="-mb-1 w-14 shrink-0 md:w-20" />
+      </div>
 
       {esito ? <div className="mt-6"><Messaggio tipo="ok">{esito}</Messaggio></div> : null}
 
@@ -95,6 +106,27 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
                   {attivo ? <Check className="size-4 text-becco-scuro" strokeWidth={3} /> : null}
                 </p>
                 <p className="text-[0.8125rem] text-tenue">{t.descrizione}</p>
+              </button>
+            );
+          })}
+        </div>
+      </Sezione>
+
+      <Sezione titolo="mascotte" descrizione="Il pinguino in alto a sinistra. Quelli delle sezioni si vestono allo stesso modo.">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {MASCOTTE.map((m) => {
+            const attiva = mascotte === m.id;
+            return (
+              <button key={m.id} onClick={() => scegliMascotte(m.id)} aria-pressed={attiva} className="anello-focus group flex flex-col items-center text-center">
+                <span
+                  className={cn(
+                    "grid aspect-square w-full place-items-center rounded-[20px] p-2 transition",
+                    attiva ? "bg-becco-tenue ring-[3px] ring-becco" : "bg-superficie-2 ring-1 ring-linea group-hover:ring-linea-forte",
+                  )}
+                >
+                  <Mascotte scelta={m.id} className="w-full" />
+                </span>
+                <span className={cn("mt-2 text-[0.8125rem]", attiva ? "font-semibold" : "text-tenue")}>{m.nome}</span>
               </button>
             );
           })}

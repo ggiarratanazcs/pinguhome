@@ -1,10 +1,12 @@
 import { getContesto } from "@/lib/sessione";
 import { BarraInferiore, BarraLaterale, TestataMobile } from "@/components/navigazione";
 import { SincronizzaTema } from "@/components/sincronizza-tema";
+import { FornitoreMascotte } from "@/components/mascotte";
 
 export default async function LayoutCasa({ children }: LayoutProps<"/">) {
   const { profilo, famiglia, membri } = await getContesto();
   return (
+    <FornitoreMascotte mascotte={profilo.mascotte}>
     <div className="flex min-h-dvh bg-dorso">
       <SincronizzaTema tema={profilo.tema} />
       <BarraLaterale casa={famiglia.nome} membri={membri} />
@@ -14,5 +16,6 @@ export default async function LayoutCasa({ children }: LayoutProps<"/">) {
       </div>
       <BarraInferiore />
     </div>
+    </FornitoreMascotte>
   );
 }

@@ -6,7 +6,7 @@ import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import type { Dispensa, Lista } from "@/lib/database.types";
 import { interpretaVoce, POSIZIONI, UNITA } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
-import { Pinguino } from "@/components/pinguino";
+import { PinguinoSezione } from "@/components/mascotte";
 import { formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 
@@ -35,7 +35,7 @@ export function VistaDispensa({
 
       {dati.dispensa.length === 0 ? (
         <div className="mt-14 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
-          <Pinguino className="w-28" />
+          <PinguinoSezione posa="scatola" className="w-28" />
           <div>
             <p className="titolo-normale text-2xl">La casa è ancora vuota.</p>
             <p className="mt-2 max-w-md text-tenue">

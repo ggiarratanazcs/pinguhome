@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarCheck, House, LogOut, Settings2, ShoppingBasket, Wallet } from "lucide-react";
-import { Pinguino } from "@/components/pinguino";
+import { Mascotte } from "@/components/mascotte";
 import { Avatar } from "@/components/ui";
 import { alternaBarra } from "@/lib/temi";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
           className="anello-focus group relative mx-auto block rounded-[28px]"
         >
           <span aria-hidden className="absolute inset-x-[-6px] bottom-[-6px] top-[38%] rounded-[50%] bg-lastra opacity-95" />
-          <Pinguino className="mascotte-barra relative" alt="PinguHome" />
+          <Mascotte className="mascotte-barra relative" />
         </button>
         <div className="solo-aperta mt-5 text-center">
           <p className="titolo text-[1.0625rem] text-su-dorso">pinguhome</p>
@@ -115,7 +115,7 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
 export function TestataMobile({ casa }: { casa: string }) {
   return (
     <header className="pt-sicuro flex items-center gap-2.5 px-5 pt-3 lg:hidden">
-      <Pinguino className="w-9" alt="PinguHome" />
+      <Mascotte className="w-9" />
       <div className="min-w-0">
         <p className="titolo text-[0.9375rem]">pinguhome</p>
         <p className="truncate text-xs text-tenue">{casa}</p>

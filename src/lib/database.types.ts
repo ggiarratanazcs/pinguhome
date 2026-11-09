@@ -63,6 +63,7 @@ export type Profilo = {
   email: string;
   famiglia_attiva: string | null;
   id: string;
+  mascotte: string;
   nome: string;
   tema: string;
 };
@@ -123,7 +124,7 @@ export type Database = {
       liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
-      profili: Tabella<Profilo, Opz<Profilo, "colore" | "creato_il" | "email" | "famiglia_attiva" | "nome" | "tema">>;
+      profili: Tabella<Profilo, Opz<Profilo, "colore" | "creato_il" | "email" | "famiglia_attiva" | "mascotte" | "nome" | "tema">>;
       spese: Tabella<Spesa, Opz<Spesa, "creata_il" | "data" | "id" | "lista_id" | "negozio" | "note" | "num_prodotti" | "origine" | "pagata_da" | "prodotti" | "scontrino_path">>;
       reparti: Tabella<Reparto, Opz<Reparto, "icona" | "id" | "ordine">>;
       voci_lista: Tabella<

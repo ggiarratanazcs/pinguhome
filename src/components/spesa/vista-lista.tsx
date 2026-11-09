@@ -7,7 +7,7 @@ import type { Lista, Reparto, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { interpretaVoce, UNITA } from "@/lib/spesa";
 import { Avatar, Pulsante } from "@/components/ui";
-import { Pinguino } from "@/components/pinguino";
+import { PinguinoSezione } from "@/components/mascotte";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 import { IconaReparto } from "./icona-reparto";
@@ -57,7 +57,7 @@ export function VistaLista({
         {daPrendere.length === 0 && prese.length === 0 ? <ListaVuota /> : null}
         {daPrendere.length === 0 && prese.length > 0 ? (
           <div className="mt-10 flex items-center gap-5">
-            <Pinguino className="w-20" />
+            <PinguinoSezione posa="carrello" className="w-20" />
             <div>
               <p className="titolo-normale text-xl">Tutto nel carrello</p>
               <p className="mt-1 text-tenue">Chiudi il carrello qui sotto e segna quanto avete speso.</p>
@@ -211,7 +211,7 @@ function ListaVuota() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 140, damping: 14 }}
       >
-        <Pinguino className="w-28" />
+        <PinguinoSezione posa="carrello" className="w-28" />
       </motion.div>
       <div>
         <p className="titolo-normale text-2xl">Niente da comprare.</p>

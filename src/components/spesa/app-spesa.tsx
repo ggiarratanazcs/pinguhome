@@ -13,6 +13,8 @@ import { VistaLista } from "./vista-lista";
 import { VistaDispensa } from "./vista-dispensa";
 import { VistaAbituali } from "./vista-abituali";
 import { VistaSpese } from "./vista-spese";
+import { PinguinoSezione } from "@/components/mascotte";
+import type { Posa } from "@/components/pinguini";
 
 export type DatiSpesa = {
   liste: Lista[];
@@ -24,6 +26,9 @@ export type DatiSpesa = {
 };
 
 type Vista = "lista" | "dispensa" | "abituali" | "spese";
+
+/** Cosa fa il pinguino in ogni sezione. */
+const POSE_SEZIONE: Record<Vista, Posa> = { lista: "carrello", dispensa: "scatola", abituali: "stella", spese: "scontrino" };
 
 export type AzioniSpesa = ReturnType<typeof useAzioni>;
 
@@ -496,6 +501,8 @@ export function AppSpesa({
       {/* Titolo: nome della lista come parola grande, le altre liste accanto più piccole */}
       {vista === "lista" ? (
         <header className="mt-5 md:mt-8">
+          <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0 flex-1">
           <SelettoreListe
             liste={liste}
             voci={dati.voci}
@@ -506,10 +513,14 @@ export function AppSpesa({
               if (nuova) setListaId(nuova.id);
             }}
           />
+          </div>
+          <PinguinoSezione posa="carrello" className="-mb-1 w-14 md:w-20" />
+          </div>
           {vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
         </header>
       ) : (
-        <header className="mt-5 md:mt-8">
+        <header className="mt-5 flex items-end justify-between gap-4 md:mt-8">
+          <div className="min-w-0">
           <h1 className="titolo titolo-pagina">{vista === "dispensa" ? "in casa" : vista === "abituali" ? "abituali" : "spese"}</h1>
           <p className="mt-2 max-w-xl text-[0.9375rem] text-tenue">
             {vista === "dispensa"
@@ -518,6 +529,8 @@ export function AppSpesa({
                 ? "I prodotti che comprate. Un tocco e tornano nella lista."
                 : "Carrelli chiusi e spese aggiunte a mano o da uno scontrino, giorno per giorno."}
           </p>
+          </div>
+          <PinguinoSezione posa={POSE_SEZIONE[vista]} className="-mb-1 w-14 shrink-0 md:w-20" />
         </header>
       )}
 
