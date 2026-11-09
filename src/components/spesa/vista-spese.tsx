@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import type { Spesa } from "@/lib/database.types";
+import { ChevronDown, ChevronLeft, ChevronRight, Paperclip, Plus, Receipt, Trash2 } from "lucide-react";
+import type { Lista, Spesa } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+import { apriScontrino } from "@/lib/scontrini";
 import type { MembroCasa } from "@/lib/sessione";
-import { Avatar } from "@/components/ui";
+import { Avatar, Pulsante } from "@/components/ui";
 import { Pinguino } from "@/components/pinguino";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
+import { NuovaSpesa } from "./nuova-spesa";
 
 const GIORNI = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"];
 
@@ -27,11 +30,13 @@ function oggiChiave() {
 
 export function VistaSpese({
   dati,
+  liste,
   membri,
   userId,
   azioni,
 }: {
   dati: DatiSpesa;
+  liste: Lista[];
   membri: MembroCasa[];
   userId: string;
   azioni: AzioniSpesa;
@@ -40,6 +45,7 @@ export function VistaSpese({
   const [anno, setAnno] = useState(Number(oggi.slice(0, 4)));
   const [mese, setMese] = useState(Number(oggi.slice(5, 7)) - 1);
   const [giorno, setGiorno] = useState<string | null>(null);
+  const [nuova, setNuova] = useState(false);
 
   const prefisso = `${anno}-${String(mese + 1).padStart(2, "0")}`;
   const speseMese = useMemo(() => dati.spese.filter((s) => s.data.startsWith(prefisso)), [dati.spese, prefisso]);
@@ -72,7 +78,15 @@ export function VistaSpese({
     .sort((a, b) => b.data.localeCompare(a.data) || b.creata_il.localeCompare(a.creata_il));
 
   return (
-    <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div>
+      {nuova ? (
+        <NuovaSpesa liste={liste} giornoIniziale={giorno} azioni={azioni} onChiudi={() => setNuova(false)} />
+      ) : (
+        <Pulsante onClick={() => setNuova(true)} className="mt-5">
+          <Plus className="size-[18px]" strokeWidth={2.4} /> Nuova spesa
+        </Pulsante>
+      )}
+    <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0">
         {/* Mese e totale */}
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -85,7 +99,7 @@ export function VistaSpese({
               <ChevronRight className="size-5" />
             </button>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="titolo-normale numeri text-[1.75rem] leading-none">{euro(totaleMese)}</p>
             <p className="mt-1.5 text-[0.8125rem] text-tenue">
               {speseMese.length} {speseMese.length === 1 ? "spesa" : "spese"}
@@ -167,7 +181,7 @@ export function VistaSpese({
                 <RigaSpesa
                   key={s.id}
                   spesa={s}
-                  nomeLista={dati.liste.find((l) => l.id === s.lista_id)?.nome}
+                  nomeLista={s.negozio || dati.liste.find((l) => l.id === s.lista_id)?.nome}
                   coloreLista={dati.liste.find((l) => l.id === s.lista_id)?.colore}
                   chi={membri.find((m) => m.id === s.pagata_da)}
                   userId={userId}
@@ -179,6 +193,7 @@ export function VistaSpese({
           </ul>
         )}
       </aside>
+    </div>
     </div>
   );
 }
@@ -202,16 +217,20 @@ function RigaSpesa({
 }) {
   const [aperta, setAperta] = useState(false);
   const prodotti = Array.isArray(spesa.prodotti) ? spesa.prodotti : [];
+  const campoFile = useRef<HTMLInputElement>(null);
 
   return (
     <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, height: 0 }} className="border-b border-linea py-3.5">
       <button onClick={() => setAperta((a) => !a)} className="anello-focus flex w-full items-center gap-3 text-left">
         <span className="size-2.5 shrink-0 rounded-full" style={{ background: coloreLista ?? "var(--linea-forte)" }} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[1rem]">{nomeLista ?? "Spesa"}</span>
+          <span className="flex items-center gap-1.5 truncate text-[1rem]">
+            {nomeLista ?? "Spesa"}
+            {spesa.scontrino_path ? <Receipt className="size-3.5 shrink-0 text-tenue" aria-label="con scontrino" /> : null}
+          </span>
           <span className="block text-[0.8125rem] text-tenue">
             {mostraGiorno ? `${new Date(`${spesa.data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" })}, ` : ""}
-            {spesa.num_prodotti} {spesa.num_prodotti === 1 ? "prodotto" : "prodotti"}
+            {spesa.num_prodotti ? `${spesa.num_prodotti} ${spesa.num_prodotti === 1 ? "prodotto" : "prodotti"}` : spesa.origine === "manuale" ? "inserita a mano" : "nessun prodotto"}
             {chi ? `, pagata da ${chi.id === userId ? "te" : chi.nome.split(" ")[0]}` : ""}
           </span>
         </span>
@@ -231,7 +250,8 @@ function RigaSpesa({
                     <li key={i} className="flex justify-between gap-3">
                       <span className="truncate">{p.nome}</span>
                       <span className="numeri shrink-0 text-tenue">
-                        {formattaQuantita(Number(p.quantita))} {p.unita}
+                        {Number(p.quantita) !== 1 || p.unita !== "pz" ? `${formattaQuantita(Number(p.quantita))} ${p.unita}` : ""}
+                        {p.prezzo !== null && p.prezzo !== undefined ? `${Number(p.quantita) !== 1 || p.unita !== "pz" ? "  " : ""}${euro(Number(p.prezzo))}` : ""}
                       </span>
                     </li>
                   ))}
@@ -260,6 +280,32 @@ function RigaSpesa({
                   />
                 </label>
                 {chi ? <Avatar nome={chi.nome} colore={chi.colore} className="mb-1 size-7 text-[0.625rem]" /> : null}
+                <input
+                  ref={campoFile}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) azioni.allegaScontrino(spesa, f);
+                    e.target.value = "";
+                  }}
+                />
+                {spesa.scontrino_path ? (
+                  <button
+                    onClick={() => apriScontrino(createClient(), spesa.scontrino_path!)}
+                    className="anello-focus mb-0.5 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold hover:bg-superficie-3"
+                  >
+                    <Receipt className="size-3.5" /> Vedi scontrino
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => campoFile.current?.click()}
+                  className="anello-focus mb-0.5 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] text-tenue hover:bg-superficie-3 hover:text-inchiostro"
+                >
+                  <Paperclip className="size-3.5" /> {spesa.scontrino_path ? "Sostituisci" : "Allega scontrino"}
+                </button>
                 <button
                   onClick={() => azioni.eliminaSpesa(spesa)}
                   className="anello-focus mb-0.5 ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold text-pericolo hover:bg-pericolo-tenue"

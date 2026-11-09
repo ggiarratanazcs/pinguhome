@@ -11,6 +11,7 @@ import { Pinguino } from "@/components/pinguino";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 import { IconaReparto } from "./icona-reparto";
+import { AllegaScontrino } from "./allega-scontrino";
 
 export function VistaLista({
   voci,
@@ -135,6 +136,7 @@ export function VistaLista({
 function ChiudiCarrello({ onChiudi }: { onChiudi: AzioniSpesa["chiudiSpesa"] }) {
   const [inCorso, setInCorso] = useState(false);
   const [inCasa, setInCasa] = useState(true);
+  const [scontrino, setScontrino] = useState<File | null>(null);
   const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 
   async function invia(e: FormEvent<HTMLFormElement>) {
@@ -143,7 +145,7 @@ function ChiudiCarrello({ onChiudi }: { onChiudi: AzioniSpesa["chiudiSpesa"] }) 
     const importo = Number(String(f.get("importo") ?? "").replace(",", "."));
     if (!Number.isFinite(importo) || importo < 0) return;
     setInCorso(true);
-    await onChiudi({ importo: Math.round(importo * 100) / 100, data: String(f.get("data") || oggi), inDispensa: inCasa });
+    await onChiudi({ importo: Math.round(importo * 100) / 100, data: String(f.get("data") || oggi), inDispensa: inCasa, scontrino });
     setInCorso(false);
   }
 
@@ -170,7 +172,10 @@ function ChiudiCarrello({ onChiudi }: { onChiudi: AzioniSpesa["chiudiSpesa"] }) 
           <input name="data" type="date" defaultValue={oggi} max={oggi} className="campo-linea h-11 text-[1rem] text-inchiostro" />
         </label>
       </div>
-      <label className="mt-5 flex cursor-pointer items-center gap-3 text-[0.9375rem]">
+      <div className="mt-5">
+        <AllegaScontrino file={scontrino} onCambia={setScontrino} etichetta="Allega lo scontrino (facoltativo)" />
+      </div>
+      <label className="mt-4 flex cursor-pointer items-center gap-3 text-[0.9375rem]">
         <input type="checkbox" checked={inCasa} onChange={(e) => setInCasa(e.target.checked)} className="size-5 accent-[var(--becco)]" />
         Metti i prodotti in casa (frigo, freezer, dispensa)
       </label>

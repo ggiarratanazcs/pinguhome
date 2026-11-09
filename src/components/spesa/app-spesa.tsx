@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { indovinaReparto, interpretaVoce, posizioneDaReparto } from "@/lib/spesa";
+import { caricaScontrino } from "@/lib/scontrini";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
 import { VistaDispensa } from "./vista-dispensa";
@@ -149,9 +150,11 @@ function useAzioni(params: {
 
   /** Toglie dalla lista ciò che è nel carrello; se richiesto lo mette in dispensa. */
   const chiudiSpesa = useCallback(
-    async ({ importo, data, inDispensa }: { importo: number; data: string; inDispensa: boolean }) => {
+    async ({ importo, data, inDispensa, scontrino }: { importo: number; data: string; inDispensa: boolean; scontrino?: File | null }) => {
       const prese = dati.voci.filter((v) => v.lista_id === listaId && v.presa);
       if (prese.length === 0) return;
+      const scontrino_path = scontrino ? await caricaScontrino(supabase, famigliaId, scontrino) : null;
+      if (scontrino && !scontrino_path) avvisa("Lo scontrino non si è caricato: la spesa la salvo lo stesso.");
       // La spesa resta nel calendario con importo, giorno e cosa avete preso
       const spesa: Spesa = {
         id: crypto.randomUUID(),
@@ -163,6 +166,9 @@ function useAzioni(params: {
         num_prodotti: prese.length,
         pagata_da: userId,
         note: null,
+        negozio: null,
+        origine: "carrello",
+        scontrino_path,
         creata_il: new Date().toISOString(),
       };
       setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, spesa) }));
@@ -275,8 +281,65 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
+  /** Spesa inserita dalla sezione Spese: a mano oppure letta da uno scontrino. */
+  const creaSpesa = useCallback(
+    async (nuova: {
+      data: string;
+      importo: number;
+      lista_id: string | null;
+      negozio: string | null;
+      prodotti: Spesa["prodotti"];
+      origine: "manuale" | "scontrino";
+      scontrino?: File | null;
+    }) => {
+      const scontrino_path = nuova.scontrino ? await caricaScontrino(supabase, famigliaId, nuova.scontrino) : null;
+      if (nuova.scontrino && !scontrino_path) avvisa("Lo scontrino non si è caricato: la spesa la salvo lo stesso.");
+      const spesa: Spesa = {
+        id: crypto.randomUUID(),
+        famiglia_id: famigliaId,
+        lista_id: nuova.lista_id,
+        data: nuova.data,
+        importo: nuova.importo,
+        prodotti: nuova.prodotti,
+        num_prodotti: nuova.prodotti.length,
+        pagata_da: userId,
+        note: null,
+        negozio: nuova.negozio,
+        origine: nuova.origine,
+        scontrino_path,
+        creata_il: new Date().toISOString(),
+      };
+      setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, spesa) }));
+      const { error } = await supabase.from("spese").insert(spesa);
+      if (error) {
+        setDati((d) => ({ ...d, spese: d.spese.filter((s) => s.id !== spesa.id) }));
+        avvisa("Non sono riuscito a salvare la spesa: riprova.");
+        return false;
+      }
+      avvisa(`Spesa salvata: ${nuova.importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}`);
+      return true;
+    },
+    [avvisa, famigliaId, setDati, supabase, userId],
+  );
+
+  /** Allega (o sostituisce) lo scontrino di una spesa già salvata. */
+  const allegaScontrino = useCallback(
+    async (s: Spesa, file: File) => {
+      const percorso = await caricaScontrino(supabase, famigliaId, file);
+      if (!percorso) {
+        avvisa("Lo scontrino non si è caricato: riprova.");
+        return;
+      }
+      if (s.scontrino_path) await supabase.storage.from("scontrini").remove([s.scontrino_path]);
+      setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, { ...s, scontrino_path: percorso }) }));
+      await supabase.from("spese").update({ scontrino_path: percorso }).eq("id", s.id);
+      avvisa("Scontrino allegato");
+    },
+    [avvisa, famigliaId, setDati, supabase],
+  );
+
   const modificaSpesa = useCallback(
-    async (s: Spesa, modifiche: Partial<Pick<Spesa, "importo" | "data" | "note">>) => {
+    async (s: Spesa, modifiche: Partial<Pick<Spesa, "importo" | "data" | "note" | "negozio">>) => {
       setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, { ...s, ...modifiche }) }));
       await supabase.from("spese").update(modifiche).eq("id", s.id);
     },
@@ -287,11 +350,12 @@ function useAzioni(params: {
     async (s: Spesa) => {
       setDati((d) => ({ ...d, spese: d.spese.filter((x) => x.id !== s.id) }));
       await supabase.from("spese").delete().eq("id", s.id);
+      if (s.scontrino_path) await supabase.storage.from("scontrini").remove([s.scontrino_path]);
     },
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa, modificaSpesa, eliminaSpesa };
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, creaLista, modificaProdotto, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({
@@ -434,7 +498,7 @@ export function AppSpesa({
               ? "Quello che avete in frigo, nel freezer e in dispensa."
               : vista === "abituali"
                 ? "I prodotti che comprate. Un tocco e tornano nella lista."
-                : "Ogni carrello chiuso finisce qui, nel giorno in cui l'avete pagato."}
+                : "Carrelli chiusi e spese aggiunte a mano o da uno scontrino, giorno per giorno."}
           </p>
         </header>
       )}
@@ -446,7 +510,7 @@ export function AppSpesa({
           ) : null}
           {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
           {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
-          {vista === "spese" ? <VistaSpese dati={dati} membri={membri} userId={userId} azioni={azioni} /> : null}
+          {vista === "spese" ? <VistaSpese dati={dati} liste={liste} membri={membri} userId={userId} azioni={azioni} /> : null}
       </motion.div>
 
       {/* Avvisi brevi */}
