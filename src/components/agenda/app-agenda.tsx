@@ -206,9 +206,8 @@ export function AppAgenda({
 
   return (
     <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-end gap-4 lg:justify-between">
         <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
-        <p className="text-[0.8125rem] text-tenue lg:hidden">Due tocchi su un giorno per aggiungere</p>
         <button
           onClick={() => setMaschera(giorno ?? oggi)}
           aria-label="Nuovo impegno"
