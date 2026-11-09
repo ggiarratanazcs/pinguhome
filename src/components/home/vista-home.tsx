@@ -51,7 +51,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
   const listaPrincipale = dati.liste[0];
 
   return (
-    <main className="mx-auto w-full max-w-[1120px] px-4 pt-3 md:px-12 md:pt-10">
+    <main className="mx-auto w-full max-w-[1120px] px-4 pt-1 md:px-12 lg:pt-10">
       {/* Testata: il dorso del pinguino entra nella pagina */}
       <section className="relative overflow-hidden rounded-[32px] bg-dorso px-5 pb-6 pt-6 text-su-dorso md:px-10 md:pb-9 md:pt-9">
         <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-dorso-2 opacity-70" />
@@ -69,7 +69,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 14, delay: 0.15 }}
-            className="relative -mr-1 -mt-2 w-20 shrink-0 md:-mt-3 md:mr-0 md:w-32"
+            className="relative -mt-3 hidden w-32 shrink-0 lg:block"
           >
             <span aria-hidden className="absolute inset-x-[-8%] bottom-[-6%] top-[44%] rounded-[50%] bg-lastra" />
             <Mascotte className="relative w-full" />

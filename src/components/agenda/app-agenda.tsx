@@ -175,11 +175,8 @@ export function AppAgenda({
   const vuota = impegni.length === 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pt-4 md:px-12 md:pt-10">
-      <header>
-        <h1 className="titolo titolo-pagina">agenda</h1>
-        <p className="mt-2 max-w-xl text-[0.9375rem] text-tenue">Impegni, scadenze e cose da fare in casa, per te, per {membri.find((m) => m.id !== userId)?.nome.split(" ")[0] ?? "l'altra persona"} o per entrambi.</p>
-      </header>
+    <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
+      <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
 
       <AggiuntaVeloce oggi={oggi} giornoScelto={giorno} membri={membri} userId={userId} onCrea={crea} />
 
@@ -369,7 +366,7 @@ function AggiuntaVeloce({
   const scelte = [{ id: null as string | null, nome: "Entrambi" }, ...membri.map((m) => ({ id: m.id as string | null, nome: m.id === userId ? "Io" : m.nome.split(" ")[0] }))];
 
   return (
-    <form onSubmit={invia} className="mt-6">
+    <form onSubmit={invia} className="lg:mt-6">
       <div className={cn("flex items-center gap-3 border-b-2 pb-1 transition-colors", fuoco ? "border-becco" : "border-linea-forte")}>
         <input
           ref={campo}

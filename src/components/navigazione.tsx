@@ -112,15 +112,34 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
 }
 
 /** Su mobile: mascotte in alto a sinistra e un dock blu-piuma in basso. */
+const TITOLI_MOBILE: [string, string][] = [
+  ["/spesa", "spesa"],
+  ["/agenda", "agenda"],
+  ["/impostazioni", "impostazioni"],
+];
+
+/**
+ * Su telefono: barra in alto nel colore del dorso con il titolo della sezione
+ * e la mascotte a destra. Sotto, il foglio bianco riparte con gli angoli tondi.
+ */
 export function TestataMobile({ casa }: { casa: string }) {
+  const pathname = usePathname();
+  const titolo = TITOLI_MOBILE.find(([p]) => pathname.startsWith(p))?.[1] ?? "pinguhome";
   return (
-    <header className="pt-sicuro flex items-center gap-2.5 px-5 pt-3 lg:hidden">
-      <Mascotte className="w-9" />
-      <div className="min-w-0">
-        <p className="titolo text-[0.9375rem]">pinguhome</p>
-        <p className="truncate text-xs text-tenue">{casa}</p>
+    <div className="sticky top-0 z-30 lg:hidden">
+      <header className="pt-sicuro bg-dorso text-su-dorso">
+        <div className="flex h-14 items-center justify-between gap-3 px-5">
+          <p className="titolo truncate text-[1.375rem]">{titolo}</p>
+          <Link href="/" aria-label={`${casa}: torna alla Home`} className="anello-focus relative grid size-11 shrink-0 place-items-center">
+            <span aria-hidden className="absolute inset-x-0 bottom-0 top-[40%] rounded-[50%] bg-lastra" />
+            <Mascotte className="relative w-10" />
+          </Link>
+        </div>
+      </header>
+      <div aria-hidden className="h-4 bg-dorso">
+        <div className="h-4 rounded-t-[22px] bg-superficie" />
       </div>
-    </header>
+    </div>
   );
 }
 

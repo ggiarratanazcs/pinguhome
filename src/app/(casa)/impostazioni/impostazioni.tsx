@@ -109,8 +109,8 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
   }
 
   return (
-    <main className="mx-auto w-full max-w-[920px] px-5 pt-8 md:px-12 md:pt-14">
-      <div className="flex items-end justify-between gap-4">
+    <main className="mx-auto w-full max-w-[920px] px-5 pt-0 md:px-12 lg:pt-14">
+      <div className="hidden items-end justify-between gap-4 lg:flex">
         <h1 className="titolo titolo-pagina">impostazioni</h1>
         <Mascotte className="-mb-1 hidden w-16 shrink-0 md:block" />
       </div>
@@ -260,7 +260,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
 
 function Sezione({ titolo, descrizione, children }: { titolo: string; descrizione?: string; children: ReactNode }) {
   return (
-    <section className="mt-10 grid gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
+    <section className="mt-10 grid gap-5 first-of-type:mt-2 lg:first-of-type:mt-10 md:grid-cols-[200px_minmax(0,1fr)]">
       <div>
         <h2 className="titolo text-[1.125rem]">{titolo}</h2>
         {descrizione ? <p className="mt-2 text-[0.875rem] text-tenue">{descrizione}</p> : null}

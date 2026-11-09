@@ -468,7 +468,7 @@ export function AppSpesa({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pt-4 md:px-12 md:pt-10">
+    <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
       {/* Sezioni del modulo, come parole */}
       <nav className="senza-barra -mx-5 flex items-center gap-5 overflow-x-auto whitespace-nowrap px-5 text-[0.9375rem] md:mx-0 md:gap-6 md:px-0">
         {schede.map((s) => {
