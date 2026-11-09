@@ -152,10 +152,12 @@
 
 html {
   background: var(--sfondo);
+  overflow-x: clip;
   -webkit-tap-highlight-color: transparent;
 }
 
 body {
+  overflow-x: clip;
   color: var(--inchiostro);
   background: var(--sfondo);
   font-family: var(--font-sans);

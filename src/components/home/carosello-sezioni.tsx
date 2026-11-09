@@ -47,12 +47,10 @@ export function CaroselloSezioni({ porte }: { porte: Porta[] }) {
   }
 
   return (
-    <section aria-roledescription="carosello" aria-label="Sezioni" className="md:hidden">
+    <section aria-roledescription="carosello" aria-label="Sezioni" className="-mx-4 overflow-hidden pb-2 md:hidden">
+      {/* Il gesto laterale cambia carta ma la pagina resta ferma: niente trascinamento del contenitore */}
       <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.18}
-        onDragEnd={fineTrascinamento}
+        onPanEnd={fineTrascinamento}
         className="relative mx-auto mt-8 h-[220px] w-full touch-pan-y select-none"
         style={{ perspective: 1100 }}
       >
