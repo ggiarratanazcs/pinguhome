@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
 import { CalendarCheck, House, LogOut, Settings2, ShoppingBasket, Wallet } from "lucide-react";
-import { Marchio } from "@/components/pinguino";
+import { Pinguino } from "@/components/pinguino";
 import { Avatar } from "@/components/ui";
+import { alternaBarra } from "@/lib/temi";
 import { cn } from "@/lib/utils";
 import type { MembroCasa } from "@/lib/sessione";
 
@@ -21,38 +21,55 @@ function corrente(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+/**
+ * Barra laterale blu-piuma (il dorso del pinguino). Cliccando la mascotte
+ * si richiude in una colonna stretta con le sole icone, e viceversa.
+ */
 export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCasa[] }) {
   const pathname = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[264px] shrink-0 flex-col border-r border-linea px-4 py-6 lg:flex">
-      <Link href="/" className="anello-focus rounded-xl px-2">
-        <Marchio />
-      </Link>
-
-      <div className="mt-8 rounded-[16px] border border-linea bg-superficie-2 px-3 py-3">
-        <p className="sovratitolo">Casa</p>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <span className="truncate font-semibold">{casa}</span>
-          <span className="flex -space-x-2">
-            {membri.map((m) => (
-              <Avatar key={m.id} nome={m.nome} colore={m.colore} className="size-7" />
-            ))}
-          </span>
+    <aside className="barra-laterale sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden bg-dorso text-su-dorso lg:flex">
+      {/* Mascotte sulla sua lastra di ghiaccio: apre e chiude la barra */}
+      <div className="relative px-4 pt-6">
+        <button
+          onClick={alternaBarra}
+          aria-label="Apri o chiudi la barra laterale"
+          title="Apri o chiudi la barra"
+          className="anello-focus group relative mx-auto block rounded-[28px]"
+        >
+          <span aria-hidden className="absolute inset-x-[-6px] bottom-[-6px] top-[38%] rounded-[50%] bg-lastra opacity-95" />
+          <Pinguino className="mascotte-barra relative" alt="PinguHome" />
+        </button>
+        <div className="solo-aperta mt-5 text-center">
+          <p className="titolo text-[1.0625rem] text-su-dorso">pinguhome</p>
+          <p className="mt-1.5 truncate text-[0.8125rem] text-su-dorso-tenue">{casa}</p>
         </div>
       </div>
 
-      <nav className="mt-6 flex flex-col gap-1">
+      <nav className="mt-8 flex flex-col gap-0.5 px-3">
         {VOCI.map((v) => {
           const attiva = corrente(pathname, v.href);
           const Icona = v.icona;
+          const contenuto = (
+            <>
+              <span
+                className={cn(
+                  "grid size-10 shrink-0 place-items-center rounded-full transition-colors",
+                  attiva ? "bg-becco text-su-becco" : "text-su-dorso-tenue group-hover:text-su-dorso",
+                )}
+              >
+                <Icona className="size-[19px]" strokeWidth={attiva ? 2.2 : 1.7} />
+              </span>
+              <span className="solo-aperta flex flex-1 items-center justify-between gap-2">
+                {v.nome}
+                {!v.attiva ? <span className="text-[0.75rem] font-normal text-su-dorso-tenue/70">presto</span> : null}
+              </span>
+            </>
+          );
           if (!v.attiva) {
             return (
-              <span key={v.href} className="flex h-11 items-center gap-3 rounded-[12px] px-3 text-[0.9375rem] text-tenue/70">
-                <Icona className="size-[18px]" strokeWidth={1.8} />
-                {v.nome}
-                <span className="ml-auto rounded-md bg-superficie-3 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider">
-                  Presto
-                </span>
+              <span key={v.href} title={`${v.nome} · presto`} className="flex h-12 items-center gap-3 px-3 text-[0.9375rem] text-su-dorso-tenue/60">
+                {contenuto}
               </span>
             );
           }
@@ -60,31 +77,50 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
             <Link
               key={v.href}
               href={v.href}
+              title={v.nome}
               className={cn(
-                "anello-focus relative flex h-11 items-center gap-3 rounded-[12px] px-3 text-[0.9375rem] font-medium transition-colors",
-                attiva ? "text-inchiostro" : "text-inchiostro-2 hover:bg-superficie-3",
+                "anello-focus group flex h-12 items-center gap-3 rounded-full px-3 text-[0.9375rem] transition-colors",
+                attiva ? "font-semibold text-su-dorso" : "text-su-dorso-tenue hover:bg-dorso-2 hover:text-su-dorso",
               )}
             >
-              {attiva ? (
-                <motion.span
-                  layoutId="voce-attiva"
-                  className="absolute inset-0 rounded-[12px] bg-superficie shadow-[0_6px_18px_-10px_rgba(var(--ombra),0.35)] ring-1 ring-linea"
-                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                />
-              ) : null}
-              <Icona className={cn("relative size-[18px]", attiva && "text-accento")} strokeWidth={attiva ? 2.2 : 1.8} />
-              <span className="relative">{v.nome}</span>
+              {contenuto}
             </Link>
           );
         })}
       </nav>
 
-      <form action="/auth/esci" method="post" className="mt-auto">
-        <button className="anello-focus flex h-10 w-full items-center gap-3 rounded-[12px] px-3 text-sm text-tenue hover:bg-superficie-3">
-          <LogOut className="size-4" /> Esci
-        </button>
-      </form>
+      <div className="mt-auto flex flex-col gap-3 px-4 pb-6">
+        <div className="flex items-center gap-2 px-1">
+          <span className="flex -space-x-2">
+            {membri.map((m) => (
+              <Avatar key={m.id} nome={m.nome} colore={m.colore} className="size-8 ring-2 ring-su-dorso/35" />
+            ))}
+          </span>
+          <span className="solo-aperta text-[0.8125rem] text-su-dorso-tenue">
+            {membri.map((m) => m.nome.split(" ")[0]).join(" e ")}
+          </span>
+        </div>
+        <form action="/auth/esci" method="post">
+          <button title="Esci" className="anello-focus flex h-10 w-full items-center gap-3 rounded-full px-3 text-[0.8125rem] text-su-dorso-tenue hover:bg-dorso-2 hover:text-su-dorso">
+            <LogOut className="ml-2.5 size-4 shrink-0" />
+            <span className="solo-aperta">Esci</span>
+          </button>
+        </form>
+      </div>
     </aside>
+  );
+}
+
+/** Su mobile: mascotte in alto a sinistra e un dock blu-piuma in basso. */
+export function TestataMobile({ casa }: { casa: string }) {
+  return (
+    <header className="pt-sicuro flex items-center gap-3 px-5 pt-4 lg:hidden">
+      <Pinguino className="w-11" alt="PinguHome" />
+      <div className="min-w-0">
+        <p className="titolo text-[1rem]">pinguhome</p>
+        <p className="truncate text-xs text-tenue">{casa}</p>
+      </div>
+    </header>
   );
 }
 
@@ -92,22 +128,23 @@ export function BarraInferiore() {
   const pathname = usePathname();
   const voci = VOCI.filter((v) => v.attiva);
   return (
-    <nav className="vetro pb-sicuro fixed inset-x-0 bottom-0 z-40 border-t border-linea lg:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-3">
+    <nav className="pb-sicuro fixed inset-x-0 bottom-3 z-40 mx-auto w-fit lg:hidden">
+      <div className="flex items-center gap-1 rounded-full bg-dorso p-1.5 shadow-[0_18px_40px_-14px_rgba(var(--ombra),0.6)]">
         {voci.map((v) => {
           const attiva = corrente(pathname, v.href);
           const Icona = v.icona;
           return (
-            <Link key={v.href} href={v.href} className="relative flex flex-col items-center gap-1 py-2.5 text-[0.6875rem] font-medium">
-              {attiva ? (
-                <motion.span
-                  layoutId="voce-attiva-mobile"
-                  className="absolute top-1.5 h-8 w-14 rounded-full bg-accento-tenue"
-                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                />
-              ) : null}
-              <Icona className={cn("relative mt-1 size-[22px]", attiva ? "text-accento" : "text-tenue")} strokeWidth={attiva ? 2.2 : 1.8} />
-              <span className={cn("relative", attiva ? "text-inchiostro" : "text-tenue")}>{v.nome}</span>
+            <Link
+              key={v.href}
+              href={v.href}
+              aria-label={v.nome}
+              className={cn(
+                "flex h-12 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-all",
+                attiva ? "bg-becco text-su-becco" : "text-su-dorso-tenue",
+              )}
+            >
+              <Icona className="size-5" strokeWidth={attiva ? 2.2 : 1.8} />
+              {attiva ? v.nome : null}
             </Link>
           );
         })}

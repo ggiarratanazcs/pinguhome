@@ -41,78 +41,88 @@ export function VistaAbituali({
   async function aggiungi(p: Prodotto) {
     if (!lista) return;
     await azioni.aggiungi(p.nome, { unita: p.unita, quantita: 1 });
-    avvisa(`${p.nome} → ${lista.nome}`);
+    avvisa(`${p.nome} aggiunto a ${lista.nome}`);
   }
 
   return (
-    <div className="mt-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <label className="carta flex h-12 flex-1 items-center gap-3 px-4">
-          <Search className="size-4 text-tenue" />
-          <input value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca tra i prodotti della casa" className="min-w-0 flex-1 bg-transparent outline-none" />
+    <div className="mt-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-end">
+        <label className="flex flex-1 items-center gap-3 border-b-2 border-linea-forte pb-1 focus-within:border-becco">
+          <Search className="size-5 text-tenue" />
+          <input
+            value={cerca}
+            onChange={(e) => setCerca(e.target.value)}
+            placeholder="Cerca un prodotto"
+            className="h-12 min-w-0 flex-1 bg-transparent text-[1.125rem] outline-none placeholder:text-tenue/70"
+          />
         </label>
         <button
           onClick={() => setSoloPreferiti((s) => !s)}
+          aria-pressed={soloPreferiti}
           className={cn(
-            "anello-focus flex h-12 items-center gap-2 rounded-[16px] border px-4 text-sm font-medium transition",
-            soloPreferiti ? "border-transparent bg-becco-tenue text-[color-mix(in_oklab,var(--becco),black_35%)]" : "border-linea bg-superficie text-inchiostro-2",
+            "anello-focus flex h-11 items-center gap-2 rounded-full px-5 text-[0.9375rem] font-semibold transition",
+            soloPreferiti ? "bg-becco text-su-becco" : "text-inchiostro-2 ring-[1.5px] ring-linea-forte hover:ring-inchiostro",
           )}
         >
-          <Star className="size-4" fill={soloPreferiti ? "currentColor" : "none"} /> Solo abituali
+          <Star className="size-4" fill={soloPreferiti ? "currentColor" : "none"} /> Solo i preferiti
         </button>
-        {totaleAcquisti > 0 ? (
-          <div className="flex h-12 items-center gap-2 rounded-[16px] bg-eco-tenue px-4 text-sm font-semibold text-eco">
-            <Leaf className="size-4" /> {quotaGreen}% acquisti green
-          </div>
-        ) : null}
       </div>
 
+      {totaleAcquisti > 0 ? (
+        <p className="mt-5 flex items-center gap-2 text-[0.9375rem] text-inchiostro-2">
+          <Leaf className="size-4 text-eco" />
+          <span>
+            <span className="font-semibold text-eco">{quotaGreen}%</span> di quello che avete comprato è green.
+          </span>
+        </p>
+      ) : null}
+
       {prodotti.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-tenue">
+        <p className="mt-10 max-w-md text-tenue">
           {dati.prodotti.length === 0
-            ? "I prodotti che aggiungi alla lista finiscono qui: la prossima volta basta un tocco."
-            : "Nessun prodotto trovato."}
+            ? "Ogni cosa che aggiungete alla lista finisce qui: la prossima volta basta un tocco."
+            : "Nessun prodotto con questo nome."}
         </p>
       ) : (
-        <ul className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="mt-6 grid grid-cols-1 gap-x-10 sm:grid-cols-2">
           {prodotti.map((p) => {
             const reparto = dati.reparti.find((r) => r.id === p.reparto_id);
             const presente = inLista.has(p.nome.toLowerCase());
             return (
-              <motion.li layout key={p.id} className="carta flex items-center gap-3 p-3 pl-4">
-                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-superficie-3 text-accento">
-                  <IconaReparto icona={reparto?.icona} className="size-[18px]" />
-                </span>
+              <motion.li layout key={p.id} className="flex items-center gap-3 border-b border-linea py-3">
+                <IconaReparto icona={reparto?.icona} className="size-[18px] shrink-0 text-tenue" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{p.nome}</p>
-                  <p className="text-xs text-tenue">
-                    {p.volte_acquistato > 0 ? `Preso ${p.volte_acquistato} ${p.volte_acquistato === 1 ? "volta" : "volte"}` : reparto?.nome ?? "—"}
+                  <p className="truncate text-[1rem]">{p.nome}</p>
+                  <p className="text-[0.8125rem] text-tenue">
+                    {p.volte_acquistato > 0 ? `Preso ${p.volte_acquistato} ${p.volte_acquistato === 1 ? "volta" : "volte"}` : reparto?.nome ?? "Altro"}
                   </p>
                 </div>
                 <button
                   onClick={() => azioni.modificaProdotto(p, { eco: !p.eco })}
-                  aria-label="Green"
-                  className={cn("grid size-8 place-items-center rounded-lg transition", p.eco ? "text-eco" : "text-tenue/50 hover:text-tenue")}
+                  aria-label={p.eco ? "Togli green" : "Segna green"}
+                  aria-pressed={p.eco}
+                  className={cn("anello-focus grid size-9 place-items-center rounded-full transition", p.eco ? "text-eco" : "text-linea-forte hover:text-tenue")}
                 >
-                  <Leaf className="size-4" />
+                  <Leaf className="size-[18px]" />
                 </button>
                 <button
                   onClick={() => azioni.modificaProdotto(p, { abituale: !p.abituale })}
-                  aria-label="Abituale"
-                  className={cn("grid size-8 place-items-center rounded-lg transition", p.abituale ? "text-becco" : "text-tenue/50 hover:text-tenue")}
+                  aria-label={p.abituale ? "Togli dai preferiti" : "Metti nei preferiti"}
+                  aria-pressed={p.abituale}
+                  className={cn("anello-focus grid size-9 place-items-center rounded-full transition", p.abituale ? "text-becco" : "text-linea-forte hover:text-tenue")}
                 >
-                  <Star className="size-4" fill={p.abituale ? "currentColor" : "none"} />
+                  <Star className="size-[18px]" fill={p.abituale ? "currentColor" : "none"} />
                 </button>
                 <button
                   onClick={() => !presente && aggiungi(p)}
                   disabled={presente || !lista}
-                  aria-label={presente ? "Già in lista" : "Aggiungi alla lista"}
+                  aria-label={presente ? "Già in lista" : `Aggiungi ${p.nome} alla lista`}
                   className={cn(
-                    "anello-focus grid size-9 shrink-0 place-items-center rounded-[12px] transition",
-                    presente ? "bg-eco-tenue text-eco" : "bg-accento text-su-accento hover:bg-accento-hover active:scale-95",
+                    "anello-focus grid size-10 shrink-0 place-items-center rounded-full transition",
+                    presente ? "bg-superficie-3 text-tenue" : "bg-becco text-su-becco hover:bg-becco-hover active:scale-95",
                   )}
                 >
-                  {presente ? <Check className="size-4" strokeWidth={2.8} /> : <Plus className="size-4" strokeWidth={2.6} />}
+                  {presente ? <Check className="size-4" strokeWidth={2.6} /> : <Plus className="size-5" strokeWidth={2.4} />}
                 </button>
               </motion.li>
             );

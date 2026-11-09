@@ -2,8 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import { Check, KeyRound, LogOut, Share2 } from "lucide-react";
+import { Check, LogOut, Share2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Famiglia, Profilo } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -11,7 +10,7 @@ import { applicaTema, TEMI, temaValido, type IdTema } from "@/lib/temi";
 import { Avatar, Campo, Messaggio, Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
-const COLORI = ["#0d5f6b", "#e08a2e", "#2f8f62", "#7a5cc2", "#c4493a", "#3a7bd5", "#d14d8a", "#13242b"];
+const COLORI = ["#1d2340", "#ff9f1c", "#f2789b", "#23885a", "#3f6fd8", "#7a5cc2", "#d2394a", "#0f8b8d"];
 
 export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; famiglia: Famiglia; membri: MembroCasa[] }) {
   const router = useRouter();
@@ -31,7 +30,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
     e.preventDefault();
     const nome = String(new FormData(e.currentTarget).get("nome") ?? "").trim();
     await supabase.from("profili").update({ nome, colore }).eq("id", profilo.id);
-    setEsito("Profilo salvato");
+    setEsito("Profilo salvato.");
     router.refresh();
   }
 
@@ -40,7 +39,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
     const nome = String(new FormData(e.currentTarget).get("casa") ?? "").trim();
     if (!nome) return;
     await supabase.from("famiglie").update({ nome }).eq("id", famiglia.id);
-    setEsito("Casa aggiornata");
+    setEsito("Nome della casa salvato.");
     router.refresh();
   }
 
@@ -49,7 +48,7 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
     const form = e.currentTarget;
     const password = String(new FormData(form).get("password") ?? "");
     const { error } = await supabase.auth.updateUser({ password });
-    setEsito(error ? "Password non aggiornata: almeno 6 caratteri." : "Password aggiornata");
+    setEsito(error ? "Password non cambiata: servono almeno 6 caratteri." : "Password cambiata.");
     if (!error) form.reset();
   }
 
@@ -67,102 +66,102 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
   }
 
   return (
-    <main className="pt-sicuro mx-auto w-full max-w-[920px] px-5 pt-8 md:px-10 md:pt-12">
-      <p className="sovratitolo">Impostazioni</p>
-      <h1 className="titolo mt-2 text-[2.25rem] leading-none md:text-[3rem]">Tu e la casa</h1>
+    <main className="mx-auto w-full max-w-[920px] px-5 pt-8 md:px-12 md:pt-14">
+      <h1 className="titolo text-[clamp(2.25rem,9vw,4.25rem)]">impostazioni</h1>
 
       {esito ? <div className="mt-6"><Messaggio tipo="ok">{esito}</Messaggio></div> : null}
 
-      <Sezione titolo="Aspetto" descrizione="Il tema vale su tutti i tuoi dispositivi.">
-        <div className="grid gap-3 sm:grid-cols-3">
+      <Sezione titolo="aspetto" descrizione="Il tema vale su tutti i tuoi dispositivi.">
+        <div className="grid gap-4 sm:grid-cols-3">
           {TEMI.map((t) => {
             const attivo = tema === t.id;
+            const a = t.anteprima;
             return (
-              <button
-                key={t.id}
-                onClick={() => scegliTema(t.id)}
-                className={cn(
-                  "anello-focus relative overflow-hidden rounded-[18px] border p-3 text-left transition",
-                  attivo ? "border-accento ring-4 ring-accento-tenue" : "border-linea hover:border-linea-forte",
-                )}
-              >
-                <div className="relative h-24 overflow-hidden rounded-[12px]" style={{ background: t.anteprima[0] }}>
-                  <div className="absolute left-3 top-3 h-2.5 w-16 rounded-full" style={{ background: t.anteprima[3], opacity: 0.85 }} />
-                  <div className="absolute left-3 top-8 h-2 w-24 rounded-full" style={{ background: t.anteprima[3], opacity: 0.25 }} />
-                  <div className="absolute bottom-3 left-3 h-7 w-20 rounded-lg" style={{ background: t.anteprima[1] }} />
-                  <div className="absolute bottom-3 right-3 size-7 rounded-full" style={{ background: t.anteprima[2] }} />
+              <button key={t.id} onClick={() => scegliTema(t.id)} aria-pressed={attivo} className="anello-focus group text-left">
+                <div
+                  className={cn("relative flex h-28 overflow-hidden rounded-[22px] ring-offset-2 ring-offset-superficie transition", attivo ? "ring-[3px] ring-becco" : "ring-1 ring-linea group-hover:ring-linea-forte")}
+                  style={{ background: a.sfondo }}
+                >
+                  <div className="w-1/4" style={{ background: a.dorso }} />
+                  <div className="relative m-2 ml-0 flex-1 rounded-l-[14px] rounded-r-[8px] p-3" style={{ background: a.foglio }}>
+                    <div className="h-2.5 w-16 rounded-full" style={{ background: a.dorso, opacity: 0.85 }} />
+                    <div className="mt-2 h-1.5 w-24 rounded-full" style={{ background: a.dorso, opacity: 0.2 }} />
+                    <div className="mt-1.5 h-1.5 w-20 rounded-full" style={{ background: a.dorso, opacity: 0.2 }} />
+                    <div className="absolute bottom-3 right-3 size-6 rounded-full" style={{ background: a.becco }} />
+                  </div>
                 </div>
-                <p className="mt-3 font-semibold">{t.nome}</p>
-                <p className="text-xs text-tenue">{t.descrizione}</p>
-                {attivo ? (
-                  <motion.span layoutId="tema-scelto" className="absolute right-5 top-5 grid size-6 place-items-center rounded-full bg-accento text-su-accento">
-                    <Check className="size-3.5" strokeWidth={3} />
-                  </motion.span>
-                ) : null}
+                <p className="mt-3 flex items-center gap-2 font-semibold">
+                  {t.nome}
+                  {attivo ? <Check className="size-4 text-becco-scuro" strokeWidth={3} /> : null}
+                </p>
+                <p className="text-[0.8125rem] text-tenue">{t.descrizione}</p>
               </button>
             );
           })}
         </div>
       </Sezione>
 
-      <Sezione titolo="Il tuo profilo" descrizione="Il colore distingue le tue voci in lista.">
-        <form onSubmit={salvaProfilo} className="flex flex-col gap-4">
+      <Sezione titolo="tu" descrizione="Il tuo colore distingue le voci che aggiungi alla lista.">
+        <form onSubmit={salvaProfilo} className="flex flex-col gap-6">
           <Campo etichetta="Nome" id="nome" name="nome" defaultValue={profilo.nome} required />
           <div>
-            <p className="text-[0.8125rem] font-medium text-inchiostro-2">Colore</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <p className="text-[0.8125rem] text-tenue">Colore</p>
+            <div className="mt-3 flex flex-wrap gap-3">
               {COLORI.map((c) => (
                 <button
                   type="button"
                   key={c}
                   onClick={() => setColore(c)}
-                  aria-label={c}
-                  className={cn("size-9 rounded-full ring-offset-2 ring-offset-superficie transition", colore === c && "ring-2 ring-inchiostro")}
+                  aria-label={`Colore ${c}`}
+                  aria-pressed={colore === c}
+                  className={cn("size-9 rounded-full ring-offset-[3px] ring-offset-superficie transition", colore === c ? "ring-2 ring-inchiostro" : "hover:scale-110")}
                   style={{ background: c }}
                 />
               ))}
             </div>
           </div>
-          <Pulsante type="submit" className="self-start">Salva profilo</Pulsante>
+          <Pulsante type="submit" className="self-start">Salva il profilo</Pulsante>
         </form>
       </Sezione>
 
-      <Sezione titolo="Casa" descrizione="Chi entra con il codice vede e modifica le stesse liste.">
-        <form onSubmit={salvaCasa} className="flex items-end gap-2">
+      <Sezione titolo="casa" descrizione="Chi entra con il codice vede e modifica le stesse liste.">
+        <form onSubmit={salvaCasa} className="flex items-end gap-3">
           <div className="flex-1"><Campo etichetta="Nome della casa" id="casa" name="casa" defaultValue={famiglia.nome} /></div>
-          <Pulsante type="submit" variante="secondario" className="h-12">Salva</Pulsante>
+          <Pulsante type="submit" variante="secondario">Salva</Pulsante>
         </form>
 
-        <div className="mt-5 flex flex-col gap-4 rounded-[18px] bg-accento-tenue p-5 sm:flex-row sm:items-center">
-          <KeyRound className="size-6 text-accento" />
+        <div className="mt-8 flex flex-col gap-4 rounded-[28px] bg-dorso p-6 text-su-dorso sm:flex-row sm:items-center">
           <div className="flex-1">
-            <p className="text-sm text-inchiostro-2">Codice invito</p>
-            <p className="numeri titolo text-[1.75rem] tracking-[0.25em] text-accento">{famiglia.codice_invito}</p>
+            <p className="text-[0.875rem] text-su-dorso-tenue">Codice per entrare nella casa</p>
+            <p className="titolo-normale numeri mt-1 text-[2.25rem] tracking-[0.18em]">{famiglia.codice_invito}</p>
           </div>
-          <Pulsante onClick={condividi} className="h-10 text-sm">
+          <Pulsante onClick={condividi}>
             {copiato ? <Check className="size-4" /> : <Share2 className="size-4" />}
-            {copiato ? "Copiato" : "Condividi"}
+            {copiato ? "Codice copiato" : "Condividi il codice"}
           </Pulsante>
         </div>
 
-        <ul className="mt-5 flex flex-col divide-y divide-linea">
+        <ul className="mt-6">
           {membri.map((m) => (
-            <li key={m.id} className="flex items-center gap-3 py-3">
+            <li key={m.id} className="flex items-center gap-3 border-b border-linea py-3">
               <Avatar nome={m.nome} colore={m.colore} className="size-9" />
-              <span className="flex-1 font-medium">{m.nome}{m.id === profilo.id ? <span className="text-tenue"> · tu</span> : null}</span>
-              <span className="text-xs uppercase tracking-wider text-tenue">{m.ruolo}</span>
+              <span className="flex-1">
+                {m.nome}
+                {m.id === profilo.id ? <span className="text-tenue"> (tu)</span> : null}
+              </span>
+              <span className="text-[0.8125rem] text-tenue">{m.ruolo === "titolare" ? "ha creato la casa" : "membro"}</span>
             </li>
           ))}
         </ul>
       </Sezione>
 
-      <Sezione titolo="Sicurezza" descrizione={profilo.email}>
-        <form onSubmit={cambiaPassword} className="flex items-end gap-2">
+      <Sezione titolo="accesso" descrizione={profilo.email}>
+        <form onSubmit={cambiaPassword} className="flex items-end gap-3">
           <div className="flex-1"><Campo etichetta="Nuova password" id="password" name="password" type="password" minLength={6} autoComplete="new-password" required /></div>
-          <Pulsante type="submit" variante="secondario" className="h-12">Cambia</Pulsante>
+          <Pulsante type="submit" variante="secondario">Cambia</Pulsante>
         </form>
-        <form action="/auth/esci" method="post" className="mt-5">
-          <Pulsante variante="pericolo" className="h-10 text-sm"><LogOut className="size-4" /> Esci da PinguHome</Pulsante>
+        <form action="/auth/esci" method="post" className="mt-8">
+          <Pulsante variante="pericolo" className="px-0 hover:bg-transparent hover:underline"><LogOut className="size-4" /> Esci da PinguHome</Pulsante>
         </form>
       </Sezione>
     </main>
@@ -171,10 +170,10 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
 
 function Sezione({ titolo, descrizione, children }: { titolo: string; descrizione?: string; children: ReactNode }) {
   return (
-    <section className="mt-10 grid gap-5 border-t border-linea pt-8 md:grid-cols-[220px_minmax(0,1fr)]">
+    <section className="mt-14 grid gap-6 md:grid-cols-[200px_minmax(0,1fr)]">
       <div>
-        <h2 className="titolo text-lg">{titolo}</h2>
-        {descrizione ? <p className="mt-1 text-sm text-tenue">{descrizione}</p> : null}
+        <h2 className="titolo text-[1.5rem]">{titolo}</h2>
+        {descrizione ? <p className="mt-2 text-[0.875rem] text-tenue">{descrizione}</p> : null}
       </div>
       <div>{children}</div>
     </section>

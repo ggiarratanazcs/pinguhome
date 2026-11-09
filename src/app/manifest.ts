@@ -7,9 +7,9 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "La casa, la spesa e le cose di tutti i giorni, in due.",
     start_url: "/",
     display: "standalone",
-    background_color: "#eef4f5",
-    theme_color: "#0d5f6b",
+    background_color: "#e8f0f6",
+    theme_color: "#1d2340",
     lang: "it",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
+    icons: [{ src: "/icon.png", sizes: "512x512", type: "image/png" }],
   };
 }

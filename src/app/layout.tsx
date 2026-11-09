@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/onest";
-import "@fontsource-variable/bricolage-grotesque/opsz.css";
-import { SCRIPT_TEMA, TEMA_PREDEFINITO } from "@/lib/temi";
+import "@fontsource-variable/unbounded";
+import { SCRIPT_AVVIO, TEMA_PREDEFINITO } from "@/lib/temi";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef4f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a1418" },
+    { media: "(prefers-color-scheme: light)", color: "#e8f0f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0f20" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="it" data-theme={TEMA_PREDEFINITO} className="h-full antialiased" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_AVVIO }} />
       </head>
       <body className="min-h-full">{children}</body>
     </html>

@@ -13,7 +13,6 @@ import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 import { IconaReparto } from "./icona-reparto";
 
 export function VistaLista({
-  lista,
   voci,
   dati,
   membri,
@@ -52,30 +51,29 @@ export function VistaLista({
   const ecoQuota = voci.length ? Math.round((voci.filter((v) => v.eco).length / voci.length) * 100) : 0;
 
   return (
-    <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_260px]">
       <div className="min-w-0">
-        <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} colore={lista.colore} />
+        <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} />
 
         {daPrendere.length === 0 && prese.length === 0 ? <ListaVuota /> : null}
         {daPrendere.length === 0 && prese.length > 0 ? (
-          <div className="carta mt-6 flex items-center gap-4 p-5">
-            <Pinguino className="size-12" />
+          <div className="mt-10 flex items-center gap-5">
+            <Pinguino className="w-20" />
             <div>
-              <p className="font-semibold">Tutto nel carrello!</p>
-              <p className="text-sm text-tenue">Chiudi la spesa per mettere i prodotti in dispensa.</p>
+              <p className="titolo-normale text-xl">Tutto nel carrello</p>
+              <p className="mt-1 text-tenue">Chiudi la spesa qui sotto: quello che hai preso finisce in casa.</p>
             </div>
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-col gap-6">
+        <div className="mt-8 flex flex-col gap-9">
           {gruppi.map(({ reparto, voci: elenco }) => (
             <section key={reparto?.id ?? "altro"}>
-              <h2 className="mb-2 flex items-center gap-2 px-1 text-[0.8125rem] font-semibold text-inchiostro-2">
-                <IconaReparto icona={reparto?.icona} className="size-4 text-accento" />
+              <h2 className="flex items-center gap-2 text-[0.8125rem] text-tenue">
+                <IconaReparto icona={reparto?.icona} className="size-4" />
                 {reparto?.nome ?? "Altro"}
-                <span className="numeri font-normal text-tenue">{elenco.length}</span>
               </h2>
-              <ul className="carta divide-y divide-linea overflow-hidden">
+              <ul className="mt-1">
                 <AnimatePresence initial={false}>
                   {elenco.map((v) => (
                     <RigaVoce key={v.id} voce={v} dati={dati} membri={membri} userId={userId} azioni={azioni} />
@@ -87,16 +85,19 @@ export function VistaLista({
         </div>
 
         {prese.length > 0 ? (
-          <section className="mt-8">
+          <section className="mt-12 rounded-[28px] bg-superficie-2 p-5 md:p-6">
             <button
               onClick={() => setCarrelloAperto((a) => !a)}
-              className="anello-focus flex w-full items-center gap-2 rounded-xl px-1 py-2 text-[0.8125rem] font-semibold text-inchiostro-2"
+              className="anello-focus flex w-full items-center gap-3 text-left"
             >
-              <motion.span animate={{ rotate: carrelloAperto ? 0 : -90 }} className="inline-flex">
-                <ChevronDown className="size-4" />
+              <span className="titolo-normale numeri text-[1.75rem] text-becco-scuro">{prese.length}</span>
+              <span className="flex-1">
+                <span className="block font-semibold">nel carrello</span>
+                <span className="block text-[0.8125rem] text-tenue">{carrelloAperto ? "Nascondi" : "Mostra"} cosa avete già preso</span>
+              </span>
+              <motion.span animate={{ rotate: carrelloAperto ? 180 : 0 }} className="inline-flex text-tenue">
+                <ChevronDown className="size-5" />
               </motion.span>
-              Nel carrello
-              <span className="numeri font-normal text-tenue">{prese.length}</span>
             </button>
             <AnimatePresence initial={false}>
               {carrelloAperto ? (
@@ -104,7 +105,7 @@ export function VistaLista({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="carta mt-2 divide-y divide-linea overflow-hidden"
+                  className="mt-3 overflow-hidden"
                 >
                   {prese.map((v) => (
                     <RigaVoce key={v.id} voce={v} dati={dati} membri={membri} userId={userId} azioni={azioni} />
@@ -112,44 +113,34 @@ export function VistaLista({
                 </motion.ul>
               ) : null}
             </AnimatePresence>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Pulsante onClick={() => azioni.chiudiSpesa(true)} className="h-10 text-sm">
-                <PackageCheck className="size-4" /> Chiudi e metti in dispensa
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Pulsante onClick={() => azioni.chiudiSpesa(true)}>
+                <PackageCheck className="size-[18px]" /> Chiudi la spesa e metti in casa
               </Pulsante>
-              <Pulsante variante="fantasma" onClick={() => azioni.chiudiSpesa(false)} className="h-10 text-sm">
-                Svuota soltanto
+              <Pulsante variante="fantasma" onClick={() => azioni.chiudiSpesa(false)}>
+                Svuota il carrello
               </Pulsante>
             </div>
           </section>
         ) : null}
       </div>
 
-      {/* Colonna laterale: riepilogo e impatto */}
-      <aside className="hidden flex-col gap-4 lg:flex">
-        <div className="carta p-5">
-          <p className="sovratitolo">Riepilogo</p>
-          <dl className="mt-4 grid grid-cols-2 gap-4">
-            <Dato etichetta="Da prendere" valore={daPrendere.length} />
-            <Dato etichetta="Urgenti" valore={daPrendere.filter((v) => v.urgente).length} accento={daPrendere.some((v) => v.urgente) ? "becco" : undefined} />
-            <Dato etichetta="Reparti" valore={gruppi.length} />
-            <Dato etichetta="Nel carrello" valore={prese.length} />
+      {/* Colonna laterale: numeri della lista, come fatti scritti */}
+      <aside className="hidden lg:block">
+        <div className="sticky top-10 flex flex-col gap-8">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
+            <Dato etichetta="da prendere" valore={daPrendere.length} />
+            <Dato etichetta="urgenti" valore={daPrendere.filter((v) => v.urgente).length} accento={daPrendere.some((v) => v.urgente)} />
+            <Dato etichetta="reparti da girare" valore={gruppi.length} />
+            <Dato etichetta="già presi" valore={prese.length} />
           </dl>
-        </div>
-        <div className="carta relative overflow-hidden p-5">
-          <p className="sovratitolo">Scelte green</p>
-          <p className="titolo numeri mt-3 text-[2.5rem] leading-none text-eco">{ecoQuota}%</p>
-          <p className="mt-2 text-sm text-tenue">
-            Prodotti sfusi, locali o senza plastica in questa lista. Tocca la foglia su una voce per segnarla.
-          </p>
-          <Leaf className="absolute -bottom-4 -right-3 size-24 rotate-12 text-eco opacity-10" />
-        </div>
-        <div className="rounded-[20px] border border-dashed border-linea-forte p-5 text-sm text-tenue">
-          <p className="font-semibold text-inchiostro-2">Scrivi come parli</p>
-          <p className="mt-1.5">
-            <kbd className="rounded bg-superficie-3 px-1.5 py-0.5 text-xs">2 kg mele</kbd>,{" "}
-            <kbd className="rounded bg-superficie-3 px-1.5 py-0.5 text-xs">latte x3</kbd>,{" "}
-            <kbd className="rounded bg-superficie-3 px-1.5 py-0.5 text-xs">pane</kbd>: quantità e reparto li capisco io.
-          </p>
+          <div className="relative overflow-hidden rounded-[28px] bg-eco-tenue p-5">
+            <p className="titolo-normale numeri text-[2.5rem] leading-none text-eco">{ecoQuota}%</p>
+            <p className="mt-2 text-[0.875rem] text-inchiostro-2">
+              della lista è green: sfuso, locale o senza plastica. Lo segni con la foglia nei dettagli di una voce.
+            </p>
+            <Leaf className="absolute -right-3 -top-3 size-20 rotate-12 text-eco opacity-15" />
+          </div>
         </div>
       </aside>
     </div>
@@ -160,26 +151,29 @@ function ordina(elenco: VoceLista[]) {
   return elenco.slice().sort((a, b) => Number(b.urgente) - Number(a.urgente) || a.creata_il.localeCompare(b.creata_il));
 }
 
-function Dato({ etichetta, valore, accento }: { etichetta: string; valore: number; accento?: "becco" }) {
+function Dato({ etichetta, valore, accento }: { etichetta: string; valore: number; accento?: boolean }) {
   return (
     <div>
-      <dt className="text-xs text-tenue">{etichetta}</dt>
-      <dd className={cn("titolo numeri mt-1 text-2xl", accento === "becco" && "text-[color-mix(in_oklab,var(--becco),black_25%)]")}>{valore}</dd>
+      <dd className={cn("titolo-normale numeri text-[2rem] leading-none", accento ? "text-becco-scuro" : "text-inchiostro")}>{valore}</dd>
+      <dt className="mt-1.5 text-[0.8125rem] text-tenue">{etichetta}</dt>
     </div>
   );
 }
 
 function ListaVuota() {
   return (
-    <div className="mt-10 flex flex-col items-center text-center">
-      <div className="relative">
-        <div className="absolute inset-x-0 bottom-0 mx-auto h-3 w-24 rounded-full bg-inchiostro/10 blur-sm" />
-        <motion.div animate={{ rotate: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}>
-          <Pinguino className="size-24" />
-        </motion.div>
+    <div className="mt-14 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+      <motion.div
+        initial={{ y: 12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 140, damping: 14 }}
+      >
+        <Pinguino className="w-28" />
+      </motion.div>
+      <div>
+        <p className="titolo-normale text-2xl">Niente da comprare.</p>
+        <p className="mt-2 max-w-sm text-tenue">Scrivi qui sopra cosa manca, oppure ripesca qualcosa dagli abituali.</p>
       </div>
-      <p className="titolo mt-5 text-xl">La lista è vuota</p>
-      <p className="mt-1 max-w-xs text-sm text-tenue">Aggiungi qualcosa qui sopra, oppure pesca dagli Abituali.</p>
     </div>
   );
 }
@@ -188,12 +182,10 @@ function AggiuntaRapida({
   dati,
   voci,
   onAggiungi,
-  colore,
 }: {
   dati: DatiSpesa;
   voci: VoceLista[];
   onAggiungi: (testo: string) => void;
-  colore: string;
 }) {
   const [testo, setTesto] = useState("");
   const [indice, setIndice] = useState(-1);
@@ -241,16 +233,7 @@ function AggiuntaRapida({
 
   return (
     <div className="relative">
-      <div
-        className={cn(
-          "carta flex items-center gap-3 px-4 transition-shadow",
-          fuoco && "ring-4 ring-accento-tenue",
-          mostraTendina && "rounded-b-none",
-        )}
-      >
-        <span className="hidden size-7 shrink-0 place-items-center rounded-full text-white sm:grid" style={{ background: colore }}>
-          <Plus className="size-4" strokeWidth={2.6} />
-        </span>
+      <div className={cn("flex items-center gap-3 border-b-2 pb-1 transition-colors", fuoco ? "border-becco" : "border-linea-forte")}>
         <input
           ref={campo}
           value={testo}
@@ -261,32 +244,28 @@ function AggiuntaRapida({
           onKeyDown={tasti}
           onFocus={() => setFuoco(true)}
           onBlur={() => setTimeout(() => setFuoco(false), 120)}
-          placeholder="Aggiungi alla lista… es. 2 kg mele"
+          placeholder="Cosa manca?"
           enterKeyHint="done"
           autoComplete="off"
-          className="h-14 min-w-0 flex-1 bg-transparent text-[1rem] outline-none placeholder:text-tenue/80"
+          className="h-14 min-w-0 flex-1 bg-transparent text-[1.375rem] font-medium outline-none placeholder:font-normal placeholder:text-tenue/70"
         />
         {testo && (interpretata.quantita !== 1 || interpretata.unita) ? (
-          <span className="numeri hidden shrink-0 rounded-lg bg-accento-tenue px-2 py-1 text-xs font-semibold text-accento sm:inline">
+          <span className="numeri shrink-0 rounded-full bg-guancia-tenue px-3 py-1 text-[0.8125rem] font-semibold text-inchiostro">
             {formattaQuantita(interpretata.quantita)} {interpretata.unita ?? "pz"}
           </span>
         ) : null}
         <button
           onClick={() => conferma()}
           disabled={!testo.trim()}
-          className="anello-focus hidden h-8 shrink-0 items-center gap-1.5 rounded-lg bg-superficie-3 px-2.5 text-xs font-medium text-inchiostro-2 transition disabled:opacity-40 sm:flex"
+          aria-label="Aggiungi alla lista"
+          className="anello-focus grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:bg-superficie-3 disabled:text-tenue"
         >
-          <CornerDownLeft className="size-3.5" /> Invio
-        </button>
-        <button
-          onClick={() => conferma()}
-          disabled={!testo.trim()}
-          aria-label="Aggiungi"
-          className="anello-focus grid size-9 shrink-0 place-items-center rounded-xl bg-accento text-su-accento disabled:opacity-40 sm:hidden"
-        >
-          <Plus className="size-5" />
+          <Plus className="size-6" strokeWidth={2.4} />
         </button>
       </div>
+      <p className="mt-2 text-[0.8125rem] text-tenue">
+        Scrivi come parli: “2 kg mele”, “latte x3”. Quantità e reparto li sistemo io.
+      </p>
       <AnimatePresence>
         {mostraTendina ? (
           <motion.ul
@@ -294,7 +273,7 @@ function AggiuntaRapida({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute inset-x-0 top-full z-30 overflow-hidden rounded-b-[20px] border border-t-0 border-linea bg-superficie shadow-xl"
+            className="absolute inset-x-0 top-[66px] z-30 overflow-hidden rounded-[22px] bg-superficie py-2 shadow-[0_24px_60px_-20px_rgba(var(--ombra),0.45)] ring-1 ring-linea"
           >
             {suggerimenti.map((p, i) => {
               const reparto = dati.reparti.find((r) => r.id === p.reparto_id);
@@ -304,12 +283,13 @@ function AggiuntaRapida({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => conferma(p.nome)}
                     onMouseEnter={() => setIndice(i)}
-                    className={cn("flex w-full items-center gap-3 px-4 py-2.5 text-left text-[0.9375rem]", i === indice && "bg-superficie-2")}
+                    className={cn("flex w-full items-center gap-3 px-5 py-2.5 text-left", i === indice && "bg-superficie-2")}
                   >
                     <IconaReparto icona={reparto?.icona} className="size-4 text-tenue" />
                     <span className="flex-1">{p.nome}</span>
                     {p.eco ? <Leaf className="size-3.5 text-eco" /> : null}
-                    {p.volte_acquistato > 0 ? <span className="numeri text-xs text-tenue">preso {p.volte_acquistato}×</span> : null}
+                    {p.volte_acquistato > 0 ? <span className="numeri text-xs text-tenue">preso {p.volte_acquistato} volte</span> : null}
+                    {i === indice ? <CornerDownLeft className="size-3.5 text-tenue" /> : null}
                   </button>
                 </li>
               );
@@ -350,11 +330,11 @@ function RigaVoce({
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
-      className="relative overflow-hidden"
+      className="relative overflow-hidden border-b border-linea last:border-b-0"
     >
       {/* Sfondo rivelato dallo scorrimento laterale (mobile) */}
       <div className="absolute inset-0 flex items-center justify-between px-5 text-sm font-semibold">
-        <span className="flex items-center gap-2 text-eco"><Check className="size-4" /> Presa</span>
+        <span className="flex items-center gap-2 text-becco-scuro"><Check className="size-4" /> Nel carrello</span>
         <span className="flex items-center gap-2 text-pericolo">Elimina <Trash2 className="size-4" /></span>
       </div>
       <motion.div
@@ -365,13 +345,13 @@ function RigaVoce({
         onDragEnd={trascina}
         className="relative bg-superficie"
       >
-        <div className="group flex min-h-[60px] items-center gap-3 px-4 py-2.5">
+        <div className="group flex min-h-[58px] items-center gap-4 py-2.5">
           <button
             onClick={() => azioni.segnaPresa(voce)}
             aria-label={voce.presa ? "Rimetti in lista" : "Segna come presa"}
             className={cn(
-              "anello-focus grid size-6 shrink-0 place-items-center rounded-full border-2 transition-colors",
-              voce.presa ? "border-eco bg-eco text-white" : "border-linea-forte hover:border-accento",
+              "anello-focus grid size-[26px] shrink-0 place-items-center rounded-full border-2 transition-colors",
+              voce.presa ? "border-becco bg-becco text-su-becco" : "border-linea-forte hover:border-becco",
             )}
           >
             <AnimatePresence>
@@ -385,10 +365,10 @@ function RigaVoce({
 
           <button onClick={() => azioni.segnaPresa(voce)} className="min-w-0 flex-1 text-left">
             <span className="flex items-center gap-2">
-              <span className={cn("truncate text-[0.9844rem] font-medium transition-colors", voce.presa && "text-tenue line-through decoration-tenue/50")}>
+              <span className={cn("truncate text-[1.0625rem] transition-colors", voce.presa && "text-tenue line-through decoration-tenue/50")}>
                 {voce.nome}
               </span>
-              {voce.urgente && !voce.presa ? <Flame className="size-3.5 shrink-0 text-becco" fill="currentColor" /> : null}
+              {voce.urgente && !voce.presa ? <span className="shrink-0 rounded-full bg-becco-tenue px-2 py-0.5 text-[0.6875rem] font-semibold text-becco-scuro">urgente</span> : null}
               {voce.eco ? <Leaf className="size-3.5 shrink-0 text-eco" /> : null}
             </span>
             {voce.note || (voce.presa && chiPresa) ? (
@@ -399,18 +379,18 @@ function RigaVoce({
           </button>
 
           {Number(voce.quantita) !== 1 || voce.unita !== "pz" ? (
-            <span className="numeri shrink-0 rounded-lg bg-superficie-3 px-2 py-1 text-xs font-semibold text-inchiostro-2">
+            <span className="numeri shrink-0 text-[0.9375rem] font-semibold text-inchiostro-2">
               {formattaQuantita(Number(voce.quantita))} {voce.unita}
             </span>
           ) : null}
 
-          {autore && membri.length > 1 ? <Avatar nome={autore.nome} colore={autore.colore} className="size-6 text-[0.5625rem] ring-0" /> : null}
+          {autore && membri.length > 1 ? <Avatar nome={autore.nome} colore={autore.colore} className="size-6 text-[0.5625rem] opacity-80" /> : null}
 
           <button
             onClick={() => setAperta((a) => !a)}
             aria-label="Dettagli"
             className={cn(
-              "anello-focus grid size-8 shrink-0 place-items-center rounded-lg text-tenue transition hover:bg-superficie-3 hover:text-inchiostro",
+              "anello-focus grid size-8 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro",
               aperta && "bg-superficie-3 text-inchiostro",
             )}
           >
@@ -439,8 +419,8 @@ function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpes
   const passo = ["kg", "l"].includes(voce.unita) ? 0.5 : ["g", "ml"].includes(voce.unita) ? 100 : 1;
   const q = Number(voce.quantita);
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-linea bg-superficie-2 px-4 py-3 pl-[52px]">
-      <div className="flex h-9 items-center rounded-lg border border-linea bg-superficie">
+    <div className="mb-3 ml-[42px] flex flex-wrap items-center gap-2 rounded-[20px] bg-superficie-2 p-3">
+      <div className="flex h-9 items-center rounded-full bg-superficie ring-1 ring-linea">
         <button onClick={() => q - passo > 0 && azioni.modificaVoce(voce, { quantita: q - passo })} className="grid size-9 place-items-center text-tenue hover:text-inchiostro" aria-label="Meno">
           <Minus className="size-3.5" />
         </button>
@@ -452,7 +432,7 @@ function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpes
       <select
         value={voce.unita}
         onChange={(e) => azioni.modificaVoce(voce, { unita: e.target.value })}
-        className="h-9 rounded-lg border border-linea bg-superficie px-2 text-sm"
+        className="h-9 rounded-full bg-superficie px-3 text-sm ring-1 ring-linea"
       >
         {[...new Set([...UNITA, voce.unita])].map((u) => (
           <option key={u}>{u}</option>
@@ -461,7 +441,7 @@ function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpes
       <select
         value={voce.reparto_id ?? ""}
         onChange={(e) => azioni.modificaVoce(voce, { reparto_id: e.target.value || null })}
-        className="h-9 max-w-[11rem] rounded-lg border border-linea bg-superficie px-2 text-sm"
+        className="h-9 max-w-[11rem] rounded-full bg-superficie px-3 text-sm ring-1 ring-linea"
       >
         {dati.reparti
           .slice()
@@ -482,9 +462,9 @@ function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpes
         defaultValue={voce.note ?? ""}
         onBlur={(e) => e.target.value !== (voce.note ?? "") && azioni.modificaVoce(voce, { note: e.target.value || null })}
         placeholder="Nota (marca, formato…)"
-        className="h-9 min-w-40 flex-1 rounded-lg border border-linea bg-superficie px-3 text-sm outline-none focus:border-accento"
+        className="h-9 min-w-40 flex-1 rounded-full bg-superficie px-4 text-sm outline-none ring-1 ring-linea focus:ring-becco"
       />
-      <button onClick={() => azioni.elimina(voce)} className="grid size-9 place-items-center rounded-lg text-pericolo hover:bg-pericolo-tenue" aria-label="Elimina">
+      <button onClick={() => azioni.elimina(voce)} className="grid size-9 place-items-center rounded-full text-pericolo hover:bg-pericolo-tenue" aria-label="Elimina">
         <Trash2 className="size-4" />
       </button>
     </div>
@@ -507,12 +487,12 @@ function Interruttore({
       onClick={onClick}
       aria-pressed={attivo}
       className={cn(
-        "anello-focus flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-sm font-medium transition",
+        "anello-focus flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition",
         attivo
           ? colore === "eco"
-            ? "border-transparent bg-eco-tenue text-eco"
-            : "border-transparent bg-becco-tenue text-[color-mix(in_oklab,var(--becco),black_30%)]"
-          : "border-linea bg-superficie text-tenue hover:text-inchiostro",
+            ? "bg-eco text-white"
+            : "bg-becco text-su-becco"
+          : "bg-superficie text-tenue ring-1 ring-linea hover:text-inchiostro",
       )}
     >
       {children}

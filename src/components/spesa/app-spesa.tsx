@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Archive, ListChecks, Plus, Star } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { indovinaReparto, interpretaVoce, posizioneDaReparto } from "@/lib/spesa";
-import { Avatar } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
 import { VistaDispensa } from "./vista-dispensa";
@@ -333,82 +332,75 @@ export function AppSpesa({
   const lista = liste.find((l) => l.id === listaId) ?? liste[0];
   const vociLista = useMemo(() => dati.voci.filter((v) => v.lista_id === lista?.id), [dati.voci, lista?.id]);
   const prese = vociLista.filter((v) => v.presa).length;
+  const altri = membri.filter((m) => m.id !== userId && inLinea.includes(m.id));
 
-  const schede: { id: Vista; nome: string; icona: typeof ListChecks }[] = [
-    { id: "lista", nome: "Lista", icona: ListChecks },
-    { id: "dispensa", nome: "Dispensa", icona: Archive },
-    { id: "abituali", nome: "Abituali", icona: Star },
+  const schede: { id: Vista; nome: string }[] = [
+    { id: "lista", nome: "Da comprare" },
+    { id: "dispensa", nome: "In casa" },
+    { id: "abituali", nome: "Abituali" },
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] px-5 pt-6 md:px-10 md:pt-10">
-      {/* Testata */}
-      <header className="pt-sicuro flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          <p className="sovratitolo">Spesa</p>
-          <h1 className="titolo mt-2 truncate text-[1.875rem] leading-none sm:text-[2.25rem] md:text-[3rem]">
-            {vista === "lista" ? lista?.nome ?? "Lista" : vista === "dispensa" ? "Dispensa" : "Abituali"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-4">
-          {vista === "lista" && vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
-          <div className="hidden items-center -space-x-2 sm:flex">
-            {membri.map((m) => (
-              <span key={m.id} className="relative">
-                <Avatar nome={m.nome} colore={m.colore} className="size-9" />
-                {inLinea.includes(m.id) ? (
-                  <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-eco ring-2 ring-sfondo" title="In linea" />
-                ) : null}
-              </span>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      {/* Schede */}
-      <div className="mt-7 flex items-center gap-1 border-b border-linea">
+    <div className="mx-auto w-full max-w-[1120px] px-5 pt-6 md:px-12 md:pt-12">
+      {/* Sezioni del modulo, come parole */}
+      <nav className="flex items-center gap-6 text-[0.9375rem]">
         {schede.map((s) => {
           const attiva = vista === s.id;
-          const Icona = s.icona;
           return (
             <button
               key={s.id}
               onClick={() => setVista(s.id)}
-              className={cn(
-                "anello-focus relative flex h-11 items-center gap-2 px-3 text-[0.9375rem] font-medium transition-colors",
-                attiva ? "text-inchiostro" : "text-tenue hover:text-inchiostro-2",
-              )}
+              className={cn("anello-focus relative pb-1.5 transition-colors", attiva ? "font-semibold text-inchiostro" : "text-tenue hover:text-inchiostro")}
             >
-              <Icona className="size-4" strokeWidth={attiva ? 2.3 : 1.8} />
               {s.nome}
-              {attiva ? (
-                <motion.span layoutId="scheda-spesa" className="absolute inset-x-2 -bottom-px h-[2.5px] rounded-full bg-accento" />
-              ) : null}
+              {attiva ? <motion.span layoutId="sezione-spesa" className="absolute inset-x-0 -bottom-0.5 h-[3px] rounded-full bg-becco" /> : null}
             </button>
           );
         })}
-      </div>
+        {altri.length > 0 ? (
+          <span className="ml-auto flex items-center gap-2 text-[0.8125rem] text-tenue">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-eco opacity-60" />
+              <span className="relative inline-flex size-2 rounded-full bg-eco" />
+            </span>
+            {altri.map((m) => m.nome.split(" ")[0]).join(", ")} sta guardando
+          </span>
+        ) : null}
+      </nav>
 
+      {/* Titolo: nome della lista come parola grande, le altre liste accanto più piccole */}
       {vista === "lista" ? (
-        <SelettoreListe
-          liste={liste}
-          voci={dati.voci}
-          corrente={lista?.id}
-          onScegli={setListaId}
-          onCrea={async (nome) => {
-            const nuova = await azioni.creaLista(nome);
-            if (nuova) setListaId(nuova.id);
-          }}
-        />
-      ) : null}
+        <header className="mt-8 md:mt-10">
+          <SelettoreListe
+            liste={liste}
+            voci={dati.voci}
+            corrente={lista?.id}
+            onScegli={setListaId}
+            onCrea={async (nome) => {
+              const nuova = await azioni.creaLista(nome);
+              if (nuova) setListaId(nuova.id);
+            }}
+          />
+          {vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
+        </header>
+      ) : (
+        <header className="mt-8 md:mt-10">
+          <h1 className="titolo text-[clamp(2.25rem,9vw,4.25rem)]">{vista === "dispensa" ? "in casa" : "abituali"}</h1>
+          <p className="mt-3 max-w-xl text-tenue">
+            {vista === "dispensa"
+              ? "Quello che avete in frigo, nel freezer e in dispensa. Le scadenze vicine salgono in cima."
+              : "I prodotti che comprate. Un tocco e tornano nella lista."}
+          </p>
+        </header>
+      )}
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={vista}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.18 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
           className="pb-16"
         >
           {vista === "lista" && lista ? (
@@ -424,10 +416,10 @@ export function AppSpesa({
         {avviso ? (
           <motion.div
             key={avviso.id}
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="fixed inset-x-0 bottom-28 z-50 mx-auto w-fit rounded-full bg-inchiostro px-5 py-2.5 text-sm font-medium text-sfondo shadow-xl lg:bottom-10"
+            className="fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-full bg-dorso px-5 py-3 text-sm font-medium text-su-dorso shadow-xl lg:bottom-10"
           >
             {avviso.testo}
           </motion.div>
@@ -437,34 +429,22 @@ export function AppSpesa({
   );
 }
 
+/** Barra di avanzamento sottile: quanto della lista è già nel carrello. */
 function Avanzamento({ fatte, totale }: { fatte: number; totale: number }) {
-  const r = 18;
-  const c = 2 * Math.PI * r;
   const quota = totale ? fatte / totale : 0;
   return (
-    <div className="flex items-center gap-3">
-      <div className="hidden text-right leading-tight sm:block">
-        <p className="numeri text-[0.9375rem] font-semibold">
-          {fatte}
-          <span className="text-tenue">/{totale}</span>
-        </p>
-        <p className="text-xs text-tenue">nel carrello</p>
-      </div>
-      <svg viewBox="0 0 44 44" className="size-11 shrink-0 -rotate-90">
-        <circle cx="22" cy="22" r={r} fill="none" stroke="var(--linea)" strokeWidth="4" />
-        <motion.circle
-          cx="22"
-          cy="22"
-          r={r}
-          fill="none"
-          stroke={quota === 1 ? "var(--eco)" : "var(--accento)"}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          animate={{ strokeDashoffset: c * (1 - quota) }}
-          transition={{ type: "spring", stiffness: 120, damping: 20 }}
+    <div className="mt-6 flex items-center gap-4">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-superficie-3">
+        <motion.div
+          className={cn("h-full rounded-full", quota === 1 ? "bg-eco" : "bg-becco")}
+          initial={false}
+          animate={{ width: `${quota * 100}%` }}
+          transition={{ type: "spring", stiffness: 120, damping: 22 }}
         />
-      </svg>
+      </div>
+      <p className="numeri shrink-0 text-[0.8125rem] text-tenue">
+        <span className="font-semibold text-inchiostro">{fatte}</span> di {totale} nel carrello
+      </p>
     </div>
   );
 }
@@ -483,51 +463,45 @@ function SelettoreListe({
   onCrea: (nome: string) => void;
 }) {
   const [nuova, setNuova] = useState<string | null>(null);
+  const attiva = liste.find((l) => l.id === corrente);
+  const altre = liste.filter((l) => l.id !== corrente);
   return (
-    <div className="senza-barra -mx-5 mt-4 flex items-center gap-1 overflow-x-auto px-5 md:mx-0 md:px-0">
-      {liste.map((l) => {
-        const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
-        const attiva = l.id === corrente;
-        return (
-          <button
-            key={l.id}
-            onClick={() => onScegli(l.id)}
-            className={cn(
-              "anello-focus flex h-9 shrink-0 items-center gap-2 rounded-[10px] px-3 text-sm font-medium transition",
-              attiva ? "bg-superficie text-inchiostro ring-1 ring-linea shadow-sm" : "text-tenue hover:bg-superficie-3",
-            )}
-          >
-            <span className="size-2 rounded-full" style={{ background: l.colore }} />
-            {l.nome}
-            {daPrendere > 0 ? <span className="numeri text-xs text-tenue">{daPrendere}</span> : null}
+    <div>
+      <h1 className="titolo break-words text-[clamp(2.25rem,9vw,4.25rem)]">{attiva?.nome ?? "lista"}</h1>
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.9375rem]">
+        {altre.map((l) => {
+          const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
+          return (
+            <button key={l.id} onClick={() => onScegli(l.id)} className="anello-focus group flex items-center gap-2 text-tenue hover:text-inchiostro">
+              <span className="size-2 rounded-full" style={{ background: l.colore }} />
+              <span className="underline decoration-linea-forte decoration-1 underline-offset-4 group-hover:decoration-inchiostro">{l.nome}</span>
+              {daPrendere > 0 ? <span className="numeri text-[0.8125rem]">{daPrendere}</span> : null}
+            </button>
+          );
+        })}
+        {nuova === null ? (
+          <button onClick={() => setNuova("")} className="anello-focus flex items-center gap-1 text-tenue hover:text-inchiostro">
+            <Plus className="size-4" /> nuova lista
           </button>
-        );
-      })}
-      {nuova === null ? (
-        <button
-          onClick={() => setNuova("")}
-          className="anello-focus flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] px-3 text-sm text-tenue hover:bg-superficie-3 hover:text-inchiostro"
-        >
-          <Plus className="size-4" /> Nuova lista
-        </button>
-      ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (nuova.trim()) onCrea(nuova.trim());
-            setNuova(null);
-          }}
-        >
-          <input
-            autoFocus
-            value={nuova}
-            onChange={(e) => setNuova(e.target.value)}
-            onBlur={() => setNuova(null)}
-            placeholder="Es. Farmacia"
-            className="h-9 w-40 rounded-[10px] border border-accento bg-superficie px-3 text-sm outline-none ring-4 ring-accento-tenue"
-          />
-        </form>
-      )}
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (nuova.trim()) onCrea(nuova.trim());
+              setNuova(null);
+            }}
+          >
+            <input
+              autoFocus
+              value={nuova}
+              onChange={(e) => setNuova(e.target.value)}
+              onBlur={() => setNuova(null)}
+              placeholder="Es. Farmacia"
+              className="campo-linea h-8 w-40 text-[0.9375rem]"
+            />
+          </form>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ La casa, la spesa e le cose di tutti i giorni, in due.
 - In arrivo: Finanze, Agenda
 
 ## Temi
-Banchisa (predefinito), Notte polare, Colonia. Per aggiungerne uno: blocco in `src/app/globals.css` + voce in `src/lib/temi.ts`.
+Banchisa (predefinito), Notte polare, Aurora. L’interfaccia è il pinguino: barra laterale = dorso, foglio dei contenuti = pancia, arancio = becco. Cliccando la mascotte la barra si richiude. Per aggiungerne uno: blocco in `src/app/globals.css` + voce in `src/lib/temi.ts`.
 
 ## Database
 Progetto Supabase `pinguhome` (eu-west-1). Le migrazioni sono in `supabase/`. Tutte le tabelle hanno RLS: ogni dato appartiene a una "casa" (famiglia) e lo vedono solo i suoi membri. Si entra in una casa con il codice invito (Impostazioni → Casa).

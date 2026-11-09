@@ -13,19 +13,20 @@ export default async function Benvenuto() {
   if (data && data.length > 0) redirect("/");
 
   return (
-    <main className="pt-sicuro mx-auto flex min-h-dvh max-w-3xl flex-col px-6 py-10 md:py-16">
-      <Marchio />
-      <div className="mt-14 md:mt-20">
-        <p className="sovratitolo">Primo passo</p>
-        <h1 className="titolo mt-3 text-[2.5rem] leading-[1.02] md:text-[3.25rem]">
-          Ciao {profilo.nome || "!"}, <br className="hidden md:block" />
-          dove vivono i tuoi pinguini?
-        </h1>
-        <p className="mt-4 max-w-xl text-[1.0625rem] text-tenue">
-          Crea la vostra casa e condividi il codice con chi vive con te, oppure entra con il codice che ti hanno mandato.
-        </p>
+    <main className="foglio pt-sicuro">
+      <div className="mx-auto flex max-w-3xl flex-col px-6 py-10 md:py-16">
+        <Marchio />
+        <div className="mt-14 md:mt-20">
+          <h1 className="titolo text-[2.75rem] md:text-[4rem]">
+            ciao {(profilo.nome || "").toLowerCase()},<br />
+            dove vivete?
+          </h1>
+          <p className="mt-5 max-w-xl text-[1.0625rem] text-inchiostro-2">
+            Crea la vostra casa e manda il codice a chi vive con te, oppure entra con il codice che ti hanno mandato.
+          </p>
+        </div>
+        <SceltaCasa />
       </div>
-      <SceltaCasa />
     </main>
   );
 }

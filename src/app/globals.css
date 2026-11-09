@@ -1,95 +1,128 @@
 @import "tailwindcss";
 
 /* =====================================================================
-   TEMI — ogni tema ridefinisce le stesse variabili sotto [data-theme].
-   Per aggiungerne uno: copiare un blocco, cambiare i valori e registrarlo
-   in src/lib/temi.ts.
+   TEMI — l'interfaccia è il pinguino: dorso (barra laterale), pancia
+   (il foglio dei contenuti), becco (le azioni), guance (gli evidenziati).
+   Ogni tema ridefinisce le stesse variabili sotto [data-theme]; per
+   aggiungerne uno copiare un blocco e registrarlo in src/lib/temi.ts.
    ===================================================================== */
 
-/* Banchisa — ghiaccio, mare artico e becco arancio */
+/* Banchisa — ghiaccio, piume blu notte e becco arancio */
 :root,
 [data-theme="banchisa"] {
-  --sfondo: #eef4f5;
-  --sfondo-alone: #dcecef;
-  --superficie: #ffffff;
-  --superficie-2: #f4f8f9;
-  --superficie-3: #e5eef0;
-  --inchiostro: #13242b;
-  --inchiostro-2: #33464e;
-  --tenue: #687d85;
-  --linea: #dde8eb;
-  --linea-forte: #c3d4d8;
-  --accento: #0d5f6b;
-  --accento-hover: #0a4e58;
-  --accento-tenue: #dbeef0;
-  --su-accento: #f4fbfb;
-  --becco: #f2a33a;
-  --becco-tenue: #fdf0dc;
-  --eco: #2f8f62;
-  --eco-tenue: #e0f2e8;
-  --pericolo: #c4493a;
-  --pericolo-tenue: #fbe6e2;
-  --ombra: 19, 36, 43;
-  --vetro: rgba(255, 255, 255, 0.78);
+  --sfondo: #e8f0f6;          /* ghiaccio dietro al foglio */
+  --dorso: #1d2340;           /* barra laterale */
+  --dorso-2: #2a3157;
+  --su-dorso: #e8eefc;
+  --su-dorso-tenue: #9aa3c7;
+  --lastra: #dcebf5;          /* lastra di ghiaccio sotto la mascotte */
+  --superficie: #ffffff;      /* il foglio: la pancia */
+  --superficie-2: #f4f8fb;
+  --superficie-3: #e9f0f5;
+  --inchiostro: #1d2340;
+  --inchiostro-2: #3d4466;
+  --tenue: #737a99;
+  --linea: #e3e9f0;
+  --linea-forte: #c9d3df;
+  --accento: #1d2340;         /* azioni secondarie e stato attivo */
+  --accento-hover: #2a3157;
+  --accento-tenue: #e6eaf6;
+  --su-accento: #ffffff;
+  --becco: #ff9f1c;           /* azione principale */
+  --becco-hover: #f28c00;
+  --su-becco: #1d2340;
+  --becco-tenue: #fff1dc;
+  --becco-scuro: #b35f00;
+  --guancia: #f6a8b8;
+  --guancia-tenue: #fde9ee;
+  --eco: #23885a;
+  --eco-tenue: #def3e8;
+  --pericolo: #d2394a;
+  --pericolo-tenue: #fde6e8;
+  --ombra: 29, 35, 64;
+  --vetro: rgba(255, 255, 255, 0.82);
   color-scheme: light;
 }
 
-/* Notte polare — buio artico con l'aurora verde */
+/* Notte polare — il foglio si spegne, il becco resta acceso */
 [data-theme="notte-polare"] {
-  --sfondo: #0a1418;
-  --sfondo-alone: #0f2a2a;
-  --superficie: #111e23;
-  --superficie-2: #15252b;
-  --superficie-3: #1c2f36;
-  --inchiostro: #e6f1f2;
-  --inchiostro-2: #bcd0d4;
-  --tenue: #7f979d;
-  --linea: #1f343b;
-  --linea-forte: #2c464e;
-  --accento: #5fd3a5;
-  --accento-hover: #7fe0b9;
-  --accento-tenue: #143a32;
-  --su-accento: #062019;
-  --becco: #f2a33a;
-  --becco-tenue: #3a2a12;
-  --eco: #5fd3a5;
-  --eco-tenue: #143a32;
-  --pericolo: #f07a6a;
-  --pericolo-tenue: #3b1d1a;
+  --sfondo: #0b0f20;
+  --dorso: #0b0f20;
+  --dorso-2: #181e38;
+  --su-dorso: #e8eefc;
+  --su-dorso-tenue: #7c84a8;
+  --lastra: #1d2546;
+  --superficie: #141a33;
+  --superficie-2: #19203d;
+  --superficie-3: #212947;
+  --inchiostro: #eef2ff;
+  --inchiostro-2: #c3c9e4;
+  --tenue: #8c93b5;
+  --linea: #242c4c;
+  --linea-forte: #333d63;
+  --accento: #eef2ff;
+  --accento-hover: #ffffff;
+  --accento-tenue: #262f55;
+  --su-accento: #141a33;
+  --becco: #ffa62e;
+  --becco-hover: #ffb84f;
+  --su-becco: #141a33;
+  --becco-tenue: #3a2a14;
+  --becco-scuro: #ffbf66;
+  --guancia: #f6a8b8;
+  --guancia-tenue: #3b2333;
+  --eco: #5fd3a0;
+  --eco-tenue: #173a30;
+  --pericolo: #ff7a86;
+  --pericolo-tenue: #3d1c24;
   --ombra: 0, 0, 0;
-  --vetro: rgba(17, 30, 35, 0.78);
+  --vetro: rgba(20, 26, 51, 0.82);
   color-scheme: dark;
 }
 
-/* Colonia — sabbia, alga e piumaggio reale */
-[data-theme="colonia"] {
-  --sfondo: #f4f1ea;
-  --sfondo-alone: #e8efe2;
-  --superficie: #fffdf8;
-  --superficie-2: #f8f5ee;
-  --superficie-3: #ece7db;
-  --inchiostro: #1d1f1c;
-  --inchiostro-2: #3d413b;
-  --tenue: #75786f;
-  --linea: #e4dfd2;
-  --linea-forte: #cfc8b7;
-  --accento: #2f6b4f;
-  --accento-hover: #255a41;
-  --accento-tenue: #e0ece4;
-  --su-accento: #f8fbf6;
-  --becco: #e9b23c;
-  --becco-tenue: #fbf0d6;
-  --eco: #2f6b4f;
-  --eco-tenue: #e0ece4;
-  --pericolo: #b9483a;
-  --pericolo-tenue: #f8e4df;
-  --ombra: 29, 31, 28;
-  --vetro: rgba(255, 253, 248, 0.8);
+/* Aurora — ghiaccio lilla, dorso prugna e guance rosa */
+[data-theme="aurora"] {
+  --sfondo: #eeeaf7;
+  --dorso: #3a2350;
+  --dorso-2: #4a2f63;
+  --su-dorso: #f6eefc;
+  --su-dorso-tenue: #c0a9d3;
+  --lastra: #e6dcf3;
+  --superficie: #ffffff;
+  --superficie-2: #f8f5fc;
+  --superficie-3: #efe9f7;
+  --inchiostro: #2c1c3d;
+  --inchiostro-2: #4d3c60;
+  --tenue: #85779a;
+  --linea: #ebe4f3;
+  --linea-forte: #d3c7e3;
+  --accento: #3a2350;
+  --accento-hover: #4a2f63;
+  --accento-tenue: #efe7f8;
+  --su-accento: #ffffff;
+  --becco: #f2789b;
+  --becco-hover: #e65f86;
+  --su-becco: #ffffff;
+  --becco-tenue: #fde6ee;
+  --becco-scuro: #b33b62;
+  --guancia: #ffc38a;
+  --guancia-tenue: #fff0df;
+  --eco: #2a8a63;
+  --eco-tenue: #e0f2e9;
+  --pericolo: #cc3550;
+  --pericolo-tenue: #fde4e9;
+  --ombra: 44, 28, 61;
+  --vetro: rgba(255, 255, 255, 0.82);
   color-scheme: light;
 }
 
 @theme inline {
   --color-sfondo: var(--sfondo);
+  --color-dorso: var(--dorso);
+  --color-dorso-2: var(--dorso-2);
+  --color-su-dorso: var(--su-dorso);
+  --color-su-dorso-tenue: var(--su-dorso-tenue);
+  --color-lastra: var(--lastra);
   --color-superficie: var(--superficie);
   --color-superficie-2: var(--superficie-2);
   --color-superficie-3: var(--superficie-3);
@@ -103,13 +136,18 @@
   --color-accento-tenue: var(--accento-tenue);
   --color-su-accento: var(--su-accento);
   --color-becco: var(--becco);
+  --color-becco-hover: var(--becco-hover);
+  --color-su-becco: var(--su-becco);
   --color-becco-tenue: var(--becco-tenue);
+  --color-becco-scuro: var(--becco-scuro);
+  --color-guancia: var(--guancia);
+  --color-guancia-tenue: var(--guancia-tenue);
   --color-eco: var(--eco);
   --color-eco-tenue: var(--eco-tenue);
   --color-pericolo: var(--pericolo);
   --color-pericolo-tenue: var(--pericolo-tenue);
   --font-sans: "Onest Variable", system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque Variable", "Onest Variable", system-ui, sans-serif;
+  --font-display: "Unbounded Variable", "Onest Variable", system-ui, sans-serif;
 }
 
 html {
@@ -119,39 +157,76 @@ html {
 
 body {
   color: var(--inchiostro);
+  background: var(--sfondo);
   font-family: var(--font-sans);
-  font-feature-settings: "ss01", "cv11";
-  /* Alone freddo in alto, come luce sul ghiaccio */
-  background:
-    radial-gradient(1200px 520px at 85% -10%, var(--sfondo-alone), transparent 60%),
-    radial-gradient(900px 400px at -10% 110%, var(--sfondo-alone), transparent 60%),
-    var(--sfondo);
-  background-attachment: fixed;
+  font-size: 15px;
+  line-height: 1.5;
   transition: background-color 300ms ease, color 300ms ease;
 }
 
+/* Titoli: Unbounded in minuscolo, larga e morbida come la mascotte */
 .titolo {
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 72;
-  letter-spacing: -0.03em;
-  font-weight: 650;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+.titolo-normale {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
-.sovratitolo {
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--tenue);
-}
-
-.carta {
+/* Il foglio: la pancia bianca dove vivono i contenuti */
+.foglio {
   background: var(--superficie);
-  border: 1px solid var(--linea);
-  border-radius: 20px;
-  box-shadow:
-    0 1px 0 rgba(var(--ombra), 0.03),
-    0 12px 32px -18px rgba(var(--ombra), 0.18);
+  min-height: 100dvh;
+}
+@media (min-width: 1024px) {
+  .foglio {
+    border-top-left-radius: 40px;
+    box-shadow: -18px 0 40px -30px rgba(var(--ombra), 0.45);
+  }
+}
+
+/* Barra laterale richiudibile: aperta 248px, chiusa 92px (data-barra su <html>) */
+:root {
+  --larghezza-barra: 248px;
+  --curva: cubic-bezier(0.22, 0.9, 0.24, 1);
+}
+[data-barra="chiusa"] {
+  --larghezza-barra: 92px;
+}
+.barra-laterale {
+  width: var(--larghezza-barra);
+  transition: width 460ms var(--curva);
+}
+.barra-laterale .solo-aperta {
+  opacity: 1;
+  max-width: 14rem;
+  transition: opacity 200ms ease 180ms, max-width 460ms var(--curva);
+  white-space: nowrap;
+  overflow: hidden;
+}
+[data-barra="chiusa"] .barra-laterale .solo-aperta {
+  opacity: 0;
+  max-width: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, max-width 460ms var(--curva);
+}
+.mascotte-barra {
+  width: 132px;
+  transition: width 460ms var(--curva), transform 300ms var(--curva);
+}
+[data-barra="chiusa"] .mascotte-barra {
+  width: 56px;
+}
+.mascotte-barra:hover {
+  transform: rotate(-4deg) scale(1.03);
+}
+.mascotte-barra:active {
+  transform: scale(0.94);
 }
 
 .vetro {
@@ -161,7 +236,7 @@ body {
 }
 
 .anello-focus:focus-visible {
-  outline: 2px solid var(--accento);
+  outline: 2px solid var(--becco);
   outline-offset: 2px;
 }
 
@@ -176,16 +251,24 @@ body {
   padding-top: max(env(safe-area-inset-top), 0px);
 }
 
-/* Barre di scorrimento discrete */
-.scorrimento-fine {
-  scrollbar-width: thin;
-  scrollbar-color: var(--linea-forte) transparent;
-}
 .senza-barra {
   scrollbar-width: none;
 }
 .senza-barra::-webkit-scrollbar {
   display: none;
+}
+
+/* Campi: niente riquadri pesanti, solo una linea che si accende */
+.campo-linea {
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid var(--linea-forte);
+  border-radius: 0;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+.campo-linea:focus {
+  border-bottom-color: var(--becco);
 }
 
 @media (prefers-reduced-motion: reduce) {

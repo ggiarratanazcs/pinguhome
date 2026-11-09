@@ -20,9 +20,9 @@ function traduciErrore(messaggio: string) {
 }
 
 const TITOLI: Record<Modo, [string, string]> = {
-  accesso: ["Bentornato", "Accedi alla vostra casa."],
-  registrazione: ["Crea il tuo account", "Poi crei la casa o entri con un codice invito."],
-  recupero: ["Password dimenticata", "Ti mandiamo un link per sceglierne una nuova."],
+  accesso: ["bentornato", "Entra nella vostra casa."],
+  registrazione: ["nuovo account", "Dopo crei la casa, oppure entri con il codice che ti hanno mandato."],
+  recupero: ["password persa", "Ti mandiamo un link per sceglierne una nuova."],
 };
 
 export function ModuloAccesso() {
@@ -104,10 +104,10 @@ export function ModuloAccesso() {
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
         >
-          <h1 className="titolo text-[2.375rem] leading-none">{titolo}</h1>
+          <h1 className="titolo text-[3rem]">{titolo}</h1>
           <p className="mt-3 text-[0.9375rem] text-tenue">{sottotitolo}</p>
 
-          <form onSubmit={invia} className="mt-9 flex flex-col gap-4">
+          <form onSubmit={invia} className="mt-10 flex flex-col gap-6">
             {modo === "registrazione" ? (
               <Campo etichetta="Come ti chiami" id="nome" name="nome" autoComplete="given-name" required />
             ) : null}
@@ -125,7 +125,7 @@ export function ModuloAccesso() {
             ) : null}
             {errore ? <Messaggio tipo="errore">{errore}</Messaggio> : null}
             {ok ? <Messaggio tipo="ok">{ok}</Messaggio> : null}
-            <Pulsante type="submit" disabled={inCorso} className="mt-2 h-12">
+            <Pulsante type="submit" disabled={inCorso} className="mt-2 h-12 self-start px-8">
               {inCorso ? <Loader2 className="size-4 animate-spin" /> : null}
               {modo === "accesso" ? "Accedi" : modo === "registrazione" ? "Crea account" : "Invia il link"}
             </Pulsante>
@@ -147,7 +147,7 @@ function Collegamento({ onClick, children, tenue }: { onClick: () => void; child
     <button
       type="button"
       onClick={onClick}
-      className={cn("anello-focus font-medium underline-offset-4 hover:underline", tenue ? "text-tenue" : "text-accento")}
+      className={cn("anello-focus underline underline-offset-4", tenue ? "text-tenue decoration-linea-forte" : "font-semibold text-inchiostro decoration-becco decoration-2")}
     >
       {children}
     </button>

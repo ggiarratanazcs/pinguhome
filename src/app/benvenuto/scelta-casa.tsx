@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Home, KeyRound, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Messaggio, Pulsante } from "@/components/ui";
 
@@ -42,40 +42,29 @@ export function SceltaCasa() {
   }
 
   return (
-    <div className="mt-10 grid gap-4 md:grid-cols-2">
-      <form onSubmit={crea} className="carta flex flex-col p-6">
-        <span className="grid size-11 place-items-center rounded-[14px] bg-accento-tenue text-accento">
-          <Home className="size-5" />
-        </span>
-        <h2 className="titolo mt-5 text-xl">Crea la casa</h2>
-        <p className="mt-1.5 text-sm text-tenue">Ti preparo reparti e due liste pronte: Supermercato e Cose per la casa.</p>
-        <input
-          name="nome"
-          placeholder="Es. Casa Firenze"
-          required
-          className="mt-5 h-12 rounded-[14px] border border-linea bg-superficie-2 px-4 outline-none transition focus:border-accento focus:ring-4 focus:ring-accento-tenue"
-        />
-        <Pulsante type="submit" disabled={inCorso !== null} className="mt-3">
+    <div className="mt-12 grid gap-10 md:grid-cols-2 md:gap-8">
+      <form onSubmit={crea} className="flex flex-col rounded-[28px] bg-superficie-2 p-6 md:p-7">
+        <h2 className="titolo text-[1.625rem]">crea la casa</h2>
+        <p className="mt-2 text-[0.9375rem] text-tenue">Trovi già i reparti e due liste: Supermercato e Cose per la casa.</p>
+        <input name="nome" placeholder="Es. Casa Firenze" required className="campo-linea mt-6 h-12 text-[1.125rem]" />
+        <Pulsante type="submit" disabled={inCorso !== null} className="mt-6 self-start">
           {inCorso === "crea" ? <Loader2 className="size-4 animate-spin" /> : null}
-          Crea e inizia <ArrowRight className="size-4" />
+          Crea la casa
         </Pulsante>
       </form>
 
-      <form onSubmit={entra} className="carta flex flex-col p-6">
-        <span className="grid size-11 place-items-center rounded-[14px] bg-becco-tenue text-[color-mix(in_oklab,var(--becco),black_35%)]">
-          <KeyRound className="size-5" />
-        </span>
-        <h2 className="titolo mt-5 text-xl">Ho un codice invito</h2>
-        <p className="mt-1.5 text-sm text-tenue">Sono 6 caratteri: li trovi in Impostazioni → Casa.</p>
+      <form onSubmit={entra} className="flex flex-col rounded-[28px] bg-dorso p-6 text-su-dorso md:p-7">
+        <h2 className="titolo text-[1.625rem]">ho un codice</h2>
+        <p className="mt-2 text-[0.9375rem] text-su-dorso-tenue">Sono 6 caratteri: chi ha creato la casa li trova in Impostazioni.</p>
         <input
           name="codice"
           placeholder="ABC123"
           required
           maxLength={6}
           autoCapitalize="characters"
-          className="numeri mt-5 h-12 rounded-[14px] border border-linea bg-superficie-2 px-4 text-lg font-semibold uppercase tracking-[0.3em] outline-none transition focus:border-accento focus:ring-4 focus:ring-accento-tenue"
+          className="campo-linea numeri mt-6 h-12 border-su-dorso-tenue text-[1.5rem] font-semibold uppercase tracking-[0.3em] text-su-dorso placeholder:text-su-dorso-tenue/50"
         />
-        <Pulsante type="submit" variante="secondario" disabled={inCorso !== null} className="mt-3">
+        <Pulsante type="submit" disabled={inCorso !== null} className="mt-6 self-start">
           {inCorso === "entra" ? <Loader2 className="size-4 animate-spin" /> : null}
           Entra nella casa
         </Pulsante>
