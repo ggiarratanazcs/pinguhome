@@ -1,0 +1,124 @@
+// Tipi del database Supabase "pinguhome" (generati dallo schema; rigenerare dopo ogni migrazione).
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+type Rel = { foreignKeyName: string; columns: string[]; isOneToOne: boolean; referencedRelation: string; referencedColumns: string[] };
+
+type Tabella<R, I, U = Partial<R>> = { Row: R; Insert: I; Update: U; Relationships: Rel[] };
+
+export type Dispensa = {
+  aggiornata_il: string;
+  famiglia_id: string;
+  id: string;
+  nome: string;
+  posizione: string;
+  prodotto_id: string | null;
+  quantita: number;
+  scadenza: string | null;
+  scorta_minima: number | null;
+  unita: string;
+};
+
+export type Famiglia = {
+  codice_invito: string;
+  creata_da: string | null;
+  creata_il: string;
+  id: string;
+  nome: string;
+};
+
+export type Lista = {
+  archiviata: boolean;
+  colore: string;
+  creata_il: string;
+  famiglia_id: string;
+  id: string;
+  nome: string;
+  ordine: number;
+};
+
+export type Membro = {
+  entrato_il: string;
+  famiglia_id: string;
+  ruolo: string;
+  user_id: string;
+};
+
+export type Prodotto = {
+  abituale: boolean;
+  creato_il: string;
+  eco: boolean;
+  famiglia_id: string;
+  id: string;
+  nome: string;
+  reparto_id: string | null;
+  ultimo_acquisto: string | null;
+  unita: string;
+  volte_acquistato: number;
+};
+
+export type Profilo = {
+  colore: string;
+  creato_il: string;
+  email: string;
+  famiglia_attiva: string | null;
+  id: string;
+  nome: string;
+  tema: string;
+};
+
+export type Reparto = {
+  famiglia_id: string;
+  icona: string;
+  id: string;
+  nome: string;
+  ordine: number;
+};
+
+export type VoceLista = {
+  aggiunta_da: string | null;
+  creata_il: string;
+  eco: boolean;
+  famiglia_id: string;
+  id: string;
+  lista_id: string;
+  nome: string;
+  note: string | null;
+  presa: boolean;
+  presa_da: string | null;
+  presa_il: string | null;
+  prodotto_id: string | null;
+  quantita: number;
+  reparto_id: string | null;
+  unita: string;
+  urgente: boolean;
+};
+
+type Opz<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+export type Database = {
+  __InternalSupabase: { PostgrestVersion: "14.18" };
+  public: {
+    Tables: {
+      dispensa: Tabella<Dispensa, Opz<Dispensa, "aggiornata_il" | "id" | "posizione" | "prodotto_id" | "quantita" | "scadenza" | "scorta_minima" | "unita">>;
+      famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id">>;
+      liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;
+      membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
+      prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
+      profili: Tabella<Profilo, Opz<Profilo, "colore" | "creato_il" | "email" | "famiglia_attiva" | "nome" | "tema">>;
+      reparti: Tabella<Reparto, Opz<Reparto, "icona" | "id" | "ordine">>;
+      voci_lista: Tabella<
+        VoceLista,
+        Opz<VoceLista, "aggiunta_da" | "creata_il" | "eco" | "id" | "note" | "presa" | "presa_da" | "presa_il" | "prodotto_id" | "quantita" | "reparto_id" | "unita" | "urgente">
+      >;
+    };
+    Views: { [_ in never]: never };
+    Functions: {
+      crea_famiglia: { Args: { p_nome: string }; Returns: string };
+      segna_presa: { Args: { p_presa: boolean; p_voce: string }; Returns: undefined };
+      unisciti_famiglia: { Args: { p_codice: string }; Returns: string };
+    };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
+  };
+};

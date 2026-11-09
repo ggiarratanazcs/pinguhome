@@ -1,0 +1,1 @@
+-- Le migrazioni applicate sono registrate nel progetto Supabase 'pinguhome' (schema_v1_nucleo_spesa, funzioni_private).

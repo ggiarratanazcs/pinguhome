@@ -1,0 +1,33 @@
+import { createClient } from "@/lib/supabase/server";
+import { getContesto } from "@/lib/sessione";
+import { AppSpesa } from "@/components/spesa/app-spesa";
+
+export const metadata = { title: "Spesa" };
+
+export default async function PaginaSpesa() {
+  const { profilo, famiglia, membri } = await getContesto();
+  const supabase = await createClient();
+  const f = famiglia.id;
+  const [liste, reparti, voci, prodotti, dispensa] = await Promise.all([
+    supabase.from("liste").select("*").eq("famiglia_id", f).order("ordine"),
+    supabase.from("reparti").select("*").eq("famiglia_id", f).order("ordine"),
+    supabase.from("voci_lista").select("*").eq("famiglia_id", f).order("creata_il"),
+    supabase.from("prodotti").select("*").eq("famiglia_id", f),
+    supabase.from("dispensa").select("*").eq("famiglia_id", f),
+  ]);
+
+  return (
+    <AppSpesa
+      famigliaId={f}
+      userId={profilo.id}
+      membri={membri}
+      iniziali={{
+        liste: liste.data ?? [],
+        reparti: reparti.data ?? [],
+        voci: voci.data ?? [],
+        prodotti: prodotti.data ?? [],
+        dispensa: dispensa.data ?? [],
+      }}
+    />
+  );
+}

@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   TEMI — ogni tema ridefinisce le stesse variabili sotto [data-theme].
+   Per aggiungerne uno: copiare un blocco, cambiare i valori e registrarlo
+   in src/lib/temi.ts.
+   ===================================================================== */
+
+/* Banchisa — ghiaccio, mare artico e becco arancio */
+:root,
+[data-theme="banchisa"] {
+  --sfondo: #eef4f5;
+  --sfondo-alone: #dcecef;
+  --superficie: #ffffff;
+  --superficie-2: #f4f8f9;
+  --superficie-3: #e5eef0;
+  --inchiostro: #13242b;
+  --inchiostro-2: #33464e;
+  --tenue: #687d85;
+  --linea: #dde8eb;
+  --linea-forte: #c3d4d8;
+  --accento: #0d5f6b;
+  --accento-hover: #0a4e58;
+  --accento-tenue: #dbeef0;
+  --su-accento: #f4fbfb;
+  --becco: #f2a33a;
+  --becco-tenue: #fdf0dc;
+  --eco: #2f8f62;
+  --eco-tenue: #e0f2e8;
+  --pericolo: #c4493a;
+  --pericolo-tenue: #fbe6e2;
+  --ombra: 19, 36, 43;
+  --vetro: rgba(255, 255, 255, 0.78);
+  color-scheme: light;
+}
+
+/* Notte polare — buio artico con l'aurora verde */
+[data-theme="notte-polare"] {
+  --sfondo: #0a1418;
+  --sfondo-alone: #0f2a2a;
+  --superficie: #111e23;
+  --superficie-2: #15252b;
+  --superficie-3: #1c2f36;
+  --inchiostro: #e6f1f2;
+  --inchiostro-2: #bcd0d4;
+  --tenue: #7f979d;
+  --linea: #1f343b;
+  --linea-forte: #2c464e;
+  --accento: #5fd3a5;
+  --accento-hover: #7fe0b9;
+  --accento-tenue: #143a32;
+  --su-accento: #062019;
+  --becco: #f2a33a;
+  --becco-tenue: #3a2a12;
+  --eco: #5fd3a5;
+  --eco-tenue: #143a32;
+  --pericolo: #f07a6a;
+  --pericolo-tenue: #3b1d1a;
+  --ombra: 0, 0, 0;
+  --vetro: rgba(17, 30, 35, 0.78);
+  color-scheme: dark;
+}
+
+/* Colonia — sabbia, alga e piumaggio reale */
+[data-theme="colonia"] {
+  --sfondo: #f4f1ea;
+  --sfondo-alone: #e8efe2;
+  --superficie: #fffdf8;
+  --superficie-2: #f8f5ee;
+  --superficie-3: #ece7db;
+  --inchiostro: #1d1f1c;
+  --inchiostro-2: #3d413b;
+  --tenue: #75786f;
+  --linea: #e4dfd2;
+  --linea-forte: #cfc8b7;
+  --accento: #2f6b4f;
+  --accento-hover: #255a41;
+  --accento-tenue: #e0ece4;
+  --su-accento: #f8fbf6;
+  --becco: #e9b23c;
+  --becco-tenue: #fbf0d6;
+  --eco: #2f6b4f;
+  --eco-tenue: #e0ece4;
+  --pericolo: #b9483a;
+  --pericolo-tenue: #f8e4df;
+  --ombra: 29, 31, 28;
+  --vetro: rgba(255, 253, 248, 0.8);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-sfondo: var(--sfondo);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-superficie-3: var(--superficie-3);
+  --color-inchiostro: var(--inchiostro);
+  --color-inchiostro-2: var(--inchiostro-2);
+  --color-tenue: var(--tenue);
+  --color-linea: var(--linea);
+  --color-linea-forte: var(--linea-forte);
+  --color-accento: var(--accento);
+  --color-accento-hover: var(--accento-hover);
+  --color-accento-tenue: var(--accento-tenue);
+  --color-su-accento: var(--su-accento);
+  --color-becco: var(--becco);
+  --color-becco-tenue: var(--becco-tenue);
+  --color-eco: var(--eco);
+  --color-eco-tenue: var(--eco-tenue);
+  --color-pericolo: var(--pericolo);
+  --color-pericolo-tenue: var(--pericolo-tenue);
+  --font-sans: "Onest Variable", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Onest Variable", system-ui, sans-serif;
+}
+
+html {
+  background: var(--sfondo);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  color: var(--inchiostro);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  /* Alone freddo in alto, come luce sul ghiaccio */
+  background:
+    radial-gradient(1200px 520px at 85% -10%, var(--sfondo-alone), transparent 60%),
+    radial-gradient(900px 400px at -10% 110%, var(--sfondo-alone), transparent 60%),
+    var(--sfondo);
+  background-attachment: fixed;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.titolo {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 72;
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+
+.sovratitolo {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--tenue);
+}
+
+.carta {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 0 rgba(var(--ombra), 0.03),
+    0 12px 32px -18px rgba(var(--ombra), 0.18);
+}
+
+.vetro {
+  background: var(--vetro);
+  backdrop-filter: saturate(160%) blur(18px);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+}
+
+.anello-focus:focus-visible {
+  outline: 2px solid var(--accento);
+  outline-offset: 2px;
+}
+
+.numeri {
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-sicuro {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+.pt-sicuro {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+
+/* Barre di scorrimento discrete */
+.scorrimento-fine {
+  scrollbar-width: thin;
+  scrollbar-color: var(--linea-forte) transparent;
+}
+.senza-barra {
+  scrollbar-width: none;
+}
+.senza-barra::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
