@@ -17,13 +17,13 @@ export type Porta = {
   presto?: boolean;
 };
 
-export function porteHome(numeri: { daComprare: number; spesoMese: string; inCasa: number; impegniSettimana: number }): Porta[] {
+export function porteHome(numeri: { daComprare: number; spesoMese: string; inCasa: number; impegniSettimana: number; residuo: string | null }): Porta[] {
   return [
     { id: "spesa", titolo: "spesa", testo: `${numeri.daComprare} da comprare`, href: "/spesa", icona: ShoppingBasket, stile: "bg-becco text-su-becco" },
     { id: "agenda", titolo: "agenda", testo: numeri.impegniSettimana ? `${numeri.impegniSettimana} ${numeri.impegniSettimana === 1 ? "impegno" : "impegni"} nei prossimi 7 giorni` : "Niente in programma questa settimana", href: "/agenda", icona: CalendarCheck, stile: "bg-[#7a5cc2] text-white" },
     { id: "spese", titolo: "spese", testo: `${numeri.spesoMese} questo mese`, href: "/spesa?vista=spese", icona: ReceiptEuro, stile: "bg-guancia text-[#2c1c3d]" },
     { id: "casa", titolo: "in casa", testo: `${numeri.inCasa} prodotti tra frigo e dispensa`, href: "/spesa?vista=dispensa", icona: Refrigerator, stile: "bg-lastra text-inchiostro" },
-    { id: "finanze", titolo: "finanze", testo: "Conti, bollette e budget", href: null, icona: Wallet, stile: "bg-[#23885a] text-white", presto: true },
+    { id: "finanze", titolo: "finanze", testo: numeri.residuo ? `${numeri.residuo} sul conto` : "Il conto di casa", href: "/finanze", icona: Wallet, stile: "bg-[#23885a] text-white" },
   ];
 }
 

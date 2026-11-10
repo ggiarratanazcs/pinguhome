@@ -9,7 +9,7 @@ import type { DatiSpesa } from "./app-spesa";
 
 type Periodo = "mese" | "trimestre" | "anno";
 type Vista = "lista" | "reparto" | "negozio";
-type Fetta = { id: string; nome: string; valore: number; colore: string; euro?: number };
+export type Fetta = { id: string; nome: string; valore: number; colore: string; euro?: number };
 
 const PERIODI: { id: Periodo; nome: string }[] = [
   { id: "mese", nome: "Mese" },
@@ -317,7 +317,7 @@ export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] 
   );
 }
 
-function Indicatore({ nome, valore, nota, tono, testo }: { nome: string; valore: string; nota?: string; tono?: "su" | "giu"; testo?: boolean }) {
+export function Indicatore({ nome, valore, nota, tono, testo }: { nome: string; valore: string; nota?: string; tono?: "su" | "giu"; testo?: boolean }) {
   return (
     <div className="rounded-[20px] bg-superficie-2 p-4">
       <p className="text-[0.8125rem] text-tenue">{nome}</p>
@@ -327,7 +327,7 @@ function Indicatore({ nome, valore, nota, tono, testo }: { nome: string; valore:
   );
 }
 
-function Torta({ fette, conteggio }: { fette: Fetta[]; conteggio: boolean }) {
+export function Torta({ fette, conteggio }: { fette: Fetta[]; conteggio: boolean }) {
   const totale = fette.reduce((t, f) => t + f.valore, 0);
   const R = 42;
   const C = 2 * Math.PI * R;

@@ -12,7 +12,7 @@ import type { MembroCasa } from "@/lib/sessione";
 const VOCI = [
   { href: "/", nome: "Home", icona: House, attiva: true },
   { href: "/spesa", nome: "Spesa", icona: ShoppingBasket, attiva: true },
-  { href: "/finanze", nome: "Finanze", icona: Wallet, attiva: false },
+  { href: "/finanze", nome: "Finanze", icona: Wallet, attiva: true },
   { href: "/agenda", nome: "Agenda", icona: CalendarCheck, attiva: true },
   { href: "/impostazioni", nome: "Impostazioni", icona: Settings2, attiva: true },
 ] as const;
@@ -115,6 +115,7 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
 const TITOLI_MOBILE: [string, string][] = [
   ["/spesa", "spesa"],
   ["/agenda", "agenda"],
+  ["/finanze", "finanze"],
   ["/impostazioni", "impostazioni"],
 ];
 

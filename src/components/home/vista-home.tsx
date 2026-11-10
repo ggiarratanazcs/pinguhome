@@ -22,10 +22,17 @@ export type DatiHome = {
   reparti: Reparto[];
   impegniSettimana: number;
   impegni30: number;
+  residuo: number | null;
 };
 
 function euro(n: number, decimali = true) {
-  return n.toLocaleString("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: decimali ? 2 : 0, maximumFractionDigits: decimali ? 2 : 0 });
+  return n.toLocaleString("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: decimali ? 2 : 0,
+    maximumFractionDigits: decimali ? 2 : 0,
+    useGrouping: "always",
+  } as Intl.NumberFormatOptions);
 }
 
 /** Numero che sale fino al valore all'apertura della pagina (unico movimento della Home). */
@@ -129,13 +136,13 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           <Indicatore href="/agenda" immagine="/casa/calendario.webp" rapporto={557 / 640} etichetta="impegni in 30 giorni" ritardo={0.06} sopra={<DataDelGiorno />}>
             <Contatore valore={dati.impegni30} />
           </Indicatore>
-          <Indicatore href={null} immagine="/casa/salvadanaio.webp" rapporto={621 / 640} etichetta="residuo sul conto" ritardo={0.12}>
-            <span className="text-tenue">presto</span>
+          <Indicatore href="/finanze" immagine="/casa/salvadanaio.webp" rapporto={621 / 640} etichetta="residuo sul conto" ritardo={0.12}>
+            {dati.residuo === null ? <span className="text-tenue">—</span> : <Contatore valore={dati.residuo} formato={(n) => euro(n, false)} />}
           </Indicatore>
         </div>
       </section>
 
-      <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa, impegniSettimana: dati.impegniSettimana })} />
+      <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa, impegniSettimana: dati.impegniSettimana, residuo: dati.residuo === null ? null : euro(dati.residuo, false) })} />
 
       <div className="mt-10 hidden gap-10 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
         {/* Liste con avanzamento: solo su schermi grandi, su telefono ci sono le carte */}

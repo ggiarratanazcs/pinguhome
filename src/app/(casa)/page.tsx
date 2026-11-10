@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getContesto } from "@/lib/sessione";
 import { VistaHome } from "@/components/home/vista-home";
 import { occorrenze, piuGiorni } from "@/lib/agenda";
+import { residuo } from "@/lib/finanze";
 
 function saluto(ora: number) {
   if (ora < 6) return "notte fonda";
@@ -37,7 +38,7 @@ export default async function Home() {
     };
   });
 
-  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }] = await Promise.all([
+  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }] = await Promise.all([
     supabase.from("voci_lista").select("lista_id, presa, urgente").eq("famiglia_id", f),
     supabase.from("liste").select("id, nome, colore").eq("famiglia_id", f).eq("archiviata", false).order("ordine"),
     supabase.from("dispensa").select("posizione").eq("famiglia_id", f),
@@ -51,6 +52,8 @@ export default async function Home() {
       .order("creata_il", { ascending: false }),
     supabase.from("reparti").select("*").eq("famiglia_id", f),
     supabase.from("impegni").select("data, ricorrenza").eq("famiglia_id", f),
+    supabase.from("conti").select("*").eq("famiglia_id", f).maybeSingle(),
+    supabase.from("movimenti").select("*").eq("famiglia_id", f),
   ]);
   const impegni30 = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 29)).length, 0);
   const impegniSettimana = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 6)).length, 0);
@@ -95,6 +98,7 @@ export default async function Home() {
         reparti: reparti ?? [],
         impegniSettimana,
         impegni30,
+        residuo: residuo(conto ?? null, movimenti ?? [], oggi),
       }}
     />
   );
