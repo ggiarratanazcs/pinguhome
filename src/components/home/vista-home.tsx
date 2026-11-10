@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { animate, motion, useMotionValue, useTransform } from "motion/react";
-import { ArrowUpRight, CalendarDays } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import type { Reparto } from "@/lib/database.types";
 import { POSIZIONI } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
@@ -42,14 +42,20 @@ function Contatore({ valore, formato }: { valore: number; formato?: (n: number) 
 function Indicatore({
   href,
   immagine,
+  rapporto,
   etichetta,
   ritardo,
+  sopra,
   children,
 }: {
   href: string | null;
-  immagine: string | null;
+  immagine: string;
+  /** larghezza / altezza dell'immagine */
+  rapporto: number;
   etichetta: string;
   ritardo: number;
+  /** Contenuto disegnato sopra l'immagine (es. la data sul calendario) */
+  sopra?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const corpo = (
@@ -60,19 +66,17 @@ function Indicatore({
       className="group flex h-full flex-col items-center rounded-[24px] bg-superficie-2 px-2 pb-3 pt-3 text-center md:rounded-[32px] md:px-5 md:pb-5 md:pt-5"
     >
       <span className="relative block aspect-[4/5] w-full">
-        {immagine ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={immagine}
-            alt=""
-            draggable={false}
-            className="absolute inset-0 size-full object-contain object-bottom drop-shadow-[0_12px_16px_rgba(var(--ombra),0.18)] transition-transform duration-300 group-hover:-translate-y-1"
-          />
-        ) : (
-          <span className="absolute inset-0 grid place-items-end justify-center pb-2">
-            <CalendarDays className="size-14 text-accento md:size-20" strokeWidth={1.5} />
+        <span className="absolute inset-0 flex items-end justify-center">
+          {/* Il riquadro ha le proporzioni dell'immagine, così ciò che sta sopra resta al suo posto */}
+          <span
+            className={cn("@container relative block transition-transform duration-300 group-hover:-translate-y-1", rapporto < 4 / 5 ? "h-full" : "w-full")}
+            style={{ aspectRatio: rapporto }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={immagine} alt="" draggable={false} className="absolute inset-0 size-full object-contain drop-shadow-[0_12px_16px_rgba(var(--ombra),0.18)]" />
+            {sopra}
           </span>
-        )}
+        </span>
       </span>
       <span className="titolo-normale mt-2 block text-[1.25rem] leading-none md:text-[1.75rem]">{children}</span>
       <span className="mt-1.5 block text-[0.75rem] leading-tight text-tenue md:text-[0.8125rem]">{etichetta}</span>
@@ -84,6 +88,23 @@ function Indicatore({
     </Link>
   ) : (
     <div>{corpo}</div>
+  );
+}
+
+/** La data di oggi, scritta sul pannello bianco del calendario. */
+function DataDelGiorno() {
+  const oggi = new Date();
+  const fmt = (o: Intl.DateTimeFormatOptions) => oggi.toLocaleDateString("it-IT", { ...o, timeZone: "Europe/Rome" });
+  return (
+    <span
+      suppressHydrationWarning
+      className="pointer-events-none absolute flex flex-col items-center justify-center text-center leading-none text-[#4a4a4f]"
+      style={{ left: "17%", right: "5%", top: "11%", bottom: "22%", transform: "skewY(-2deg)" }}
+    >
+      <span suppressHydrationWarning className="text-[9cqw] font-semibold uppercase tracking-wide">{fmt({ month: "short" }).replace(".", "")}</span>
+      <span suppressHydrationWarning className="titolo-normale mt-[2cqw] text-[26cqw]">{fmt({ day: "numeric" })}</span>
+      <span suppressHydrationWarning className="mt-[2cqw] text-[8cqw]">{fmt({ weekday: "long" })}</span>
+    </span>
   );
 }
 
@@ -104,13 +125,13 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
         </h1>
 
         <div className="mt-6 grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
-          <Indicatore href="/spesa?vista=spese" immagine="/casa/carrello.webp" etichetta="spesa del mese" ritardo={0}>
+          <Indicatore href="/spesa?vista=spese" immagine="/casa/carrello.webp" rapporto={414 / 640} etichetta="spesa del mese" ritardo={0}>
             <Contatore valore={meseCorrente?.totale ?? 0} formato={(n) => euro(n, false)} />
           </Indicatore>
-          <Indicatore href="/agenda" immagine={null} etichetta="impegni in 30 giorni" ritardo={0.06}>
+          <Indicatore href="/agenda" immagine="/casa/calendario.webp" rapporto={557 / 640} etichetta="impegni in 30 giorni" ritardo={0.06} sopra={<DataDelGiorno />}>
             <Contatore valore={dati.impegni30} />
           </Indicatore>
-          <Indicatore href={null} immagine="/casa/salvadanaio.webp" etichetta="residuo sul conto" ritardo={0.12}>
+          <Indicatore href={null} immagine="/casa/salvadanaio.webp" rapporto={621 / 640} etichetta="residuo sul conto" ritardo={0.12}>
             <span className="text-tenue">presto</span>
           </Indicatore>
         </div>
