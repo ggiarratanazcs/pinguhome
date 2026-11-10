@@ -52,6 +52,7 @@ export default async function Home() {
     supabase.from("reparti").select("*").eq("famiglia_id", f),
     supabase.from("impegni").select("data, ricorrenza").eq("famiglia_id", f),
   ]);
+  const impegni30 = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 29)).length, 0);
   const impegniSettimana = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 6)).length, 0);
 
   const inCasa: Record<string, number> = {};
@@ -93,6 +94,7 @@ export default async function Home() {
         inCasa,
         reparti: reparti ?? [],
         impegniSettimana,
+        impegni30,
       }}
     />
   );

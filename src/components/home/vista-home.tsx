@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "motion/react";
-import { ArrowUpRight, Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
 import type { Reparto } from "@/lib/database.types";
-import { indovinaReparto, interpretaVoce, POSIZIONI } from "@/lib/spesa";
-import { Mascotte } from "@/components/mascotte";
+import { POSIZIONI } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import { CaroselloSezioni, porteHome } from "./carosello-sezioni";
 
@@ -24,6 +21,7 @@ export type DatiHome = {
   inCasa: Record<string, number>;
   reparti: Reparto[];
   impegniSettimana: number;
+  impegni30: number;
 };
 
 function euro(n: number, decimali = true) {
@@ -41,65 +39,81 @@ function Contatore({ valore, formato }: { valore: number; formato?: (n: number) 
   return <motion.span className="numeri">{testo}</motion.span>;
 }
 
+function Indicatore({
+  href,
+  immagine,
+  etichetta,
+  ritardo,
+  children,
+}: {
+  href: string | null;
+  immagine: string | null;
+  etichetta: string;
+  ritardo: number;
+  children: React.ReactNode;
+}) {
+  const corpo = (
+    <motion.span
+      initial={{ y: 12, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 24, delay: ritardo }}
+      className="group flex h-full flex-col items-center rounded-[24px] bg-superficie-2 px-2 pb-3 pt-3 text-center md:rounded-[32px] md:px-5 md:pb-5 md:pt-5"
+    >
+      <span className="relative block aspect-[4/5] w-full">
+        {immagine ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={immagine}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 size-full object-contain object-bottom drop-shadow-[0_12px_16px_rgba(var(--ombra),0.18)] transition-transform duration-300 group-hover:-translate-y-1"
+          />
+        ) : (
+          <span className="absolute inset-0 grid place-items-end justify-center pb-2">
+            <CalendarDays className="size-14 text-accento md:size-20" strokeWidth={1.5} />
+          </span>
+        )}
+      </span>
+      <span className="titolo-normale mt-2 block text-[1.25rem] leading-none md:text-[1.75rem]">{children}</span>
+      <span className="mt-1.5 block text-[0.75rem] leading-tight text-tenue md:text-[0.8125rem]">{etichetta}</span>
+    </motion.span>
+  );
+  return href ? (
+    <Link href={href} className="anello-focus block rounded-[24px] transition-transform active:scale-[0.97] md:rounded-[32px]">
+      {corpo}
+    </Link>
+  ) : (
+    <div>{corpo}</div>
+  );
+}
+
 export function VistaHome({ dati }: { dati: DatiHome }) {
-  const router = useRouter();
   const daComprare = dati.liste.reduce((t, l) => t + l.daPrendere, 0);
   const meseCorrente = dati.mesi[dati.mesi.length - 1];
   const mesePrecedente = dati.mesi[dati.mesi.length - 2];
   const totaleInCasa = Object.values(dati.inCasa).reduce((t, n) => t + n, 0);
   const massimo = Math.max(1, ...dati.mesi.map((m) => m.totale));
-  const listaPrincipale = dati.liste[0];
 
   return (
     <main className="mx-auto w-full max-w-[1120px] px-4 pt-1 md:px-12 lg:pt-10">
-      {/* Testata: il dorso del pinguino entra nella pagina */}
-      <section className="relative overflow-hidden rounded-[32px] bg-dorso px-5 pb-6 pt-6 text-su-dorso md:px-10 md:pb-9 md:pt-9">
-        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-dorso-2 opacity-70" />
-        <div className="relative flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[0.875rem] text-su-dorso-tenue first-letter:uppercase">{dati.data}</p>
-            <h1 className="titolo titolo-pagina mt-1.5">
-              {dati.saluto}, {dati.nome.toLowerCase()}
-            </h1>
-            <div className="hidden md:block">
-              {listaPrincipale ? <AggiuntaVeloce famigliaId={dati.famigliaId} lista={listaPrincipale} reparti={dati.reparti} onAggiunto={() => router.refresh()} /> : null}
-            </div>
-          </div>
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 14, delay: 0.15 }}
-            className="relative -mt-3 hidden w-32 shrink-0 lg:block"
-          >
-            <span aria-hidden className="absolute inset-x-[-8%] bottom-[-6%] top-[44%] rounded-[50%] bg-lastra" />
-            <Mascotte className="relative w-full" />
-          </motion.div>
-        </div>
+      {/* Testata: data, saluto e i tre numeri che contano */}
+      <section className="pt-3 md:pt-0">
+        <p className="text-[0.875rem] text-tenue first-letter:uppercase">{dati.data}</p>
+        <h1 className="titolo titolo-pagina mt-1">
+          {dati.saluto}, {dati.nome.toLowerCase()}
+        </h1>
 
-        <div className="md:hidden">
-          {listaPrincipale ? <AggiuntaVeloce famigliaId={dati.famigliaId} lista={listaPrincipale} reparti={dati.reparti} onAggiunto={() => router.refresh()} /> : null}
+        <div className="mt-6 grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
+          <Indicatore href="/spesa?vista=spese" immagine="/casa/carrello.webp" etichetta="spesa del mese" ritardo={0}>
+            <Contatore valore={meseCorrente?.totale ?? 0} formato={(n) => euro(n, false)} />
+          </Indicatore>
+          <Indicatore href="/agenda" immagine={null} etichetta="impegni in 30 giorni" ritardo={0.06}>
+            <Contatore valore={dati.impegni30} />
+          </Indicatore>
+          <Indicatore href={null} immagine="/casa/salvadanaio.webp" etichetta="residuo sul conto" ritardo={0.12}>
+            <span className="text-tenue">presto</span>
+          </Indicatore>
         </div>
-
-        <dl className="relative mt-7 grid grid-cols-3 gap-3 md:mt-8 md:max-w-2xl">
-          <div>
-            <dd className="titolo-normale text-[1.75rem] leading-none md:text-[2.5rem]">
-              <Contatore valore={daComprare} />
-            </dd>
-            <dt className="mt-2 text-[0.8125rem] text-su-dorso-tenue">da comprare</dt>
-          </div>
-          <div>
-            <dd className="titolo-normale text-[1.75rem] leading-none text-becco md:text-[2.5rem]">
-              <Contatore valore={meseCorrente?.totale ?? 0} formato={(n) => euro(n, false)} />
-            </dd>
-            <dt className="mt-2 text-[0.8125rem] text-su-dorso-tenue">spesi a {meseCorrente?.etichetta ?? "questo mese"}</dt>
-          </div>
-          <div>
-            <dd className="titolo-normale text-[1.75rem] leading-none md:text-[2.5rem]">
-              <Contatore valore={totaleInCasa} />
-            </dd>
-            <dt className="mt-2 text-[0.8125rem] text-su-dorso-tenue">prodotti in casa</dt>
-          </div>
-        </dl>
       </section>
 
       <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa, impegniSettimana: dati.impegniSettimana })} />
@@ -194,66 +208,5 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
       </div>
       <div className="pb-6" />
     </main>
-  );
-}
-
-/** "Cosa manca?" direttamente dalla Home: aggiunge alla prima lista. */
-function AggiuntaVeloce({
-  famigliaId,
-  lista,
-  reparti,
-  onAggiunto,
-}: {
-  famigliaId: string;
-  lista: { id: string; nome: string };
-  reparti: Reparto[];
-  onAggiunto: () => void;
-}) {
-  const [testo, setTesto] = useState("");
-  const [fatto, setFatto] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const supabase = useMemo(() => createClient(), []);
-
-  async function invia(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const v = interpretaVoce(testo);
-    if (!v.nome) return;
-    setTesto("");
-    const reparto_id = indovinaReparto(v.nome, reparti);
-    // Il prodotto entra anche negli abituali (se c'è già, lo si riusa)
-    await supabase.from("prodotti").upsert({ famiglia_id: famigliaId, nome: v.nome, reparto_id, unita: v.unita ?? "pz" }, { onConflict: "famiglia_id,nome", ignoreDuplicates: true });
-    const { data: prodotto } = await supabase.from("prodotti").select("id, reparto_id").eq("famiglia_id", famigliaId).eq("nome", v.nome).maybeSingle();
-    await supabase.from("voci_lista").insert({
-      famiglia_id: famigliaId,
-      lista_id: lista.id,
-      prodotto_id: prodotto?.id ?? null,
-      reparto_id: prodotto?.reparto_id ?? reparto_id,
-      nome: v.nome,
-      quantita: v.quantita,
-      unita: v.unita ?? "pz",
-    });
-    setFatto(`${v.nome} aggiunto a ${lista.nome}`);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setFatto(null), 2400);
-    onAggiunto();
-  }
-
-  return (
-    <form onSubmit={invia} className="relative mt-6 md:w-[520px] md:max-w-full">
-      <div className="flex items-center gap-2 rounded-full bg-superficie py-1.5 pl-5 pr-1.5 text-inchiostro">
-        <input
-          value={testo}
-          onChange={(e) => setTesto(e.target.value)}
-          placeholder={`Cosa manca? Va in ${lista.nome}`}
-          enterKeyHint="done"
-          autoComplete="off"
-          className="h-10 min-w-0 flex-1 bg-transparent text-[1rem] outline-none placeholder:text-tenue"
-        />
-        <button type="submit" disabled={!testo.trim()} aria-label="Aggiungi" className="anello-focus grid size-10 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover disabled:opacity-40">
-          <Plus className="size-5" strokeWidth={2.4} />
-        </button>
-      </div>
-      {fatto ? <p className="absolute left-5 top-full mt-1.5 text-[0.8125rem] text-su-dorso-tenue">{fatto}</p> : null}
-    </form>
   );
 }
