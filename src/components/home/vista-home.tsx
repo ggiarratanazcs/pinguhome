@@ -111,9 +111,7 @@ function DataDelGiorno() {
 export function VistaHome({ dati }: { dati: DatiHome }) {
   const daComprare = dati.liste.reduce((t, l) => t + l.daPrendere, 0);
   const meseCorrente = dati.mesi[dati.mesi.length - 1];
-  const mesePrecedente = dati.mesi[dati.mesi.length - 2];
   const totaleInCasa = Object.values(dati.inCasa).reduce((t, n) => t + n, 0);
-  const massimo = Math.max(1, ...dati.mesi.map((m) => m.totale));
 
   return (
     <main className="mx-auto w-full max-w-[1120px] px-4 pt-1 md:px-12 lg:pt-10">
@@ -139,8 +137,8 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
 
       <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa, impegniSettimana: dati.impegniSettimana })} />
 
-      <div className="mt-10 grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
-        {/* Liste con avanzamento: su telefono ci sono già le carte, qui resta solo il grafico */}
+      <div className="mt-10 hidden gap-10 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+        {/* Liste con avanzamento: solo su schermi grandi, su telefono ci sono le carte */}
         <section className="hidden md:block">
           <h2 className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
             <span className="titolo text-[1.125rem]">spesa</span>
@@ -186,48 +184,8 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
             ))}
           </div>
         </section>
-
-        {/* Spese: ultimi sei mesi */}
-        <section>
-          <h2 className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
-            <span className="titolo text-[1.125rem]">spese</span>
-            {mesePrecedente && mesePrecedente.totale > 0 ? (
-              <span className="text-[0.8125rem] text-tenue">
-                {mesePrecedente.etichetta}: <span className="numeri font-semibold text-inchiostro">{euro(mesePrecedente.totale, false)}</span>
-              </span>
-            ) : null}
-          </h2>
-          <div className="mt-5 flex h-36 items-end gap-2.5 md:gap-3.5" role="img" aria-label="Spese degli ultimi sei mesi">
-            {dati.mesi.map((m, i) => {
-              const corrente = i === dati.mesi.length - 1;
-              return (
-                <div key={m.etichetta} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
-                  <span className={cn("numeri text-[0.6875rem]", corrente ? "font-semibold text-inchiostro" : "text-tenue")}>
-                    {m.totale > 0 ? Math.round(m.totale) : ""}
-                  </span>
-                  <motion.span
-                    className={cn("w-full rounded-[8px]", corrente ? "bg-becco" : "bg-superficie-3")}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${Math.max(3, (m.totale / massimo) * 100)}%` }}
-                    transition={{ duration: 0.8, delay: 0.05 * i, ease: [0.22, 0.9, 0.24, 1] }}
-                  />
-                  <span className={cn("text-[0.75rem]", corrente ? "font-semibold" : "text-tenue")}>{m.etichetta.slice(0, 3)}</span>
-                </div>
-              );
-            })}
-          </div>
-          {dati.ultimaSpesa ? (
-            <p className="mt-6 border-t border-linea pt-4 text-[0.9375rem] text-inchiostro-2">
-              Ultima spesa: <span className="font-semibold text-inchiostro">{euro(dati.ultimaSpesa.importo)}</span> {dati.ultimaSpesa.quando}
-              {dati.ultimaSpesa.dove ? `, ${dati.ultimaSpesa.dove}` : ""}
-              {dati.ultimaSpesa.chi ? `, pagata da ${dati.ultimaSpesa.chi}` : ""}.
-            </p>
-          ) : (
-            <p className="mt-6 border-t border-linea pt-4 text-[0.9375rem] text-tenue">Ancora nessuna spesa: chiudi un carrello per vederla qui.</p>
-          )}
-        </section>
       </div>
-      <div className="pb-6" />
+      <div className="hidden pb-6 md:block" />
     </main>
   );
 }

@@ -70,6 +70,7 @@ function intervalli(periodo: Periodo, oggi: Date) {
 export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] }) {
   const [periodo, setPeriodo] = useState<Periodo>("mese");
   const [vista, setVista] = useState<Vista>("lista");
+  const [scala, setScala] = useState<"settimane" | "mesi">("settimane");
 
   const oggi = useMemo(() => new Date(), []);
   const int = useMemo(() => intervalli(periodo, oggi), [periodo, oggi]);
@@ -155,31 +156,34 @@ export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] 
   /* ---------- Barre ---------- */
 
   const barre = useMemo(() => {
-    if (periodo === "anno") {
-      return Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(oggi.getFullYear(), oggi.getMonth() - 11 + i, 1);
-        const pref = iso(d).slice(0, 7);
-        return { nome: MESI_BREVI[d.getMonth()], valore: spese.filter((s) => s.data.startsWith(pref)).reduce((t, s) => t + Number(s.importo), 0) };
+    const somma = (da: string, a: string) => dati.spese.filter((s) => s.data >= da && s.data <= a).reduce((t, s) => t + Number(s.importo), 0);
+
+    if (scala === "mesi") {
+      // Gli ultimi mesi fino a quello corrente (almeno sei)
+      const n = Math.max(6, int.mesi);
+      return Array.from({ length: n }, (_, i) => {
+        const d = new Date(oggi.getFullYear(), oggi.getMonth() - n + 1 + i, 1);
+        const fine = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        return { nome: MESI_BREVI[d.getMonth()], valore: somma(iso(d), iso(fine)) };
       });
     }
-    // Settimane da lunedì, dentro il periodo
-    const inizio = new Date(`${int.inizio}T12:00:00`);
+
+    // Settimane da lunedì: quelle del periodo, oppure le ultime 13 per l'anno
+    const fine = periodo === "anno" ? new Date(oggi) : new Date(`${int.fine}T12:00:00`);
+    const inizio = periodo === "anno" ? new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() - 7 * 12) : new Date(`${int.inizio}T12:00:00`);
     const lunedi = new Date(inizio);
     lunedi.setDate(inizio.getDate() - ((inizio.getDay() + 6) % 7));
-    const fine = new Date(`${int.fine}T12:00:00`);
     const out: { nome: string; valore: number }[] = [];
     for (let d = new Date(lunedi); d <= fine; d.setDate(d.getDate() + 7)) {
-      const da = iso(d);
       const fineSett = new Date(d);
       fineSett.setDate(d.getDate() + 6);
-      const a = iso(fineSett);
       out.push({
         nome: periodo === "mese" ? `sett. ${out.length + 1}` : `${d.getDate()}/${d.getMonth() + 1}`,
-        valore: spese.filter((s) => s.data >= da && s.data <= a).reduce((t, s) => t + Number(s.importo), 0),
+        valore: somma(iso(d), iso(fineSett)),
       });
     }
     return out;
-  }, [periodo, spese, int, oggi]);
+  }, [scala, periodo, dati.spese, int, oggi]);
 
   /* ---------- I più comprati ---------- */
 
@@ -267,8 +271,29 @@ export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] 
 
           <div className="min-w-0">
             <section>
-              <h2 className="titolo text-[1.125rem]">{periodo === "anno" ? "mese per mese" : "settimana per settimana"}</h2>
-              <Barre barre={barre} />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="titolo text-[1.125rem]">{scala === "mesi" ? "mese per mese" : "settimana per settimana"}</h2>
+                <div className="flex gap-1">
+                  {(
+                    [
+                      { id: "settimane", nome: "Settimane" },
+                      { id: "mesi", nome: "Mesi" },
+                    ] as const
+                  ).map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setScala(v.id)}
+                      className={cn(
+                        "anello-focus h-8 rounded-full px-3 text-[0.8125rem] transition",
+                        scala === v.id ? "bg-becco-tenue font-semibold text-becco-scuro" : "text-tenue ring-1 ring-linea-forte hover:text-inchiostro",
+                      )}
+                    >
+                      {v.nome}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Barre barre={barre} evidenzia={scala === "mesi" ? barre.length - 1 : undefined} />
             </section>
 
             {piuComprati.length ? (
@@ -354,9 +379,10 @@ function Torta({ fette, conteggio }: { fette: Fetta[]; conteggio: boolean }) {
   );
 }
 
-function Barre({ barre }: { barre: { nome: string; valore: number }[] }) {
+/** Barre verticali; in arancione la più alta, oppure quella indicata (es. il mese corrente). */
+function Barre({ barre, evidenzia }: { barre: { nome: string; valore: number }[]; evidenzia?: number }) {
   const max = Math.max(1, ...barre.map((b) => b.valore));
-  const piuAlta = barre.reduce((m, b, i) => (b.valore > barre[m].valore ? i : m), 0);
+  const piuAlta = evidenzia ?? barre.reduce((m, b, i) => (b.valore > barre[m].valore ? i : m), 0);
   return (
     <div className="mt-4 flex h-44 items-end gap-1.5">
       {barre.map((b, i) => (
