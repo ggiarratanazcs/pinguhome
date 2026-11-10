@@ -125,8 +125,8 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
         </h1>
 
         <div className="mt-6 grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
-          <Indicatore href="/spesa?vista=spese" immagine="/casa/carrello.webp" rapporto={414 / 640} etichetta="spesa del mese" ritardo={0}>
-            <Contatore valore={meseCorrente?.totale ?? 0} formato={(n) => euro(n, false)} />
+          <Indicatore href="/spesa" immagine="/casa/carrello.webp" rapporto={414 / 640} etichetta="da comprare" ritardo={0}>
+            <Contatore valore={daComprare} />
           </Indicatore>
           <Indicatore href="/agenda" immagine="/casa/calendario.webp" rapporto={557 / 640} etichetta="impegni in 30 giorni" ritardo={0.06} sopra={<DataDelGiorno />}>
             <Contatore valore={dati.impegni30} />
