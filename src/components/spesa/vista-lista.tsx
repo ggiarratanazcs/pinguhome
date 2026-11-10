@@ -6,7 +6,7 @@ import { Check, ChevronDown, CornerDownLeft, Flame, Loader2, Minus, MoreHorizont
 import type { Lista, Reparto, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { interpretaVoce, UNITA } from "@/lib/spesa";
-import { Avatar, Pulsante } from "@/components/ui";
+import { Pulsante } from "@/components/ui";
 import { Mascotte } from "@/components/mascotte";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
@@ -357,7 +357,6 @@ function RigaVoce({
   azioni: AzioniSpesa;
 }) {
   const [aperta, setAperta] = useState(false);
-  const autore = membri.find((m) => m.id === voce.aggiunta_da);
   const chiPresa = membri.find((m) => m.id === voce.presa_da);
 
   function trascina(_: unknown, info: PanInfo) {
@@ -425,7 +424,6 @@ function RigaVoce({
             </span>
           ) : null}
 
-          {autore && membri.length > 1 ? <Avatar nome={autore.nome} colore={autore.colore} className="size-6 text-[0.5625rem] opacity-80" /> : null}
 
           <button
             onClick={() => setAperta((a) => !a)}

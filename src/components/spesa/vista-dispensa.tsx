@@ -151,7 +151,7 @@ function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: Az
       exit={{ opacity: 0, height: 0 }}
       className="border-b border-linea py-3"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button onClick={() => setModifica((m) => !m)} className="anello-focus min-w-0 flex-1 truncate text-left text-[1rem]">
           {riga.nome}
         </button>
@@ -174,6 +174,24 @@ function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: Az
             <Plus className="size-3.5" />
           </button>
         </div>
+        <div className="flex items-center border-l border-linea pl-1">
+          <button
+            onClick={onRicompra}
+            className="anello-focus grid size-9 place-items-center rounded-full text-tenue hover:bg-becco-tenue hover:text-becco-scuro"
+            aria-label={`Rimetti ${riga.nome} in lista`}
+            title="Rimetti in lista"
+          >
+            <ShoppingCart className="size-4" />
+          </button>
+          <button
+            onClick={() => azioni.eliminaDispensa(riga)}
+            className="anello-focus grid size-9 place-items-center rounded-full text-tenue hover:bg-pericolo-tenue hover:text-pericolo"
+            aria-label={`${riga.nome} finito`}
+            title="Finito"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </div>
       </div>
 
       <AnimatePresence initial={false}>
@@ -192,12 +210,6 @@ function RigaDispensa({ riga, azioni, onRicompra }: { riga: Dispensa; azioni: Az
                   ))}
                 </select>
               </label>
-              <Pulsante variante="secondario" onClick={onRicompra} className="h-9 px-4 text-sm">
-                <ShoppingCart className="size-4" /> Rimetti in lista
-              </Pulsante>
-              <Pulsante variante="pericolo" onClick={() => azioni.eliminaDispensa(riga)} className="h-9 px-4 text-sm">
-                <Trash2 className="size-4" /> Finito
-              </Pulsante>
             </div>
           </motion.div>
         ) : null}
