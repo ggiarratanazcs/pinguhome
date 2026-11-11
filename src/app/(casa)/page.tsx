@@ -116,7 +116,7 @@ export default async function Home() {
         impegni30,
         residuo: residuo(conto ?? null, movimenti ?? [], oggi),
         foto,
-        userId: profilo.id,
+        cornice: profilo.cornice ?? "scorrimento",
       }}
     />
   );

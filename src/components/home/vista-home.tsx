@@ -24,7 +24,7 @@ export type DatiHome = {
   impegni30: number;
   residuo: number | null;
   foto: FotoCornice[];
-  userId: string;
+  cornice: "scorrimento" | "polaroid";
 };
 
 function euro(n: number, decimali = true) {
@@ -126,7 +126,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
       <section className="pt-3 md:pt-0">
         <CorniceFoto
           famigliaId={dati.famigliaId}
-          userId={dati.userId}
+          stile={dati.cornice}
           iniziali={dati.foto}
           data={dati.data}
           saluto={`${dati.saluto}, ${dati.nome.toLowerCase()}`}

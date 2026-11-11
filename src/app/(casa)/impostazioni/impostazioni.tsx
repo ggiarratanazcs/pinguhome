@@ -11,10 +11,11 @@ import { Avatar, Campo, Messaggio, Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { Mascotte, type SceltaMascotte } from "@/components/mascotte";
 import { GestioneNotifiche } from "@/components/notifiche";
+import { GestioneFoto, type FotoSalvata } from "@/components/impostazioni/gestione-foto";
 
 const COLORI = ["#1d2340", "#ff9f1c", "#f2789b", "#23885a", "#3f6fd8", "#7a5cc2", "#d2394a", "#0f8b8d"];
 
-export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; famiglia: Famiglia; membri: MembroCasa[] }) {
+export function Impostazioni({ profilo, famiglia, membri, foto }: { profilo: Profilo; famiglia: Famiglia; membri: MembroCasa[]; foto: FotoSalvata[] }) {
   const router = useRouter();
   const supabase = createClient();
   const [tema, setTema] = useState<IdTema>(temaValido(profilo.tema));
@@ -150,6 +151,10 @@ export function Impostazioni({ profilo, famiglia, membri }: { profilo: Profilo; 
             );
           })}
         </div>
+      </Sezione>
+
+      <Sezione titolo="foto">
+        <GestioneFoto famigliaId={famiglia.id} userId={profilo.id} stileIniziale={profilo.cornice ?? "scorrimento"} iniziali={foto} />
       </Sezione>
 
       <Sezione titolo="mascotte" descrizione="Il pinguino in alto a sinistra. Ognuno sceglie il suo: puoi caricare un'immagine tua, meglio un PNG con sfondo trasparente.">
