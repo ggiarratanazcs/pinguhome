@@ -21,6 +21,16 @@ function quando(data: string, oggi: string) {
   return `il ${d.toLocaleDateString("it-IT", { day: "numeric", month: "long" })}`;
 }
 
+/** Ordine casuale (Fisher–Yates), così ogni apertura parte da una foto diversa. */
+function mescola<T>(elenco: T[]) {
+  const copia = elenco.slice();
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+  return copia;
+}
+
 export default async function Home() {
   const { profilo, famiglia, membri } = await getContesto();
   const supabase = await createClient();
@@ -38,7 +48,7 @@ export default async function Home() {
     };
   });
 
-  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }] = await Promise.all([
+  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }, { data: righeFoto }] = await Promise.all([
     supabase.from("voci_lista").select("lista_id, presa, urgente").eq("famiglia_id", f),
     supabase.from("liste").select("id, nome, colore").eq("famiglia_id", f).eq("archiviata", false).order("ordine"),
     supabase.from("dispensa").select("posizione").eq("famiglia_id", f),
@@ -54,7 +64,13 @@ export default async function Home() {
     supabase.from("impegni").select("data, ricorrenza").eq("famiglia_id", f),
     supabase.from("conti").select("*").eq("famiglia_id", f).maybeSingle(),
     supabase.from("movimenti").select("*").eq("famiglia_id", f),
+    supabase.from("foto").select("id, path").eq("famiglia_id", f),
   ]);
+  // Foto della cornice: ordine casuale a ogni apertura, con link temporanei
+  const elencoFoto = mescola(righeFoto ?? []);
+  const firmati = elencoFoto.length ? (await supabase.storage.from("foto").createSignedUrls(elencoFoto.map((x) => x.path), 60 * 60 * 12)).data ?? [] : [];
+  const foto = elencoFoto.flatMap((x, i) => (firmati[i]?.signedUrl ? [{ id: x.id, path: x.path, url: firmati[i].signedUrl }] : []));
+
   const impegni30 = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 29)).length, 0);
   const impegniSettimana = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 6)).length, 0);
 
@@ -99,6 +115,8 @@ export default async function Home() {
         impegniSettimana,
         impegni30,
         residuo: residuo(conto ?? null, movimenti ?? [], oggi),
+        foto,
+        userId: profilo.id,
       }}
     />
   );

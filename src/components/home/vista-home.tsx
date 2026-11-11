@@ -7,7 +7,7 @@ import { ArrowUpRight } from "lucide-react";
 import type { Reparto } from "@/lib/database.types";
 import { POSIZIONI } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
-import { CaroselloSezioni, porteHome } from "./carosello-sezioni";
+import { CorniceFoto, type FotoCornice } from "./cornice-foto";
 
 export type DatiHome = {
   nome: string;
@@ -23,6 +23,8 @@ export type DatiHome = {
   impegniSettimana: number;
   impegni30: number;
   residuo: number | null;
+  foto: FotoCornice[];
+  userId: string;
 };
 
 function euro(n: number, decimali = true) {
@@ -117,19 +119,20 @@ function DataDelGiorno() {
 
 export function VistaHome({ dati }: { dati: DatiHome }) {
   const daComprare = dati.liste.reduce((t, l) => t + l.daPrendere, 0);
-  const meseCorrente = dati.mesi[dati.mesi.length - 1];
-  const totaleInCasa = Object.values(dati.inCasa).reduce((t, n) => t + n, 0);
 
   return (
     <main className="mx-auto w-full max-w-[1120px] px-4 pt-1 md:px-12 lg:pt-10">
       {/* Testata: data, saluto e i tre numeri che contano */}
       <section className="pt-3 md:pt-0">
-        <p className="text-[0.875rem] text-tenue first-letter:uppercase">{dati.data}</p>
-        <h1 className="titolo titolo-pagina mt-1">
-          {dati.saluto}, {dati.nome.toLowerCase()}
-        </h1>
+        <CorniceFoto
+          famigliaId={dati.famigliaId}
+          userId={dati.userId}
+          iniziali={dati.foto}
+          data={dati.data}
+          saluto={`${dati.saluto}, ${dati.nome.toLowerCase()}`}
+        />
 
-        <div className="mt-6 grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
+        <div className="mt-4 grid max-w-3xl grid-cols-3 gap-3 md:mt-6 md:gap-6">
           <Indicatore href="/spesa" immagine="/casa/carrello.webp" rapporto={414 / 640} etichetta="da comprare" ritardo={0}>
             <Contatore valore={daComprare} />
           </Indicatore>
@@ -142,7 +145,6 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
         </div>
       </section>
 
-      <CaroselloSezioni porte={porteHome({ daComprare, spesoMese: euro(meseCorrente?.totale ?? 0, false), inCasa: totaleInCasa, impegniSettimana: dati.impegniSettimana, residuo: dati.residuo === null ? null : euro(dati.residuo, false) })} />
 
       <div className="mt-10 hidden gap-10 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
         {/* Liste con avanzamento: solo su schermi grandi, su telefono ci sono le carte */}

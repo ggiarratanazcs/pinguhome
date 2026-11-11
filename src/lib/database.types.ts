@@ -174,6 +174,16 @@ export type Movimento = {
   tipo: "entrata" | "uscita";
 };
 
+export type Foto = {
+  altezza: number | null;
+  caricata_da: string | null;
+  creata_il: string;
+  famiglia_id: string;
+  id: string;
+  larghezza: number | null;
+  path: string;
+};
+
 type Opz<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type Database = {
@@ -189,6 +199,7 @@ export type Database = {
       impegni: Tabella<Impegno, Opz<Impegno, "categoria" | "creato_da" | "creato_il" | "id" | "importo" | "note" | "ora" | "per_chi" | "promemoria" | "ricorrenza">>;
       push_iscrizioni: Tabella<PushIscrizione, Opz<PushIscrizione, "id" | "user_id" | "dispositivo" | "creata_il">>;
       impegni_fatti: Tabella<ImpegnoFatto, Opz<ImpegnoFatto, "fatto_da" | "fatto_il">>;
+      foto: Tabella<Foto, Opz<Foto, "altezza" | "caricata_da" | "creata_il" | "id" | "larghezza">>;
       conti: Tabella<Conto, Opz<Conto, "aggiornato_da" | "aggiornato_il" | "data_saldo">>;
       movimenti: Tabella<
         Movimento,
