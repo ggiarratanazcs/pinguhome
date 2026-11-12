@@ -169,6 +169,58 @@ function useAzioni(params: {
   }, [avvisa, dati.voci, listaId, setDati, supabase]);
 
   /** Toglie dalla lista ciò che è nel carrello; se richiesto lo mette in dispensa. */
+  /**
+   * Mette gli articoli comprati in casa: nel frigo, nel freezer o in dispensa secondo il reparto.
+   * Se un prodotto c'è già (stesso nome e unità) ne aumenta la quantità.
+   */
+  const mettiInCasa = useCallback(
+    async (articoli: { nome: string; quantita: number; unita: string; prodotto_id?: string | null; reparto_id?: string | null }[]) => {
+      const nuove: Dispensa[] = [];
+      const mappaAggiornate = new Map<string, Dispensa>();
+      for (const v of articoli) {
+        const nome = v.nome.trim();
+        if (!nome) continue;
+        const quantita = Number(v.quantita) > 0 ? Number(v.quantita) : 1;
+        const unita = v.unita || "pz";
+        const stessa = (x: Dispensa) => x.nome.toLowerCase() === nome.toLowerCase() && x.unita === unita;
+        const nuovaUguale = nuove.find(stessa);
+        const esistente = dati.dispensa.find(stessa);
+        if (nuovaUguale) {
+          nuovaUguale.quantita = Number(nuovaUguale.quantita) + quantita;
+        } else if (esistente) {
+          const base = mappaAggiornate.get(esistente.id) ?? esistente;
+          mappaAggiornate.set(esistente.id, { ...base, quantita: Number(base.quantita) + quantita });
+        } else {
+          const prodotto = dati.prodotti.find((p) => p.id === v.prodotto_id) ?? dati.prodotti.find((p) => p.nome.toLowerCase() === nome.toLowerCase());
+          const repartoId = v.reparto_id ?? prodotto?.reparto_id ?? indovinaReparto(nome, dati.reparti);
+          const reparto = dati.reparti.find((r) => r.id === repartoId)?.nome;
+          nuove.push({
+            id: crypto.randomUUID(),
+            famiglia_id: famigliaId,
+            prodotto_id: v.prodotto_id ?? prodotto?.id ?? null,
+            nome,
+            quantita,
+            unita,
+            posizione: posizioneDaReparto(reparto),
+            scadenza: null,
+            scorta_minima: null,
+            aggiornata_il: new Date().toISOString(),
+          });
+        }
+      }
+      const aggiornate = [...mappaAggiornate.values()];
+      if (!nuove.length && !aggiornate.length) return 0;
+      setDati((d) => ({
+        ...d,
+        dispensa: [...aggiornate, ...nuove].reduce((acc, r) => aggiornaPerId(acc, { ...r }), d.dispensa),
+      }));
+      if (nuove.length) await supabase.from("dispensa").insert(nuove);
+      for (const a of aggiornate) await supabase.from("dispensa").update({ quantita: a.quantita, aggiornata_il: new Date().toISOString() }).eq("id", a.id);
+      return nuove.length + aggiornate.length;
+    },
+    [dati.dispensa, dati.prodotti, dati.reparti, famigliaId, setDati, supabase],
+  );
+
   const chiudiSpesa = useCallback(
     async ({ importo, data, inDispensa, scontrino }: { importo: number; data: string; inDispensa: boolean; scontrino?: File | null }) => {
       const prese = dati.voci.filter((v) => v.lista_id === listaId && v.presa);
@@ -198,48 +250,13 @@ function useAzioni(params: {
         avvisa("Non sono riuscito a salvare la spesa: riprova.");
         return;
       }
-      if (inDispensa) {
-        const nuove: Dispensa[] = [];
-        const mappaAggiornate = new Map<string, Dispensa>();
-        for (const v of prese) {
-          const stessa = (x: Dispensa) => x.nome.toLowerCase() === v.nome.toLowerCase() && x.unita === v.unita;
-          const nuovaUguale = nuove.find(stessa);
-          const esistente = dati.dispensa.find(stessa);
-          if (nuovaUguale) {
-            nuovaUguale.quantita = Number(nuovaUguale.quantita) + Number(v.quantita);
-          } else if (esistente) {
-            const base = mappaAggiornate.get(esistente.id) ?? esistente;
-            mappaAggiornate.set(esistente.id, { ...base, quantita: Number(base.quantita) + Number(v.quantita) });
-          } else {
-            const reparto = dati.reparti.find((r) => r.id === v.reparto_id)?.nome;
-            nuove.push({
-              id: crypto.randomUUID(),
-              famiglia_id: famigliaId,
-              prodotto_id: v.prodotto_id,
-              nome: v.nome,
-              quantita: Number(v.quantita),
-              unita: v.unita,
-              posizione: posizioneDaReparto(reparto),
-              scadenza: null,
-              scorta_minima: null,
-              aggiornata_il: new Date().toISOString(),
-            });
-          }
-        }
-        const aggiornate = [...mappaAggiornate.values()];
-        setDati((d) => ({
-          ...d,
-          dispensa: [...aggiornate, ...nuove].reduce((acc, r) => aggiornaPerId(acc, { ...r }), d.dispensa),
-        }));
-        if (nuove.length) await supabase.from("dispensa").insert(nuove);
-        for (const a of aggiornate) await supabase.from("dispensa").update({ quantita: a.quantita, aggiornata_il: new Date().toISOString() }).eq("id", a.id);
-      }
+      if (inDispensa) await mettiInCasa(prese);
       const ids = prese.map((v) => v.id);
       setDati((d) => ({ ...d, voci: d.voci.filter((x) => !ids.includes(x.id)) }));
       await supabase.from("voci_lista").delete().in("id", ids);
       avvisa(`Carrello chiuso: ${importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}`);
     },
-    [avvisa, dati.dispensa, dati.reparti, dati.voci, famigliaId, listaId, setDati, supabase, userId],
+    [avvisa, dati.voci, famigliaId, listaId, mettiInCasa, setDati, supabase, userId],
   );
 
   const creaLista = useCallback(
@@ -361,10 +378,14 @@ function useAzioni(params: {
         avvisa("Non sono riuscito a salvare la spesa: riprova.");
         return false;
       }
-      avvisa(`Spesa salvata: ${nuova.importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}`);
+      const inCasa = await mettiInCasa(nuova.prodotti.map((p) => ({ nome: p.nome, quantita: p.quantita, unita: p.unita })));
+      avvisa(
+        `Spesa salvata: ${nuova.importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}` +
+          (inCasa ? `, ${inCasa} ${inCasa === 1 ? "prodotto" : "prodotti"} in casa` : ""),
+      );
       return true;
     },
-    [avvisa, famigliaId, setDati, supabase, userId],
+    [avvisa, famigliaId, mettiInCasa, setDati, supabase, userId],
   );
 
   /** Allega (o sostituisce) lo scontrino di una spesa già salvata. */
