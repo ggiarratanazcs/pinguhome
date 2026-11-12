@@ -132,7 +132,7 @@ export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] 
     const conta = new Map<string, { n: number; euro: number }>();
     for (const s of spese) {
       for (const p of s.prodotti ?? []) {
-        const id = repartoDi(p.nome) ?? "";
+        const id = (p.reparto && dati.reparti.find((r) => r.nome === p.reparto)?.id) || repartoDi(p.nome) || "";
         const c = conta.get(id) ?? { n: 0, euro: 0 };
         c.n += 1;
         if (typeof p.prezzo === "number") c.euro += p.prezzo;

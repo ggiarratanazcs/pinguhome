@@ -60,13 +60,14 @@ export async function apriScontrino(supabase: SupabaseClient<Database>, percorso
 }
 
 /** Fa leggere lo scontrino a Claude: data, negozio, totale e prodotti. */
-export async function leggiScontrino(file: File): Promise<ScontrinoLetto> {
+/** Legge lo scontrino con Claude; `daComprare` serve a riconoscere le voci della lista già comprate. */
+export async function leggiScontrino(file: File, daComprare: string[] = []): Promise<ScontrinoLetto> {
   const { dataUrl } = await preparaFile(file);
   if (!dataUrl) throw new Error("Per la lettura serve una foto (JPG o PNG), non un PDF.");
   const r = await fetch("/api/scontrino", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ immagine: dataUrl, tipo: "image/jpeg" }),
+    body: JSON.stringify({ immagine: dataUrl, tipo: "image/jpeg", lista: daComprare }),
   });
   const json = await r.json().catch(() => null);
   if (!r.ok || !json) throw new Error(json?.errore ?? "Non sono riuscito a leggere lo scontrino.");

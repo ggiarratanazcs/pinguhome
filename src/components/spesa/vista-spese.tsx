@@ -42,6 +42,7 @@ export function VistaSpese({
   azioni: AzioniSpesa;
 }) {
   const oggi = oggiChiave();
+  const daComprare = useMemo(() => [...new Set(dati.voci.filter((v) => !v.presa).map((v) => v.nome))], [dati.voci]);
   const [anno, setAnno] = useState(Number(oggi.slice(0, 4)));
   const [mese, setMese] = useState(Number(oggi.slice(5, 7)) - 1);
   const [giorno, setGiorno] = useState<string | null>(null);
@@ -81,7 +82,7 @@ export function VistaSpese({
     <div>
       {nuova ? (
         <div className="mt-5">
-          <NuovaSpesa liste={liste} giornoIniziale={giorno} azioni={azioni} onChiudi={() => setNuova(false)} />
+          <NuovaSpesa liste={liste} giornoIniziale={giorno} azioni={azioni} daComprare={daComprare} onChiudi={() => setNuova(false)} />
         </div>
       ) : null}
     <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">

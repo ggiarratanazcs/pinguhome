@@ -7,7 +7,7 @@ import { Pulsante } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
-import { indovinaReparto, interpretaVoce, posizioneDaReparto } from "@/lib/spesa";
+import { indovinaReparto, interpretaVoce, posizioneDaReparto, stessoArticolo } from "@/lib/spesa";
 import { caricaScontrino } from "@/lib/scontrini";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
@@ -174,7 +174,7 @@ function useAzioni(params: {
    * Se un prodotto c'è già (stesso nome e unità) ne aumenta la quantità.
    */
   const mettiInCasa = useCallback(
-    async (articoli: { nome: string; quantita: number; unita: string; prodotto_id?: string | null; reparto_id?: string | null }[]) => {
+    async (articoli: { nome: string; quantita: number; unita: string; prodotto_id?: string | null; reparto_id?: string | null; reparto?: string | null }[]) => {
       const nuove: Dispensa[] = [];
       const mappaAggiornate = new Map<string, Dispensa>();
       for (const v of articoli) {
@@ -192,7 +192,8 @@ function useAzioni(params: {
           mappaAggiornate.set(esistente.id, { ...base, quantita: Number(base.quantita) + quantita });
         } else {
           const prodotto = dati.prodotti.find((p) => p.id === v.prodotto_id) ?? dati.prodotti.find((p) => p.nome.toLowerCase() === nome.toLowerCase());
-          const repartoId = v.reparto_id ?? prodotto?.reparto_id ?? indovinaReparto(nome, dati.reparti);
+          const repartoLetto = v.reparto ? dati.reparti.find((r) => r.nome.toLowerCase() === v.reparto!.toLowerCase())?.id : undefined;
+          const repartoId = v.reparto_id ?? repartoLetto ?? prodotto?.reparto_id ?? indovinaReparto(nome, dati.reparti);
           const reparto = dati.reparti.find((r) => r.id === repartoId)?.nome;
           nuove.push({
             id: crypto.randomUUID(),
@@ -362,7 +363,7 @@ function useAzioni(params: {
         lista_id: nuova.lista_id,
         data: nuova.data,
         importo: nuova.importo,
-        prodotti: nuova.prodotti,
+        prodotti: nuova.prodotti.map(({ in_lista: _l, ...p }) => (void _l, p)),
         num_prodotti: nuova.prodotti.length,
         pagata_da: userId,
         note: null,
@@ -378,14 +379,32 @@ function useAzioni(params: {
         avvisa("Non sono riuscito a salvare la spesa: riprova.");
         return false;
       }
-      const inCasa = await mettiInCasa(nuova.prodotti.map((p) => ({ nome: p.nome, quantita: p.quantita, unita: p.unita })));
+      const inCasa = await mettiInCasa(nuova.prodotti.map((p) => ({ nome: p.nome, quantita: p.quantita, unita: p.unita, reparto: p.reparto })));
+
+      // Quello che è stato comprato sparisce dalla lista delle cose da comprare
+      const comprate = dati.voci.filter(
+        (v) =>
+          !v.presa &&
+          nuova.prodotti.some((p) => (p.in_lista && p.in_lista.toLowerCase() === v.nome.toLowerCase()) || stessoArticolo(p.nome, v.nome)),
+      );
+      if (comprate.length) {
+        const ids = comprate.map((v) => v.id);
+        setDati((d) => ({ ...d, voci: d.voci.filter((x) => !ids.includes(x.id)) }));
+        await supabase.from("voci_lista").delete().in("id", ids);
+      }
+
       avvisa(
-        `Spesa salvata: ${nuova.importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}` +
-          (inCasa ? `, ${inCasa} ${inCasa === 1 ? "prodotto" : "prodotti"} in casa` : ""),
+        [
+          `Spesa salvata: ${nuova.importo.toLocaleString("it-IT", { style: "currency", currency: "EUR" })}`,
+          inCasa ? `${inCasa} in casa` : null,
+          comprate.length ? `${comprate.length} ${comprate.length === 1 ? "tolta" : "tolte"} dalla lista` : null,
+        ]
+          .filter(Boolean)
+          .join(", "),
       );
       return true;
     },
-    [avvisa, famigliaId, mettiInCasa, setDati, supabase, userId],
+    [avvisa, dati.voci, famigliaId, mettiInCasa, setDati, supabase, userId],
   );
 
   /** Allega (o sostituisce) lo scontrino di una spesa già salvata. */

@@ -27,11 +27,14 @@ export function NuovaSpesa({
   liste,
   giornoIniziale,
   azioni,
+  daComprare,
   onChiudi,
 }: {
   liste: Lista[];
   giornoIniziale: string | null;
   azioni: AzioniSpesa;
+  /** Le voci ancora da comprare, per riconoscerle sullo scontrino */
+  daComprare: string[];
   onChiudi: () => void;
 }) {
   const oggi = oggiChiave();
@@ -61,7 +64,7 @@ export function NuovaSpesa({
   async function leggi(file: File) {
     setLettura("in-corso");
     try {
-      const r = await leggiScontrino(file);
+      const r = await leggiScontrino(file, daComprare);
       if (r.data) setData(r.data > oggi ? oggi : r.data);
       if (r.totale !== null) setImporto(r.totale.toFixed(2).replace(".", ","));
       if (r.negozio) setNegozio(r.negozio);

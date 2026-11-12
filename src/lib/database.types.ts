@@ -97,7 +97,16 @@ export type VoceLista = {
   urgente: boolean;
 };
 
-export type ProdottoSpesa = { nome: string; quantita: number; unita: string; prezzo?: number | null };
+export type ProdottoSpesa = {
+  nome: string;
+  quantita: number;
+  unita: string;
+  prezzo?: number | null;
+  /** Reparto (es. "Frutta e verdura"), quando lo indica la lettura dello scontrino */
+  reparto?: string | null;
+  /** Voce della lista da comprare a cui corrisponde, quando la indica la lettura dello scontrino */
+  in_lista?: string | null;
+};
 
 export type Spesa = {
   creata_il: string;

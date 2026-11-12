@@ -85,3 +85,28 @@ export function posizioneDaReparto(nomeReparto: string | undefined) {
   if (nomeReparto === "Surgelati") return "freezer";
   return "dispensa";
 }
+
+/** Radici delle parole di un nome: minuscolo, senza accenti né simboli, senza la vocale finale ("Banane" → ["banan"]). */
+function radici(nome: string) {
+  return nome
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z\s]/g, " ")
+    .split(/\s+/)
+    .filter((p) => p.length > 1)
+    .map((p) => (p.length > 3 ? p.replace(/[aeiou]+$/, "") : p));
+}
+
+/**
+ * Due nomi indicano lo stesso articolo? Tutte le parole del nome più corto devono stare nell'altro,
+ * a meno della desinenza ("banana" = "Banane", "latte" = "Latte parzialmente scremato",
+ * ma "detersivo piatti" ≠ "detersivo lavatrice").
+ */
+export function stessoArticolo(a: string, b: string) {
+  const ra = radici(a);
+  const rb = radici(b);
+  if (!ra.length || !rb.length) return false;
+  const [corto, lungo] = ra.length <= rb.length ? [ra, rb] : [rb, ra];
+  return corto.every((p) => lungo.includes(p));
+}
