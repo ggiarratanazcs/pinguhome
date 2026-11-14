@@ -300,11 +300,22 @@ function useAzioni(params: {
   );
 
   const modificaProdotto = useCallback(
-    async (p: Prodotto, modifiche: Partial<Pick<Prodotto, "abituale" | "reparto_id" | "unita">>) => {
+    async (p: Prodotto, modifiche: Partial<Pick<Prodotto, "abituale" | "nascosto" | "reparto_id" | "unita">>) => {
       setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, { ...p, ...modifiche }) }));
       await supabase.from("prodotti").update(modifiche).eq("id", p.id);
     },
     [setDati, supabase],
+  );
+
+  /** Preferito o tolto dagli abituali: il prodotto viene creato nel catalogo se ancora non c'è. */
+  const segnaAbituale = useCallback(
+    async (nome: string, unita: string | null, modifiche: Partial<Pick<Prodotto, "abituale" | "nascosto">>) => {
+      const p = dati.prodotti.find((x) => stessoArticolo(x.nome, nome)) ?? (await assicuraProdotto(nome, unita));
+      if (!p) return;
+      setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, { ...p, ...modifiche }) }));
+      await supabase.from("prodotti").update(modifiche).eq("id", p.id);
+    },
+    [assicuraProdotto, dati.prodotti, setDati, supabase],
   );
 
   const salvaDispensa = useCallback(
@@ -440,7 +451,7 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, segnaAbituale, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({
