@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: { default: "PinguHome", template: "%s · PinguHome" },
   description: "La casa, la spesa e le cose di tutti i giorni, in due.",
   applicationName: "PinguHome",
+  icons: { apple: "/apple-icon.png" },
   appleWebApp: { capable: true, title: "PinguHome", statusBarStyle: "default" },
   formatDetection: { telephone: false },
   robots: { index: false, follow: false },

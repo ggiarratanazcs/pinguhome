@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { getContesto } from "@/lib/sessione";
 import { BarraInferiore, BarraLaterale, TestataMobile } from "@/components/navigazione";
 import { SincronizzaTema } from "@/components/sincronizza-tema";
 import { FornitoreMascotte } from "@/components/mascotte";
 import { AvvioServiceWorker } from "@/components/notifiche";
+
+/** Con una mascotte personale, l'icona per la schermata Home del telefono è la sua. */
+export async function generateMetadata(): Promise<Metadata> {
+  const { profilo } = await getContesto();
+  if (profilo.mascotte !== "personale" || !profilo.mascotte_path) return {};
+  return { icons: { apple: `/icona-app?s=180&v=${encodeURIComponent(profilo.mascotte_path)}` } };
+}
 
 export default async function LayoutCasa({ children }: LayoutProps<"/">) {
   const { profilo, famiglia, membri } = await getContesto();

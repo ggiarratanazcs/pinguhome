@@ -8,6 +8,7 @@ import type { Reparto } from "@/lib/database.types";
 import { POSIZIONI } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import { CorniceFoto, type FotoCornice } from "./cornice-foto";
+import { IllustrazioneScena, useRapportoScena, type NomeScena } from "@/components/scena-mascotte";
 
 export type DatiHome = {
   nome: string;
@@ -51,22 +52,27 @@ function Contatore({ valore, formato }: { valore: number; formato?: (n: number) 
 function Indicatore({
   href,
   immagine,
-  rapporto,
+  rapporto: rapportoImmagine,
+  scena,
   etichetta,
   ritardo,
   sopra,
   children,
 }: {
   href: string | null;
-  immagine: string;
+  /** Un'immagine fissa, oppure una scena con la mascotte scelta seduta sopra */
+  immagine?: string;
   /** larghezza / altezza dell'immagine */
-  rapporto: number;
+  rapporto?: number;
+  scena?: NomeScena;
   etichetta: string;
   ritardo: number;
   /** Contenuto disegnato sopra l'immagine (es. la data sul calendario) */
   sopra?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const rapportoScena = useRapportoScena(scena ?? "carrello");
+  const rapporto = scena ? rapportoScena : (rapportoImmagine ?? 1);
   const corpo = (
     <motion.span
       initial={{ y: 12, opacity: 0 }}
@@ -81,8 +87,12 @@ function Indicatore({
             className={cn("@container relative block transition-transform duration-300 group-hover:-translate-y-1", rapporto < 4 / 5 ? "h-full" : "w-full")}
             style={{ aspectRatio: rapporto }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={immagine} alt="" draggable={false} className="absolute inset-0 size-full object-contain drop-shadow-[0_12px_16px_rgba(var(--ombra),0.18)]" />
+            {scena ? (
+              <IllustrazioneScena nome={scena} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={immagine} alt="" draggable={false} className="absolute inset-0 size-full object-contain drop-shadow-[0_12px_16px_rgba(var(--ombra),0.18)]" />
+            )}
             {sopra}
           </span>
         </span>
@@ -133,7 +143,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
         />
 
         <div className="mt-4 grid max-w-3xl grid-cols-3 gap-3 md:mt-6 md:gap-6">
-          <Indicatore href="/spesa" immagine="/casa/carrello.webp" rapporto={414 / 640} etichetta="da comprare" ritardo={0}>
+          <Indicatore href="/spesa" scena="carrello" etichetta="da comprare" ritardo={0}>
             <Contatore valore={daComprare} />
           </Indicatore>
           <Indicatore href="/agenda" immagine="/casa/calendario.webp" rapporto={557 / 640} etichetta="impegni in 30 giorni" ritardo={0.06} sopra={<DataDelGiorno />}>

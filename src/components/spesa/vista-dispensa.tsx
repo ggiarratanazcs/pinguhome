@@ -8,12 +8,29 @@ import { interpretaVoce, POSIZIONI, UNITA } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
 import { formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
+import { IllustrazioneScena, useRapportoScena, type NomeScena } from "@/components/scena-mascotte";
 
-const IMMAGINI: Record<string, { vuoto: string; pinguino: string }> = {
-  frigo: { vuoto: "/casa/frigo-vuoto.webp", pinguino: "/casa/frigo.webp" },
-  freezer: { vuoto: "/casa/freezer-vuoto.webp", pinguino: "/casa/freezer.webp" },
-  dispensa: { vuoto: "/casa/dispensa-vuoto.webp", pinguino: "/casa/dispensa.webp" },
+const IMMAGINI: Record<string, string> = {
+  frigo: "/casa/frigo-vuoto.webp",
+  freezer: "/casa/freezer-vuoto.webp",
+  dispensa: "/casa/dispensa-vuoto.webp",
 };
+
+/** L'oggetto aperto, con la mascotte che spunta sopra (il pinguino o quella scelta in Impostazioni). */
+function ImmagineAperta({ nome }: { nome: NomeScena }) {
+  const rapporto = useRapportoScena(nome);
+  return (
+    <motion.span
+      initial={{ opacity: 0, y: 24, scale: 0.85 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.08 }}
+      className="relative -mt-16 block h-36 shrink-0 sm:-mt-24 sm:h-44"
+      style={{ aspectRatio: rapporto }}
+    >
+      <IllustrazioneScena nome={nome} />
+    </motion.span>
+  );
+}
 
 export function VistaDispensa({
   dati,
@@ -59,7 +76,7 @@ export function VistaDispensa({
               <div className="relative aspect-[3/4] w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={IMMAGINI[pos.id].vuoto}
+                  src={IMMAGINI[pos.id]}
                   alt=""
                   draggable={false}
                   className="absolute inset-0 size-full object-contain object-bottom drop-shadow-[0_14px_18px_rgba(var(--ombra),0.18)] transition-transform duration-300 group-hover:-translate-y-1"
@@ -94,15 +111,7 @@ export function VistaDispensa({
               className="pb-sicuro flex max-h-[88dvh] w-full max-w-lg flex-col rounded-[32px] bg-superficie shadow-2xl"
             >
               <div className="relative flex items-end gap-4 px-5 pt-5">
-                <motion.img
-                  src={IMMAGINI[posAperta.id].pinguino}
-                  initial={{ opacity: 0, y: 24, scale: 0.85 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.08 }}
-                  alt=""
-                  draggable={false}
-                  className="h-36 w-auto -mt-16 object-contain drop-shadow-[0_18px_22px_rgba(var(--ombra),0.25)] sm:h-44 sm:-mt-24"
-                />
+                <ImmagineAperta nome={posAperta.id as NomeScena} />
                 <div className="min-w-0 flex-1 pb-2">
                   <p className="titolo text-[1.375rem]">{posAperta.nome.toLowerCase()}</p>
                   <p className="numeri text-[0.875rem] text-tenue">
