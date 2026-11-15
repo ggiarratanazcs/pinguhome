@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Car,
   Dumbbell,
+  Pencil,
   Gift,
   GraduationCap,
   Heart,
@@ -120,6 +121,7 @@ export function VistaObiettivi({
   onSalva,
   onElimina,
   onAccantona,
+  onTogliAccantonamento,
 }: {
   obiettivi: Obiettivo[];
   accantonamenti: Accantonamento[];
@@ -130,6 +132,7 @@ export function VistaObiettivi({
   onSalva: (o: Obiettivo) => Promise<void>;
   onElimina: (o: Obiettivo) => Promise<void>;
   onAccantona: (o: Obiettivo, importo: number) => Promise<void>;
+  onTogliAccantonamento: (a: Accantonamento) => Promise<void>;
 }) {
   const [aperto, setAperto] = useState<string | null>(null);
   const [maschera, setMaschera] = useState<{ obiettivo: Obiettivo | null } | null>(null);
@@ -217,6 +220,8 @@ export function VistaObiettivi({
             onChiudi={() => setAperto(null)}
             onModifica={() => setMaschera({ obiettivo: apertoObiettivo })}
             onAccantona={(n) => onAccantona(apertoObiettivo, n)}
+            storico={accantonamenti.filter((a) => a.obiettivo_id === apertoObiettivo.id)}
+            onTogli={onTogliAccantonamento}
             onAutomatico={(attivo, quota, giorno) => onSalva({ ...apertoObiettivo, automatico: attivo, quota_auto: quota, giorno_auto: giorno })}
           />
         ) : null}
@@ -291,9 +296,13 @@ function SchedaObiettivo({
   onModifica,
   onAccantona,
   onAutomatico,
+  storico,
+  onTogli,
 }: {
   obiettivo: Obiettivo;
   stato: StatoObiettivo;
+  storico: Accantonamento[];
+  onTogli: (a: Accantonamento) => Promise<void>;
   membri: MembroCasa[];
   nascoste: boolean;
   onChiudi: () => void;
@@ -327,10 +336,15 @@ function SchedaObiettivo({
 
   return (
     <Velo onChiudi={onChiudi} etichetta={o.nome}>
-      <button onClick={onChiudi} aria-label="Chiudi" className="anello-focus absolute right-4 top-4 grid size-9 place-items-center rounded-full bg-superficie-2 text-tenue hover:text-inchiostro">
-        <X className="size-4" />
-      </button>
-      <button onClick={onModifica} className="anello-focus flex items-center gap-3 rounded-[16px] pr-12 text-left">
+      <div className="absolute right-4 top-4 flex gap-2">
+        <button onClick={onModifica} aria-label="Modifica obiettivo" title="Modifica" className="anello-focus grid size-9 place-items-center rounded-full bg-superficie-2 text-tenue hover:text-inchiostro">
+          <Pencil className="size-4" />
+        </button>
+        <button onClick={onChiudi} aria-label="Chiudi" className="anello-focus grid size-9 place-items-center rounded-full bg-superficie-2 text-tenue hover:text-inchiostro">
+          <X className="size-4" />
+        </button>
+      </div>
+      <button onClick={onModifica} className="anello-focus flex items-center gap-3 rounded-[16px] pr-24 text-left">
         <span className="grid size-12 shrink-0 place-items-center rounded-[14px] text-white" style={{ background: o.colore }}>
           <Icona className="size-6" />
         </span>
@@ -429,6 +443,8 @@ function SchedaObiettivo({
         </div>
       ) : null}
 
+      {storico.length ? <Storico storico={storico} membri={membri} nascoste={nascoste} onTogli={onTogli} /> : null}
+
       <AnimatePresence initial={false} mode="wait">
         {azione ? (
           <motion.form key="importo" onSubmit={conferma} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 flex items-end gap-2">
@@ -466,6 +482,51 @@ function SchedaObiettivo({
         )}
       </AnimatePresence>
     </Velo>
+  );
+}
+
+/** Gli ultimi movimenti dell'obiettivo: si possono togliere quelli sbagliati */
+function Storico({ storico, membri, nascoste, onTogli }: { storico: Accantonamento[]; membri: MembroCasa[]; nascoste: boolean; onTogli: (a: Accantonamento) => Promise<void> }) {
+  const [tutti, setTutti] = useState(false);
+  const [conferma, setConferma] = useState<string | null>(null);
+  const ordinati = storico.slice().sort((a, b) => b.data.localeCompare(a.data) || b.creato_il.localeCompare(a.creato_il));
+  const visibili = tutti ? ordinati : ordinati.slice(0, 3);
+  return (
+    <div className="mt-4">
+      <p className="text-[0.75rem] font-semibold uppercase tracking-wider text-tenue">Movimenti</p>
+      <ul className="mt-1">
+        {visibili.map((a) => {
+          const chi = membri.find((m) => m.id === a.chi)?.nome.split(" ")[0];
+          const quando = new Date(`${a.data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+          return (
+            <li key={a.id} className="flex items-center gap-2 border-b border-linea py-2 text-[0.875rem] last:border-0">
+              <span className="flex-1 text-tenue">
+                {quando}
+                {chi ? ` · ${chi}` : ""}
+                {a.automatico ? " · automatico" : ""}
+              </span>
+              <span className={cn("numeri font-semibold", Number(a.importo) < 0 && "text-pericolo")}>
+                {nascoste ? "•••••" : `${Number(a.importo) > 0 ? "+" : "−"}${euro(Math.abs(Number(a.importo)))}`}
+              </span>
+              {conferma === a.id ? (
+                <button onClick={() => (setConferma(null), onTogli(a))} className="anello-focus rounded-full bg-pericolo px-3 py-1 text-[0.75rem] font-semibold text-white">
+                  Togli
+                </button>
+              ) : (
+                <button onClick={() => setConferma(a.id)} aria-label="Togli questo movimento" className="anello-focus grid size-7 place-items-center rounded-full text-tenue hover:bg-pericolo-tenue hover:text-pericolo">
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {ordinati.length > 3 ? (
+        <button onClick={() => setTutti((t) => !t)} className="anello-focus mt-1 text-[0.8125rem] text-tenue underline underline-offset-4 hover:text-inchiostro">
+          {tutti ? "Mostra meno" : `Mostra tutti (${ordinati.length})`}
+        </button>
+      ) : null}
+    </div>
   );
 }
 

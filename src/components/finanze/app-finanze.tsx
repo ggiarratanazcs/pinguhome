@@ -283,6 +283,15 @@ export function AppFinanze({
     }
   }
 
+  async function togliAccantonamento(a: Accantonamento) {
+    setAccantonamenti((x) => x.filter((y) => y.id !== a.id));
+    const { error } = await supabase.from("accantonamenti").delete().eq("id", a.id);
+    if (error) {
+      setAccantonamenti((x) => [...x, a]);
+      avvisa("Non sono riuscito a toglierlo");
+    }
+  }
+
   const accantonato = accantonamenti.reduce((t, a) => t + Number(a.importo), 0);
 
   const schede: { id: VistaFinanze; nome: string }[] = [
@@ -336,6 +345,7 @@ export function AppFinanze({
           onSalva={salvaObiettivo}
           onElimina={eliminaObiettivo}
           onAccantona={accantona}
+          onTogliAccantonamento={togliAccantonamento}
         />
       ) : vista === "budget" ? (
         <VistaBudget budget={budget} movimenti={movimenti} oggi={oggi} nascoste={nascoste} onSalva={salvaBudget} onElimina={eliminaBudget} />
