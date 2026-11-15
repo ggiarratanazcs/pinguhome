@@ -5,7 +5,7 @@ import { Mascotte, useMascotte } from "@/components/mascotte";
 import { cn } from "@/lib/utils";
 
 /**
- * Illustrazioni con la mascotte seduta sopra (frigo, freezer, dispensa, carrello).
+ * Illustrazioni con la mascotte seduta sopra (frigo, freezer, dispensa, bagno, ripostiglio, lavanderia, carrello).
  * Con il pinguino originale si usa il disegno completo; con una mascotte personale
  * si usa l'oggetto senza pinguino e ci si appoggia sopra la mascotte scelta.
  */
@@ -29,6 +29,7 @@ export const SCENE = {
   dispensa: { conPinguino: "/casa/dispensa.webp", rapportoConPinguino: 480 / 640, vuota: "/casa/dispensa-vuoto.webp", rapportoVuota: 480 / 640, x: 0.4, y: 0.39, m: 0.48 },
   bagno: { conPinguino: null, rapportoConPinguino: 1, vuota: "/casa/bagno-vuoto.webp", rapportoVuota: 481 / 640, x: 0.63, y: 0.13, m: 0.5 },
   ripostiglio: { conPinguino: null, rapportoConPinguino: 1, vuota: "/casa/ripostiglio-vuoto.webp", rapportoVuota: 392 / 640, x: 0.4, y: 0.05, m: 0.66 },
+  lavanderia: { conPinguino: null, rapportoConPinguino: 1, vuota: "/casa/lavanderia-vuoto.webp", rapportoVuota: 666 / 640, x: 0.81, y: 0.66, m: 0.27 },
   carrello: { conPinguino: "/casa/carrello.webp", rapportoConPinguino: 414 / 640, vuota: "/casa/carrello-vuoto.webp", rapportoVuota: 413 / 494, x: 0.72, y: 0.06, m: 0.5 },
 } satisfies Record<string, Scena>;
 

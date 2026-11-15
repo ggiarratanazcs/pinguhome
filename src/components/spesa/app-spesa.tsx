@@ -7,7 +7,7 @@ import { Pulsante } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
-import { indovinaReparto, interpretaVoce, posizioneDaReparto, stessoArticolo } from "@/lib/spesa";
+import { indovinaReparto, interpretaVoce, posizioneDaReparto, postiAttivi, postoAttivo, stessoArticolo } from "@/lib/spesa";
 import { caricaScontrino } from "@/lib/scontrini";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
@@ -23,6 +23,8 @@ export type DatiSpesa = {
   prodotti: Prodotto[];
   dispensa: Dispensa[];
   spese: Spesa[];
+  /** I posti di "In casa" scelti dalla casa (null = non ancora scelti) */
+  luoghi: string[] | null;
 };
 
 export type Vista = "lista" | "dispensa" | "abituali" | "spese" | "analisi";
@@ -202,7 +204,7 @@ function useAzioni(params: {
             nome,
             quantita,
             unita,
-            posizione: posizioneDaReparto(reparto),
+            posizione: postoAttivo(posizioneDaReparto(reparto, nome), postiAttivi(dati.luoghi)),
             scadenza: null,
             scorta_minima: null,
             aggiornata_il: new Date().toISOString(),
@@ -219,7 +221,22 @@ function useAzioni(params: {
       for (const a of aggiornate) await supabase.from("dispensa").update({ quantita: a.quantita, aggiornata_il: new Date().toISOString() }).eq("id", a.id);
       return nuove.length + aggiornate.length;
     },
-    [dati.dispensa, dati.prodotti, dati.reparti, famigliaId, setDati, supabase],
+    [dati.dispensa, dati.luoghi, dati.prodotti, dati.reparti, famigliaId, setDati, supabase],
+  );
+
+  /** Salva i posti scelti; le cose nei posti tolti passano in quello più vicino. */
+  const salvaLuoghi = useCallback(
+    async (luoghi: string[]) => {
+      const attivi = postiAttivi(luoghi);
+      const spostate = dati.dispensa
+        .filter((r) => postoAttivo(r.posizione, attivi) !== r.posizione)
+        .map((r) => ({ ...r, posizione: postoAttivo(r.posizione, attivi) }));
+      setDati((d) => ({ ...d, luoghi, dispensa: spostate.reduce((acc, r) => aggiornaPerId(acc, r), d.dispensa) }));
+      const { error } = await supabase.from("famiglie").update({ luoghi }).eq("id", famigliaId);
+      for (const r of spostate) await supabase.from("dispensa").update({ posizione: r.posizione, aggiornata_il: new Date().toISOString() }).eq("id", r.id);
+      return { ok: !error, spostate: spostate.length };
+    },
+    [dati.dispensa, famigliaId, setDati, supabase],
   );
 
   const chiudiSpesa = useCallback(
@@ -451,7 +468,7 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, segnaAbituale, salvaDispensa, eliminaDispensa, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, segnaAbituale, salvaDispensa, eliminaDispensa, salvaLuoghi, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({

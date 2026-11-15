@@ -5,7 +5,7 @@ import Link from "next/link";
 import { animate, motion, useMotionValue, useTransform } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import type { Reparto } from "@/lib/database.types";
-import { POSIZIONI } from "@/lib/spesa";
+import { postiAttivi } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import { CorniceFoto, type FotoCornice } from "./cornice-foto";
 import { IllustrazioneScena, useRapportoScena, type NomeScena } from "@/components/scena-mascotte";
@@ -20,6 +20,7 @@ export type DatiHome = {
   mesi: { etichetta: string; totale: number }[];
   ultimaSpesa: { importo: number; quando: string; dove: string; chi: string } | null;
   inCasa: Record<string, number>;
+  luoghi: string[] | null;
   reparti: Reparto[];
   impegniSettimana: number;
   impegni30: number;
@@ -198,7 +199,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
 
           {/* In casa: una lastra di ghiaccio per ogni posto */}
           <div className="mt-8 grid grid-cols-3 gap-2.5 lg:grid-cols-5">
-            {POSIZIONI.map((p) => (
+            {postiAttivi(dati.luoghi).map((p) => (
               <Link key={p.id} href="/spesa" className="anello-focus rounded-[20px] bg-lastra/55 px-4 py-3.5 transition hover:bg-lastra">
                 <p className="titolo-normale numeri text-[1.5rem] leading-none">{dati.inCasa[p.id] ?? 0}</p>
                 <p className="mt-1.5 text-[0.8125rem] text-inchiostro-2">{p.nome}</p>

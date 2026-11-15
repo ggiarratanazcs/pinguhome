@@ -32,6 +32,7 @@ export default async function PaginaSpesa({ searchParams }: PageProps<"/spesa">)
         prodotti: prodotti.data ?? [],
         dispensa: dispensa.data ?? [],
         spese: spese.data ?? [],
+        luoghi: famiglia.luoghi ?? null,
       }}
     />
   );

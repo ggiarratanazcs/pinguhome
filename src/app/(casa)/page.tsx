@@ -111,6 +111,7 @@ export default async function Home() {
             }
           : null,
         inCasa,
+        luoghi: famiglia.luoghi ?? null,
         reparti: reparti ?? [],
         impegniSettimana,
         impegni30,

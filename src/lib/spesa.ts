@@ -79,9 +79,30 @@ export const POSIZIONI = [
   { id: "dispensa", nome: "Dispensa" },
   { id: "bagno", nome: "Bagno" },
   { id: "ripostiglio", nome: "Ripostiglio" },
+  { id: "lavanderia", nome: "Lavanderia" },
 ] as const;
 
-export function posizioneDaReparto(nomeReparto: string | undefined) {
+export type Posto = (typeof POSIZIONI)[number];
+
+/** I posti che la casa gestisce, nell'ordine di sempre (se non li ha ancora scelti, tutti). */
+export function postiAttivi(luoghi: string[] | null | undefined): Posto[] {
+  return luoghi?.length ? POSIZIONI.filter((p) => luoghi.includes(p.id)) : [...POSIZIONI];
+}
+
+/** Se il posto non è tra quelli gestiti: freezer → frigo, il resto → dispensa, altrimenti il primo che c'è. */
+export function postoAttivo(posizione: string, attivi: Posto[]): string {
+  const ids = attivi.map((p) => p.id as string);
+  if (ids.includes(posizione)) return posizione;
+  if (posizione === "freezer" && ids.includes("frigo")) return "frigo";
+  if (posizione === "lavanderia" && ids.includes("ripostiglio")) return "ripostiglio";
+  if (ids.includes("dispensa")) return "dispensa";
+  return ids[0] ?? "dispensa";
+}
+
+const DA_LAVANDERIA = /\b(detersiv\w*\s+(per\s+)?(lavatrice|bucato|lana|capi)|ammorbident\w*|candeggin\w*|smacchiator\w*|mollett\w*|sapone\s+di\s+marsiglia|anticalcare\s+lavatrice|profumatore\s+bucato)\b/i;
+
+export function posizioneDaReparto(nomeReparto: string | undefined, nome = "") {
+  if (DA_LAVANDERIA.test(nome)) return "lavanderia";
   if (!nomeReparto) return "dispensa";
   if (["Latticini e uova", "Carne e pesce"].includes(nomeReparto)) return "frigo";
   if (nomeReparto === "Surgelati") return "freezer";

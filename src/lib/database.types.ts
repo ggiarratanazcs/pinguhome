@@ -24,6 +24,8 @@ export type Famiglia = {
   creata_da: string | null;
   creata_il: string;
   id: string;
+  /** I posti di "In casa" che la casa gestisce; null = non ancora scelti */
+  luoghi: string[] | null;
   nome: string;
 };
 
@@ -204,7 +206,7 @@ export type Database = {
   public: {
     Tables: {
       dispensa: Tabella<Dispensa, Opz<Dispensa, "aggiornata_il" | "id" | "posizione" | "prodotto_id" | "quantita" | "scadenza" | "scorta_minima" | "unita">>;
-      famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id">>;
+      famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id" | "luoghi">>;
       liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "nascosto" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
