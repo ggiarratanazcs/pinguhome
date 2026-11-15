@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "La casa, la spesa e le cose di tutti i giorni, in due.",
   applicationName: "Uchi",
   icons: { apple: "/apple-icon.png" },
-  appleWebApp: { capable: true, title: "Uchi", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Uchi", statusBarStyle: "default" },
   formatDetection: { telephone: false },
   robots: { index: false, follow: false },
 };
