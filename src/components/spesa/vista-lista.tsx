@@ -59,21 +59,6 @@ export function VistaLista({
       <div className="min-w-0">
         <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} onFoto={azioni.aggiungiDaFoto} />
 
-        {voci.length > 0 ? (
-          <div className="mt-4 flex items-center gap-3 text-[0.75rem] text-tenue">
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-superficie-3">
-              <motion.span
-                className="block h-full rounded-full bg-becco"
-                initial={false}
-                animate={{ width: `${(prese.length / voci.length) * 100}%` }}
-                transition={{ duration: 0.5, ease: [0.22, 0.9, 0.24, 1] }}
-              />
-            </span>
-            <span className="numeri shrink-0">
-              {prese.length} di {voci.length} nel carrello
-            </span>
-          </div>
-        ) : null}
 
         {daPrendere.length === 0 && prese.length === 0 ? <ListaVuota /> : null}
         {daPrendere.length === 0 && prese.length > 0 ? (
