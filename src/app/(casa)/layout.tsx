@@ -13,6 +13,8 @@ export default async function LayoutCasa({ children }: LayoutProps<"/">) {
       <SincronizzaTema tema={profilo.tema} />
       <AvvioServiceWorker />
       <BarraLaterale casa={famiglia.nome} membri={membri} />
+      {/* Sotto l'ora e la batteria: sempre il blu della testata (iOS 26 ci mette sopra un velo sfocato) */}
+      <div aria-hidden className="fixed inset-x-0 top-0 z-50 h-[env(safe-area-inset-top)] bg-dorso lg:hidden" />
       <div className="foglio relative min-w-0 flex-1 pb-28 lg:pb-0">
         <TestataMobile casa={famiglia.nome} />
         {children}
