@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Briefcase,
   Car,
+  ChevronDown,
   ChevronLeft,
   CalendarClock,
   ChevronRight,
@@ -529,39 +530,44 @@ function VistaConto({
             )}
           </div>
 
-          {/* Le uscite dei prossimi 3 mesi: scadenze dell'Agenda non pagate e uscite già previste */}
+          {/* Le uscite dei prossimi 30 giorni: una riga sola col totale, il dettaglio si apre a richiesta */}
           {inArrivo.length ? (
-            <section className="mt-8">
-              <p className="flex items-center gap-1.5 text-[0.75rem] font-semibold uppercase tracking-wider text-tenue">
-                <CalendarClock className="size-3.5" /> In arrivo · prossimi 3 mesi
-              </p>
-              <ul className="mt-1">
-                {(tutteInArrivo ? inArrivo : inArrivo.slice(0, 6)).map((u) => {
-                  const cat = categoria("uscita", u.categoria);
-                  const quando = new Date(`${u.data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
-                  return (
-                    <li key={u.chiave} className="flex items-center gap-3 border-b border-linea py-2.5 last:border-0">
-                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: cat.colore }} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.9375rem]">{u.nome}</span>
-                        <span className="block text-[0.75rem] text-tenue">
-                          {quando}
-                          {u.daAgenda ? " · in agenda" : ""}
-                        </span>
-                      </span>
-                      <span className="numeri shrink-0 font-semibold">{nascoste ? NASCOSTO : euro(u.importo, false)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-              {inArrivo.length > 6 ? (
-                <button onClick={() => setTutteInArrivo((t) => !t)} className="anello-focus mt-1 text-[0.8125rem] text-tenue underline underline-offset-4 hover:text-inchiostro">
-                  {tutteInArrivo ? "Mostra meno" : `Mostra tutte (${inArrivo.length})`}
-                </button>
-              ) : null}
-              <p className="mt-2 text-[0.8125rem] text-tenue">
-                Totale nei 3 mesi: <strong className="numeri text-inchiostro">{nascoste ? NASCOSTO : euro(inArrivo.reduce((t, u) => t + u.importo, 0), false)}</strong>
-              </p>
+            <section className="mt-6 rounded-[18px] bg-superficie-2">
+              <button
+                onClick={() => setTutteInArrivo((t) => !t)}
+                aria-expanded={tutteInArrivo}
+                className="anello-focus flex w-full items-center gap-3 rounded-[18px] px-4 py-3 text-left"
+              >
+                <CalendarClock className="size-5 shrink-0 text-tenue" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[0.8125rem] text-tenue">In arrivo nei prossimi 30 giorni</span>
+                  <span className="block text-[0.9375rem]">
+                    <strong className="numeri">{nascoste ? NASCOSTO : euro(inArrivo.reduce((t, u) => t + u.importo, 0), false)}</strong>
+                    <span className="text-tenue"> · {inArrivo.length === 1 ? "1 uscita" : `${inArrivo.length} uscite`}</span>
+                  </span>
+                </span>
+                <motion.span animate={{ rotate: tutteInArrivo ? 180 : 0 }} className="inline-flex text-tenue">
+                  <ChevronDown className="size-5" />
+                </motion.span>
+              </button>
+              <AnimatePresence initial={false}>
+                {tutteInArrivo ? (
+                  <motion.ul initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-4">
+                    {inArrivo.map((u) => {
+                      const quando = new Date(`${u.data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+                      return (
+                        <li key={u.chiave} className="flex items-center gap-3 border-t border-linea py-2 text-[0.875rem]">
+                          <span className="numeri w-12 shrink-0 text-tenue">{quando}</span>
+                          <span className="size-2 shrink-0 rounded-full" style={{ background: categoria("uscita", u.categoria).colore }} />
+                          <span className="min-w-0 flex-1 truncate">{u.nome}</span>
+                          <span className="numeri shrink-0 font-semibold">{nascoste ? NASCOSTO : euro(u.importo, false)}</span>
+                        </li>
+                      );
+                    })}
+                    <li className="h-1" aria-hidden />
+                  </motion.ul>
+                ) : null}
+              </AnimatePresence>
             </section>
           ) : null}
         </div>

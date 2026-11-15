@@ -98,7 +98,7 @@ export function proiezioneFineMese(
 export type InArrivo = { chiave: string; nome: string; data: string; importo: number; categoria: string; daAgenda: boolean };
 
 /**
- * Le uscite in arrivo nei prossimi mesi: le scadenze dell'Agenda con un importo non ancora pagate
+ * Le uscite in arrivo nei prossimi giorni: le scadenze dell'Agenda con un importo non ancora pagate
  * e le uscite già previste sul conto (anche quelle che si ripetono).
  */
 export function usciteInArrivo(
@@ -106,10 +106,10 @@ export function usciteInArrivo(
   scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo" | "titolo">[],
   pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[],
   oggi: string,
-  mesi = 3,
+  giorni = 30,
 ): InArrivo[] {
   const [a, m, g] = oggi.split("-").map(Number);
-  const fineData = new Date(a, m - 1 + mesi, g);
+  const fineData = new Date(a, m - 1, g + giorni);
   const fine = `${fineData.getFullYear()}-${String(fineData.getMonth() + 1).padStart(2, "0")}-${String(fineData.getDate()).padStart(2, "0")}`;
   const fatte = new Set(pagate.map((p) => `${p.impegno_id}|${p.data}`));
   const daAgenda = scadenze.flatMap((i) =>
