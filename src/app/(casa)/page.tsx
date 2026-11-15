@@ -48,7 +48,7 @@ export default async function Home() {
     };
   });
 
-  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }, { data: righeFoto }] = await Promise.all([
+  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }, { data: righeFoto }, { data: carte }] = await Promise.all([
     supabase.from("voci_lista").select("lista_id, presa, urgente").eq("famiglia_id", f),
     supabase.from("liste").select("id, nome, colore").eq("famiglia_id", f).eq("archiviata", false).order("ordine"),
     supabase.from("dispensa").select("posizione").eq("famiglia_id", f),
@@ -65,6 +65,7 @@ export default async function Home() {
     supabase.from("conti").select("*").eq("famiglia_id", f).maybeSingle(),
     supabase.from("movimenti").select("*").eq("famiglia_id", f),
     supabase.from("foto").select("id, path").eq("famiglia_id", f),
+    supabase.from("carte").select("negozio, colore").eq("famiglia_id", f).order("creata_il"),
   ]);
   // Foto della cornice: ordine casuale a ogni apertura, con link temporanei
   const elencoFoto = mescola(righeFoto ?? []);
@@ -118,6 +119,7 @@ export default async function Home() {
         residuo: residuo(conto ?? null, movimenti ?? [], oggi),
         foto,
         cornice: profilo.cornice ?? "scorrimento",
+        carte: carte ?? [],
       }}
     />
   );

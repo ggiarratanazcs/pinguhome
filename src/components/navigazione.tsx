@@ -118,6 +118,7 @@ const TITOLI_MOBILE: [string, string][] = [
   ["/agenda", "agenda"],
   ["/finanze", "finanze"],
   ["/impostazioni", "impostazioni"],
+  ["/wallet", "wallet"],
 ];
 
 /**

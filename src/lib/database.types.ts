@@ -199,12 +199,26 @@ export type Foto = {
   path: string;
 };
 
+export type Carta = {
+  colore: string;
+  creata_da: string | null;
+  creata_il: string;
+  famiglia_id: string;
+  foto_path: string | null;
+  formato: "ean13" | "ean8" | "upca" | "code128" | "code39" | "qrcode";
+  id: string;
+  negozio: string;
+  numero: string;
+  titolare: string | null;
+};
+
 type Opz<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type Database = {
   __InternalSupabase: { PostgrestVersion: "14.18" };
   public: {
     Tables: {
+      carte: Tabella<Carta, Opz<Carta, "colore" | "creata_da" | "creata_il" | "foto_path" | "formato" | "id" | "titolare">>;
       dispensa: Tabella<Dispensa, Opz<Dispensa, "aggiornata_il" | "id" | "posizione" | "prodotto_id" | "quantita" | "scadenza" | "scorta_minima" | "unita">>;
       famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id" | "luoghi">>;
       liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;

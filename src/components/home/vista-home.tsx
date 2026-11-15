@@ -3,12 +3,13 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { animate, motion, useMotionValue, useTransform } from "motion/react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight } from "lucide-react";
 import type { Reparto } from "@/lib/database.types";
 import { postiAttivi } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import { CorniceFoto, type FotoCornice } from "./cornice-foto";
 import { IllustrazioneScena, useRapportoScena, type NomeScena } from "@/components/scena-mascotte";
+import { Tessera } from "@/components/wallet/tessera";
 
 export type DatiHome = {
   nome: string;
@@ -27,7 +28,46 @@ export type DatiHome = {
   residuo: number | null;
   foto: FotoCornice[];
   cornice: "scorrimento" | "polaroid";
+  /** Le carte del Wallet (per il ventaglio dell'accesso rapido) */
+  carte: { negozio: string; colore: string }[];
 };
+
+/** Accesso rapido al Wallet: le prime carte a ventaglio */
+function AccessoWallet({ carte }: { carte: DatiHome["carte"] }) {
+  const prime = carte.slice(0, 3);
+  return (
+    <Link
+      href="/wallet"
+      className="anello-focus mt-3 flex max-w-3xl items-center gap-4 rounded-[20px] bg-superficie-2 py-3 pl-4 pr-3 transition hover:bg-superficie-3 active:scale-[0.99] md:mt-6"
+    >
+      <span className="relative h-14 w-24 shrink-0">
+        {prime.length ? (
+          prime.map((c, k) => (
+            <motion.span
+              key={`${c.negozio}-${k}`}
+              className="absolute w-[72px]"
+              style={{ left: k * 12, top: 8 - k * 4 }}
+              initial={{ rotate: 0, opacity: 0 }}
+              animate={{ rotate: -8 + k * 6 + (prime.length === 1 ? 8 : 0), opacity: 1 }}
+              transition={{ delay: 0.2 + k * 0.06, type: "spring", stiffness: 260, damping: 18 }}
+            >
+              <Tessera negozio={c.negozio} colore={c.colore} piccola />
+            </motion.span>
+          ))
+        ) : (
+          <span className="absolute left-3 top-2 w-[72px] rotate-[-4deg]">
+            <Tessera negozio="wallet" colore="#5b5fa3" piccola />
+          </span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="titolo block text-[1.0625rem]">wallet</span>
+        <span className="block text-[0.75rem] text-tenue">{carte.length === 1 ? "1 carta" : `${carte.length} carte`}</span>
+      </span>
+      <ChevronRight className="size-5 shrink-0 text-tenue" />
+    </Link>
+  );
+}
 
 function euro(n: number, decimali = true) {
   return n.toLocaleString("it-IT", {
@@ -156,6 +196,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
             {dati.residuo === null ? <span className="text-tenue">—</span> : <Contatore valore={dati.residuo} formato={(n) => euro(n, false)} />}
           </Indicatore>
         </div>
+        <AccessoWallet carte={dati.carte} />
         </div>
       </section>
 
