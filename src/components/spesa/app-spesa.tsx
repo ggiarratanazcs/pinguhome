@@ -7,7 +7,7 @@ import { Pulsante } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
-import { indovinaReparto, insegnaNegozio, interpretaVoce, posizioneDaReparto, postiAttivi, postoAttivo, stessoArticolo } from "@/lib/spesa";
+import { indovinaReparto, insegnaNegozio, interpretaVoce, nomeArticolo, posizioneDaReparto, postiAttivi, postoAttivo, stessoArticolo } from "@/lib/spesa";
 import { caricaScontrino } from "@/lib/scontrini";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
@@ -51,7 +51,8 @@ function useAzioni(params: {
   const supabase = useMemo(() => createClient(), []);
 
   const assicuraProdotto = useCallback(
-    async (nome: string, unita: string | null): Promise<Prodotto | null> => {
+    async (nomeScritto: string, unita: string | null): Promise<Prodotto | null> => {
+      const nome = nomeArticolo(nomeScritto);
       const esistente = dati.prodotti.find((p) => p.nome.toLowerCase() === nome.toLowerCase());
       if (esistente) return esistente;
       const reparto_id = indovinaReparto(nome, dati.reparti);
@@ -180,7 +181,7 @@ function useAzioni(params: {
       const nuove: Dispensa[] = [];
       const mappaAggiornate = new Map<string, Dispensa>();
       for (const v of articoli) {
-        const nome = v.nome.trim();
+        const nome = nomeArticolo(v.nome);
         if (!nome) continue;
         const quantita = Number(v.quantita) > 0 ? Number(v.quantita) : 1;
         const unita = v.unita || "pz";
@@ -388,7 +389,7 @@ function useAzioni(params: {
         id: crypto.randomUUID(),
         famiglia_id: famigliaId,
         prodotto_id: prodotto?.id ?? null,
-        nome: prodotto?.nome ?? riga.nome,
+        nome: prodotto?.nome ?? nomeArticolo(riga.nome),
         quantita: riga.quantita ?? 1,
         unita: riga.unita ?? prodotto?.unita ?? "pz",
         posizione: riga.posizione ?? "dispensa",
@@ -429,7 +430,7 @@ function useAzioni(params: {
         lista_id: nuova.lista_id,
         data: nuova.data,
         importo: nuova.importo,
-        prodotti: nuova.prodotti.map(({ in_lista: _l, ...p }) => (void _l, p)),
+        prodotti: nuova.prodotti.map(({ in_lista: _l, ...p }) => (void _l, { ...p, nome: nomeArticolo(p.nome) })),
         num_prodotti: nuova.prodotti.length,
         pagata_da: userId,
         note: null,

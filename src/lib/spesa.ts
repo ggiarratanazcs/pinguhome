@@ -43,10 +43,13 @@ export function interpretaVoce(testo: string): VoceInterpretata {
   return { nome: maiuscola(t), quantita: 1, unita: null };
 }
 
-function maiuscola(s: string) {
-  const p = s.trim();
-  return p.charAt(0).toUpperCase() + p.slice(1);
+/** I nomi degli articoli si scrivono tutti allo stesso modo: prima lettera maiuscola, il resto minuscolo ("PERE" → "Pere"). */
+export function nomeArticolo(s: string) {
+  const p = s.trim().replace(/\s+/g, " ").toLocaleLowerCase("it-IT");
+  return p.charAt(0).toLocaleUpperCase("it-IT") + p.slice(1);
 }
+
+const maiuscola = nomeArticolo;
 
 /** Parole chiave per indovinare il reparto di un prodotto nuovo. */
 const PAROLE_REPARTO: [string, string[]][] = [
