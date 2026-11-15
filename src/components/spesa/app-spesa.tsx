@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { Pulsante } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
@@ -711,7 +711,8 @@ function Avanzamento({ fatte, totale }: { fatte: number; totale: number }) {
 
 /**
  * Le liste come pillole su una riga (scorre di lato se sono tante): un tocco per cambiare lista,
- * "+" per crearne una. Sotto, l'avanzamento e il "⋯" per rinominare o eliminare la lista attiva.
+ * "+" per crearne una. Ritoccando la lista attiva (quella con la freccina) si rinomina o si elimina.
+ * Sotto, solo quando c'è qualcosa nel carrello, l'avanzamento.
  */
 function SelettoreListe({
   liste,
@@ -749,10 +750,15 @@ function SelettoreListe({
               <button
                 key={l.id}
                 onClick={() => {
-                  onScegli(l.id);
-                  setGestione("chiusa");
+                  if (selezionata) setGestione((g) => (g === "chiusa" ? "menu" : "chiusa"));
+                  else {
+                    onScegli(l.id);
+                    setGestione("chiusa");
+                  }
                 }}
                 aria-pressed={selezionata}
+                aria-expanded={selezionata ? gestione !== "chiusa" : undefined}
+                aria-label={selezionata ? `${l.nome}: rinomina o elimina` : undefined}
                 className={cn(
                   "anello-focus flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[0.9375rem] transition",
                   selezionata ? "bg-dorso font-semibold text-su-dorso" : "text-inchiostro ring-[1.5px] ring-inset ring-linea-forte hover:ring-inchiostro",
@@ -762,6 +768,11 @@ function SelettoreListe({
                 {l.nome}
                 {daPrendere > 0 ? (
                   <span className={cn("numeri rounded-full px-1.5 text-[0.75rem]", selezionata ? "bg-white/15" : "text-tenue")}>{daPrendere}</span>
+                ) : null}
+                {selezionata ? (
+                  <motion.span animate={{ rotate: gestione !== "chiusa" ? 180 : 0 }} className="-mr-1 inline-flex opacity-70">
+                    <ChevronDown className="size-4" />
+                  </motion.span>
                 ) : null}
               </button>
             );
@@ -795,23 +806,8 @@ function SelettoreListe({
         </div>
       </div>
 
-      {/* Avanzamento della lista attiva e il "⋯" per gestirla */}
-      <div className="mt-4 flex items-center gap-2">
-        <div className="min-w-0 flex-1">{avanzamento}</div>
-        {attiva ? (
-          <button
-            onClick={() => setGestione((g) => (g === "chiusa" ? "menu" : "chiusa"))}
-            aria-label={`Gestisci la lista ${attiva.nome}`}
-            aria-expanded={gestione !== "chiusa"}
-            className={cn(
-              "anello-focus grid size-9 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro",
-              gestione !== "chiusa" && "bg-superficie-3 text-inchiostro",
-            )}
-          >
-            <MoreHorizontal className="size-5" />
-          </button>
-        ) : null}
-      </div>
+      {/* Avanzamento della lista attiva: solo quando c'è qualcosa nel carrello */}
+      {avanzamento ? <div className="mt-3">{avanzamento}</div> : null}
 
       {/* Gestione della lista: rinomina o elimina (con conferma, senza finestre del browser) */}
       <AnimatePresence initial={false}>

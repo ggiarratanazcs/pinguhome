@@ -55,7 +55,7 @@ export function VistaLista({
   }, [daPrendere, dati.reparti]);
 
   return (
-    <div className="mt-6 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
+    <div className="mt-4 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
       <div className="min-w-0">
         <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} onFoto={azioni.aggiungiDaFoto} />
 
