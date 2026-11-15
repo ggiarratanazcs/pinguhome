@@ -14,6 +14,8 @@ const IMMAGINI: Record<string, string> = {
   frigo: "/casa/frigo-vuoto.webp",
   freezer: "/casa/freezer-vuoto.webp",
   dispensa: "/casa/dispensa-vuoto.webp",
+  bagno: "/casa/bagno-vuoto.webp",
+  ripostiglio: "/casa/ripostiglio-vuoto.webp",
 };
 
 /** L'oggetto aperto, con la mascotte che spunta sopra (il pinguino o quella scelta in Impostazioni). */
@@ -64,7 +66,7 @@ export function VistaDispensa({
     <div className="mt-8">
       <NuovaInDispensa onSalva={azioni.salvaDispensa} />
 
-      <div className="mt-8 grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
+      <div className="mt-8 grid max-w-5xl grid-cols-3 gap-3 md:grid-cols-5 md:gap-5">
         {POSIZIONI.map((pos) => {
           const n = righe.filter((r) => r.posizione === pos.id).length;
           return (

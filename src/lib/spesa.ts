@@ -77,12 +77,16 @@ export const POSIZIONI = [
   { id: "frigo", nome: "Frigo" },
   { id: "freezer", nome: "Freezer" },
   { id: "dispensa", nome: "Dispensa" },
+  { id: "bagno", nome: "Bagno" },
+  { id: "ripostiglio", nome: "Ripostiglio" },
 ] as const;
 
 export function posizioneDaReparto(nomeReparto: string | undefined) {
   if (!nomeReparto) return "dispensa";
   if (["Latticini e uova", "Carne e pesce"].includes(nomeReparto)) return "frigo";
   if (nomeReparto === "Surgelati") return "freezer";
+  if (nomeReparto === "Cura persona") return "bagno";
+  if (nomeReparto === "Casa e pulizia") return "ripostiglio";
   return "dispensa";
 }
 

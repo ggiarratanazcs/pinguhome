@@ -193,8 +193,8 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
             })}
           </ul>
 
-          {/* In casa: tre lastre di ghiaccio */}
-          <div className="mt-8 grid grid-cols-3 gap-2.5">
+          {/* In casa: una lastra di ghiaccio per ogni posto */}
+          <div className="mt-8 grid grid-cols-3 gap-2.5 lg:grid-cols-5">
             {POSIZIONI.map((p) => (
               <Link key={p.id} href="/spesa" className="anello-focus rounded-[20px] bg-lastra/55 px-4 py-3.5 transition hover:bg-lastra">
                 <p className="titolo-normale numeri text-[1.5rem] leading-none">{dati.inCasa[p.id] ?? 0}</p>
