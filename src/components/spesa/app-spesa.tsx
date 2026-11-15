@@ -653,7 +653,7 @@ export function AppSpesa({
               const prossima = liste.find((x) => x.id !== l.id);
               if (await azioni.eliminaLista(l)) setListaId(prossima?.id ?? "");
             }}
-            avanzamento={vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
+            avanzamento={prese > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
           />
           </div>
           </div>
