@@ -1,9 +1,9 @@
-/* Service worker di PinguHome: riceve le notifiche push e apre l'app al tocco. */
+/* Service worker di Uchi: riceve le notifiche push e apre l'app al tocco. */
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
 self.addEventListener("push", (evento) => {
-  let dati = { title: "PinguHome", body: "", url: "/", tag: undefined };
+  let dati = { title: "Uchi", body: "", url: "/", tag: undefined };
   try {
     dati = { ...dati, ...evento.data.json() };
   } catch (_) {

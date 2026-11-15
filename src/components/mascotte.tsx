@@ -31,7 +31,7 @@ export function Mascotte({ className, scelta }: { className?: string; scelta?: S
   const dalContesto = useMascotte();
   const m = scelta ?? dalContesto;
   const url = m.tipo === "personale" ? urlMascotte(m.percorso) : null;
-  if (!url) return <Pinguino className={className} alt="PinguHome" />;
+  if (!url) return <Pinguino className={className} alt="Uchi" />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={url} alt="La tua mascotte" draggable={false} className={cn("h-auto shrink-0 select-none object-contain", className)} />;
 }

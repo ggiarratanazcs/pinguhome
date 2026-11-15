@@ -275,7 +275,7 @@ function AggiuntaRapida({
   const mostraTendina = fuoco && suggerimenti.length > 0;
 
   return (
-    <div className="relative">
+    <div data-giro="aggiungi" className="relative">
       <div className={cn("flex items-center gap-3 border-b-2 pb-1 transition-colors", fuoco ? "border-becco" : "border-linea-forte")}>
         <input
           ref={campo}

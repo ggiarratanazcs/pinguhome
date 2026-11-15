@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Check, ChevronRight, Home, Images, KeyRound, Loader2, LogOut, Palette, Share2, Smile, Upload, X, type LucideIcon } from "lucide-react";
+import { Bell, Check, ChevronRight, Home, Images, KeyRound, Loader2, LogOut, Palette, Share2, Smile, Sparkles, Upload, X, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Famiglia, Profilo } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Mascotte, type SceltaMascotte } from "@/components/mascotte";
 import { GestioneNotifiche } from "@/components/notifiche";
 import { GestioneFoto, type FotoSalvata } from "@/components/impostazioni/gestione-foto";
+import { EVENTO_GIRO } from "@/components/giro-guidato";
 
 const COLORI = ["#1d2340", "#ff9f1c", "#f2789b", "#23885a", "#3f6fd8", "#7a5cc2", "#d2394a", "#0f8b8d"];
 
@@ -81,7 +82,7 @@ export function Impostazioni({ profilo, famiglia, membri, foto }: { profilo: Pro
       </button>
 
       <Gruppo>
-        <Riga icona={Bell} colore="#f0a03c" nome="Notifiche" valore={notifiche ? TESTO_NOTIFICHE[notifiche] : ""} onClick={() => setAperto("notifiche")} />
+        <Riga giro="notifiche" icona={Bell} colore="#f0a03c" nome="Notifiche" valore={notifiche ? TESTO_NOTIFICHE[notifiche] : ""} onClick={() => setAperto("notifiche")} />
         <Riga icona={Palette} colore="#7a5cc2" nome="Aspetto" valore={nomeTema} onClick={() => setAperto("aspetto")} />
         <Riga
           icona={Smile}
@@ -111,13 +112,14 @@ export function Impostazioni({ profilo, famiglia, membri, foto }: { profilo: Pro
       </Gruppo>
 
       <Gruppo>
+        <Riga icona={Sparkles} colore="#ff9f1c" nome="Rivedi il tutorial" valore="" onClick={() => window.dispatchEvent(new Event(EVENTO_GIRO))} />
         <Riga icona={KeyRound} colore="#8a8f99" nome="Password" valore="" onClick={() => setAperto("password")} />
         <form action="/auth/esci" method="post">
           <button className="anello-focus flex w-full items-center gap-3 px-4 py-3.5 text-left text-pericolo transition hover:bg-superficie-3">
             <span className="grid size-8 place-items-center rounded-[10px] bg-pericolo-tenue">
               <LogOut className="size-[17px]" />
             </span>
-            <span className="flex-1 text-[0.9375rem] font-semibold">Esci da PinguHome</span>
+            <span className="flex-1 text-[0.9375rem] font-semibold">Esci da Uchi</span>
           </button>
         </form>
       </Gruppo>
@@ -232,6 +234,7 @@ function Gruppo({ children }: { children: ReactNode }) {
 }
 
 function Riga({
+  giro,
   icona: Icona,
   colore,
   nome,
@@ -239,6 +242,7 @@ function Riga({
   anteprima,
   onClick,
 }: {
+  giro?: string;
   icona: LucideIcon;
   colore: string;
   nome: string;
@@ -247,7 +251,7 @@ function Riga({
   onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className="anello-focus flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-superficie-3">
+    <button data-giro={giro} onClick={onClick} className="anello-focus flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-superficie-3">
       <span className="grid size-8 shrink-0 place-items-center rounded-[10px] text-white" style={{ background: colore }}>
         <Icona className="size-[17px]" />
       </span>
@@ -464,10 +468,10 @@ function PannelloCasa({
   }
 
   async function condividi() {
-    const testo = `Entra nella nostra casa su PinguHome con il codice ${famiglia.codice_invito}: ${window.location.origin}`;
+    const testo = `Entra nella nostra casa su Uchi con il codice ${famiglia.codice_invito}: ${window.location.origin}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "PinguHome", text: testo });
+        await navigator.share({ title: "Uchi", text: testo });
         return;
       } catch {}
     }

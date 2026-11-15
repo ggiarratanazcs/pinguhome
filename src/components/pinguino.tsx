@@ -11,7 +11,7 @@ export function Marchio({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-3", className)}>
       <Pinguino className="w-10" />
-      <span className="titolo text-[1.125rem]">pinguhome</span>
+      <span className="titolo text-[1.125rem]">uchi</span>
     </span>
   );
 }

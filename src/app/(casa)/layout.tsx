@@ -4,6 +4,7 @@ import { BarraInferiore, BarraLaterale, TestataMobile } from "@/components/navig
 import { SincronizzaTema } from "@/components/sincronizza-tema";
 import { FornitoreMascotte } from "@/components/mascotte";
 import { AvvioServiceWorker } from "@/components/notifiche";
+import { GiroGuidato } from "@/components/giro-guidato";
 
 /** Con una mascotte personale, l'icona per la schermata Home del telefono è la sua. */
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,6 +26,7 @@ export default async function LayoutCasa({ children }: LayoutProps<"/">) {
         {children}
       </div>
       <BarraInferiore />
+      <GiroGuidato profiloId={profilo.id} daMostrare={!profilo.tutorial_visto_il} />
     </div>
     </FornitoreMascotte>
   );

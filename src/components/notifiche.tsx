@@ -41,12 +41,12 @@ export function GestioneNotifiche() {
     <div className="flex flex-col gap-4">
       {stato === "solo-da-home" ? (
         <p className="text-[0.9375rem] text-inchiostro-2">
-          Su iPhone le notifiche funzionano solo dall&apos;app sulla schermata Home: in Safari tocca <strong>Condividi</strong> → <strong>Aggiungi a schermata Home</strong>, apri PinguHome da lì e torna qui.
+          Su iPhone le notifiche funzionano solo dall&apos;app sulla schermata Home: in Safari tocca <strong>Condividi</strong> → <strong>Aggiungi a schermata Home</strong>, apri Uchi da lì e torna qui.
         </p>
       ) : stato === "non-supportate" ? (
         <p className="text-[0.9375rem] text-inchiostro-2">Questo browser non supporta le notifiche. Prova con Chrome, Edge, Firefox o con l&apos;app installata.</p>
       ) : stato === "bloccate" ? (
-        <p className="text-[0.9375rem] text-inchiostro-2">Le notifiche sono bloccate per PinguHome: riattivale dalle impostazioni del browser o del telefono, poi ricarica la pagina.</p>
+        <p className="text-[0.9375rem] text-inchiostro-2">Le notifiche sono bloccate per Uchi: riattivale dalle impostazioni del browser o del telefono, poi ricarica la pagina.</p>
       ) : stato === "attive" ? (
         <p className="flex items-center gap-2 text-[0.9375rem] font-semibold text-eco">
           <BellRing className="size-5" /> Attive su questo dispositivo

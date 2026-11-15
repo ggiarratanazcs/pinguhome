@@ -70,6 +70,7 @@ export type Profilo = {
   mascotte_path: string | null;
   nome: string;
   tema: string;
+  tutorial_visto_il: string | null;
 };
 
 export type Reparto = {
@@ -207,7 +208,7 @@ export type Database = {
       liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "nascosto" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
-      profili: Tabella<Profilo, Opz<Profilo, "colore" | "cornice" | "creato_il" | "email" | "famiglia_attiva" | "mascotte" | "mascotte_path" | "nome" | "tema">>;
+      profili: Tabella<Profilo, Opz<Profilo, "colore" | "cornice" | "creato_il" | "tutorial_visto_il" | "email" | "famiglia_attiva" | "mascotte" | "mascotte_path" | "nome" | "tema">>;
       impegni: Tabella<Impegno, Opz<Impegno, "categoria" | "creato_da" | "creato_il" | "id" | "importo" | "note" | "ora" | "per_chi" | "promemoria" | "ricorrenza">>;
       push_iscrizioni: Tabella<PushIscrizione, Opz<PushIscrizione, "id" | "user_id" | "dispositivo" | "creata_il">>;
       impegni_fatti: Tabella<ImpegnoFatto, Opz<ImpegnoFatto, "fatto_da" | "fatto_il">>;

@@ -41,7 +41,7 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
           <Mascotte className="mascotte-barra relative" />
         </button>
         <div className="solo-aperta mt-5 text-center">
-          <p className="titolo text-[1.0625rem] text-su-dorso">pinguhome</p>
+          <p className="titolo text-[1.0625rem] text-su-dorso">uchi</p>
           <p className="mt-1.5 truncate text-[0.8125rem] text-su-dorso-tenue">{casa}</p>
         </div>
       </div>
@@ -125,7 +125,7 @@ const TITOLI_MOBILE: [string, string][] = [
  */
 export function TestataMobile({ casa }: { casa: string }) {
   const pathname = usePathname();
-  const titolo = TITOLI_MOBILE.find(([p]) => pathname.startsWith(p))?.[1] ?? "pinguhome";
+  const titolo = TITOLI_MOBILE.find(([p]) => pathname.startsWith(p))?.[1] ?? "uchi";
   return (
     <div className="sticky top-0 z-30 lg:hidden">
       <header className="pt-sicuro bg-dorso text-su-dorso">

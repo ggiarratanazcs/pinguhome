@@ -5,7 +5,7 @@ export default function LayoutAccesso({ children }: LayoutProps<"/">) {
     <div className="grid min-h-dvh bg-dorso lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       {/* Il dorso: mascotte grande su una lastra di ghiaccio */}
       <aside className="relative hidden flex-col justify-between overflow-hidden p-12 text-su-dorso lg:flex">
-        <p className="titolo text-[1.25rem]">pinguhome</p>
+        <p className="titolo text-[1.25rem]">uchi</p>
         <div className="relative mx-auto w-full max-w-[360px]">
           <div aria-hidden className="absolute inset-x-[-10%] bottom-[-6%] top-[42%] rounded-[50%] bg-lastra" />
           <Pinguino className="relative w-full" />

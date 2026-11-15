@@ -228,6 +228,7 @@ export function AppAgenda({
             ) : null}
             <button
               onClick={() => setMaschera(oggi)}
+              data-giro="nuovo-impegno"
               aria-label="Nuovo impegno"
               className="anello-focus ml-auto grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
             >

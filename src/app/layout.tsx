@@ -5,11 +5,11 @@ import { SCRIPT_AVVIO, TEMA_PREDEFINITO } from "@/lib/temi";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "PinguHome", template: "%s · PinguHome" },
+  title: { default: "Uchi", template: "%s · Uchi" },
   description: "La casa, la spesa e le cose di tutti i giorni, in due.",
-  applicationName: "PinguHome",
+  applicationName: "Uchi",
   icons: { apple: "/apple-icon.png" },
-  appleWebApp: { capable: true, title: "PinguHome", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Uchi", statusBarStyle: "default" },
   formatDetection: { telephone: false },
   robots: { index: false, follow: false },
 };

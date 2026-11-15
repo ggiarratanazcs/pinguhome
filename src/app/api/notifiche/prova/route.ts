@@ -14,7 +14,7 @@ export async function POST() {
   let ok = 0;
   for (const s of iscrizioni) {
     const esito = await inviaNotifica(s, {
-      title: "PinguHome",
+      title: "Uchi",
       body: "Le notifiche funzionano: qui arriveranno i promemoria dell'agenda.",
       url: "/agenda",
       tag: "prova",

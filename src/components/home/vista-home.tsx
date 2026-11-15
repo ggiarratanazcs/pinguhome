@@ -142,7 +142,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           saluto={`${dati.saluto}, ${dati.nome.toLowerCase()}`}
         />
 
-        <div className="mt-4 grid max-w-3xl grid-cols-3 gap-3 md:mt-6 md:gap-6">
+        <div data-giro="indicatori" className="mt-4 grid max-w-3xl grid-cols-3 gap-3 md:mt-6 md:gap-6">
           <Indicatore href="/spesa" scena="carrello" etichetta="da comprare" ritardo={0}>
             <Contatore valore={daComprare} />
           </Indicatore>

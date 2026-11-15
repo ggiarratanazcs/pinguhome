@@ -253,7 +253,7 @@ function VistaConto({
 
   if (!conto) {
     return (
-      <div className="mt-8 max-w-md">
+      <div data-giro="residuo" className="mt-8 max-w-md">
         <ImpostaSaldo etichetta="Quanto c'è sul conto oggi?" onSalva={onSaldo} />
       </div>
     );
@@ -262,7 +262,7 @@ function VistaConto({
   return (
     <div className="mt-6 pb-16">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-12">
-        <div>
+        <div data-giro="residuo">
           <div className="flex items-center gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/casa/salvadanaio.webp" alt="" className="size-16 shrink-0 object-contain drop-shadow-[0_8px_12px_rgba(var(--ombra),0.18)]" />

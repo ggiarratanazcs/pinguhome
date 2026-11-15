@@ -549,7 +549,7 @@ export function AppSpesa({
   return (
     <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
       {/* Sezioni del modulo, come parole */}
-      <nav className="senza-barra -mx-5 flex items-center gap-5 overflow-x-auto whitespace-nowrap px-5 text-[0.9375rem] md:mx-0 md:gap-6 md:px-0">
+      <nav data-giro="schede-spesa" className="senza-barra -mx-5 flex items-center gap-5 overflow-x-auto whitespace-nowrap px-5 text-[0.9375rem] md:mx-0 md:gap-6 md:px-0">
         {schede.map((s) => {
           const attiva = vista === s.id;
           return (
@@ -681,7 +681,7 @@ function SelettoreListe({
     <div>
       <h1 className="sr-only">{attiva?.nome ?? "lista"}</h1>
       <div className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max items-center gap-2 py-1">
+        <div data-giro="liste" className="flex w-max items-center gap-2 py-1">
           {liste.map((l) => {
             const selezionata = l.id === corrente;
             const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
