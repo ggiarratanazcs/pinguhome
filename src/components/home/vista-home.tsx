@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { animate, motion, useMotionValue, useTransform } from "motion/react";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { ascoltaNascoste, impostaNascoste, leggiNascoste } from "@/lib/finanze";
 import type { Reparto } from "@/lib/database.types";
 import { postiAttivi } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,7 @@ function Indicatore({
   etichetta,
   ritardo,
   sopra,
+  angolo,
   children,
 }: {
   href: string | null;
@@ -110,6 +112,8 @@ function Indicatore({
   ritardo: number;
   /** Contenuto disegnato sopra l'immagine (es. la data sul calendario) */
   sopra?: React.ReactNode;
+  /** Un pulsantino nell'angolo in alto a destra, fuori dal collegamento (es. l'occhio per le cifre) */
+  angolo?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const rapportoScena = useRapportoScena(scena ?? "carrello");
@@ -142,12 +146,34 @@ function Indicatore({
       <span className="mt-1.5 block text-[0.75rem] leading-tight text-tenue md:text-[0.8125rem]">{etichetta}</span>
     </motion.span>
   );
-  return href ? (
-    <Link href={href} className="anello-focus block rounded-[24px] transition-transform active:scale-[0.97] md:rounded-[32px]">
+  const scheda = href ? (
+    <Link href={href} className="anello-focus block h-full rounded-[24px] transition-transform active:scale-[0.97] md:rounded-[32px]">
       {corpo}
     </Link>
   ) : (
-    <div>{corpo}</div>
+    <div className="h-full">{corpo}</div>
+  );
+  return angolo ? (
+    <div className="relative">
+      {scheda}
+      <div className="absolute right-1.5 top-1.5 md:right-3 md:top-3">{angolo}</div>
+    </div>
+  ) : (
+    scheda
+  );
+}
+
+/** L'occhio sul salvadanaio: nasconde o mostra le cifre (la stessa scelta vale in Finanze). */
+function OcchioCifre({ nascoste }: { nascoste: boolean }) {
+  return (
+    <button
+      onClick={() => impostaNascoste(!nascoste)}
+      aria-label={nascoste ? "Mostra le cifre" : "Nascondi le cifre"}
+      aria-pressed={nascoste}
+      className="anello-focus grid size-7 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro"
+    >
+      {nascoste ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+    </button>
   );
 }
 
@@ -170,6 +196,7 @@ function DataDelGiorno() {
 
 export function VistaHome({ dati }: { dati: DatiHome }) {
   const daComprare = dati.liste.reduce((t, l) => t + l.daPrendere, 0);
+  const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
 
   return (
     <main className="mx-auto w-full max-w-[1120px] px-4 md:px-12 lg:pt-10">
@@ -192,8 +219,15 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           <Indicatore href="/agenda" immagine="/casa/calendario.webp" rapporto={557 / 640} etichetta="impegni in 30 giorni" ritardo={0.06} sopra={<DataDelGiorno />}>
             <Contatore valore={dati.impegni30} />
           </Indicatore>
-          <Indicatore href="/finanze" immagine="/casa/salvadanaio.webp" rapporto={621 / 640} etichetta="residuo sul conto" ritardo={0.12}>
-            {dati.residuo === null ? <span className="text-tenue">—</span> : <Contatore valore={dati.residuo} formato={(n) => euro(n, false)} />}
+          <Indicatore
+            href="/finanze"
+            immagine="/casa/salvadanaio.webp"
+            rapporto={621 / 640}
+            etichetta="residuo sul conto"
+            ritardo={0.12}
+            angolo={dati.residuo === null ? null : <OcchioCifre nascoste={nascoste} />}
+          >
+            {dati.residuo === null ? <span className="text-tenue">—</span> : nascoste ? <span className="tracking-wider">•••••</span> : <Contatore valore={dati.residuo} formato={(n) => euro(n, false)} />}
           </Indicatore>
         </div>
         <AccessoWallet carte={dati.carte} />
