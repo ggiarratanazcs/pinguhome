@@ -51,6 +51,8 @@ export type Prodotto = {
   creato_il: string;
   eco: boolean;
   famiglia_id: string;
+  /** Foto del prodotto (archivio privato "prodotti"), per sapere cosa comprare di preciso */
+  foto_path: string | null;
   id: string;
   /** Tolto dagli abituali: non ricompare anche se si ricompra spesso */
   nascosto: boolean;
@@ -223,7 +225,7 @@ export type Database = {
       famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id" | "luoghi">>;
       liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
-      prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "id" | "nascosto" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
+      prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "foto_path" | "id" | "nascosto" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
       profili: Tabella<Profilo, Opz<Profilo, "colore" | "cornice" | "creato_il" | "tutorial_visto_il" | "email" | "famiglia_attiva" | "mascotte" | "mascotte_path" | "nome" | "tema">>;
       impegni: Tabella<Impegno, Opz<Impegno, "categoria" | "creato_da" | "creato_il" | "id" | "importo" | "note" | "ora" | "per_chi" | "promemoria" | "ricorrenza">>;
       push_iscrizioni: Tabella<PushIscrizione, Opz<PushIscrizione, "id" | "user_id" | "dispositivo" | "creata_il">>;

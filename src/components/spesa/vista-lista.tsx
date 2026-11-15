@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
-import { Check, ChevronDown, CornerDownLeft, Flame, Loader2, Minus, MoreHorizontal, Plus, Trash2 } from "lucide-react";
-import type { Lista, Reparto, VoceLista } from "@/lib/database.types";
+import { Camera, Check, ChevronDown, CornerDownLeft, Flame, Loader2, Minus, Plus, Trash2, X } from "lucide-react";
+import type { Lista, Prodotto, Reparto, VoceLista } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/client";
+import { preparaFile } from "@/lib/scontrini";
 import type { MembroCasa } from "@/lib/sessione";
 import { interpretaVoce, UNITA } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
@@ -28,6 +30,9 @@ export function VistaLista({
   azioni: AzioniSpesa;
 }) {
   const [carrelloAperto, setCarrelloAperto] = useState(false);
+  const [scheda, setScheda] = useState<string | null>(null);
+  const [grande, setGrande] = useState<string | null>(null);
+  const foto = useFotoProdotti(dati.prodotti);
   const daPrendere = voci.filter((v) => !v.presa);
   const prese = voci.filter((v) => v.presa).sort((a, b) => (b.presa_il ?? "").localeCompare(a.presa_il ?? ""));
 
@@ -52,7 +57,23 @@ export function VistaLista({
   return (
     <div className="mt-6 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
       <div className="min-w-0">
-        <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} />
+        <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} onFoto={azioni.aggiungiDaFoto} />
+
+        {voci.length > 0 ? (
+          <div className="mt-4 flex items-center gap-3 text-[0.75rem] text-tenue">
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-superficie-3">
+              <motion.span
+                className="block h-full rounded-full bg-becco"
+                initial={false}
+                animate={{ width: `${(prese.length / voci.length) * 100}%` }}
+                transition={{ duration: 0.5, ease: [0.22, 0.9, 0.24, 1] }}
+              />
+            </span>
+            <span className="numeri shrink-0">
+              {prese.length} di {voci.length} nel carrello
+            </span>
+          </div>
+        ) : null}
 
         {daPrendere.length === 0 && prese.length === 0 ? <ListaVuota /> : null}
         {daPrendere.length === 0 && prese.length > 0 ? (
@@ -65,17 +86,26 @@ export function VistaLista({
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-col gap-7">
+        <div className="mt-5 flex flex-col gap-5">
           {gruppi.map(({ reparto, voci: elenco }) => (
             <section key={reparto?.id ?? "altro"}>
-              <h2 className="flex items-center gap-2 text-[0.8125rem] text-tenue">
-                <IconaReparto icona={reparto?.icona} className="size-4" />
+              <h2 className="flex items-center gap-1.5 text-[0.75rem] font-semibold uppercase tracking-wider text-tenue">
+                <IconaReparto icona={reparto?.icona} className="size-3.5" />
                 {reparto?.nome ?? "Altro"}
               </h2>
-              <ul className="mt-1">
+              <ul className="mt-0.5">
                 <AnimatePresence initial={false}>
                   {elenco.map((v) => (
-                    <RigaVoce key={v.id} voce={v} dati={dati} membri={membri} userId={userId} azioni={azioni} />
+                    <RigaVoce
+                      key={v.id}
+                      voce={v}
+                      foto={foto.di(v, dati.prodotti)}
+                      membri={membri}
+                      userId={userId}
+                      azioni={azioni}
+                      onApri={() => setScheda(v.id)}
+                      onFoto={() => setGrande(v.id)}
+                    />
                   ))}
                 </AnimatePresence>
               </ul>
@@ -107,7 +137,16 @@ export function VistaLista({
                   className="mt-3 overflow-hidden"
                 >
                   {prese.map((v) => (
-                    <RigaVoce key={v.id} voce={v} dati={dati} membri={membri} userId={userId} azioni={azioni} />
+                    <RigaVoce
+                      key={v.id}
+                      voce={v}
+                      foto={foto.di(v, dati.prodotti)}
+                      membri={membri}
+                      userId={userId}
+                      azioni={azioni}
+                      onApri={() => setScheda(v.id)}
+                      onFoto={() => setGrande(v.id)}
+                    />
                   ))}
                 </motion.ul>
               ) : null}
@@ -116,6 +155,37 @@ export function VistaLista({
           </section>
         ) : null}
       </div>
+
+      <AnimatePresence>
+        {scheda && voci.some((v) => v.id === scheda) ? (
+          <SchedaVoce
+            key={scheda}
+            voce={voci.find((v) => v.id === scheda)!}
+            foto={foto.di(voci.find((v) => v.id === scheda)!, dati.prodotti)}
+            dati={dati}
+            azioni={azioni}
+            onChiudi={() => setScheda(null)}
+            onFotoGrande={() => setGrande(scheda)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {grande && voci.some((v) => v.id === grande) && foto.di(voci.find((v) => v.id === grande)!, dati.prodotti) ? (
+          <FotoGrande
+            key={grande}
+            voce={voci.find((v) => v.id === grande)!}
+            url={foto.di(voci.find((v) => v.id === grande)!, dati.prodotti)!}
+            onCarrello={() => {
+              const v = voci.find((x) => x.id === grande)!;
+              if (!v.presa) azioni.segnaPresa(v);
+              setGrande(null);
+              setScheda(null);
+            }}
+            onChiudi={() => setGrande(null)}
+          />
+        ) : null}
+      </AnimatePresence>
 
       {/* Colonna laterale: numeri della lista, come fatti scritti */}
       <aside className="hidden lg:block">
@@ -225,12 +295,29 @@ function AggiuntaRapida({
   dati,
   voci,
   onAggiungi,
+  onFoto,
 }: {
   dati: DatiSpesa;
   voci: VoceLista[];
   onAggiungi: (testo: string) => void;
+  onFoto: (foto: Blob, dataUrl: string) => Promise<void>;
 }) {
   const [testo, setTesto] = useState("");
+  const [leggo, setLeggo] = useState(false);
+  const fotocamera = useRef<HTMLInputElement>(null);
+
+  async function daFoto(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setLeggo(true);
+    try {
+      const { blob, dataUrl } = await preparaFile(file);
+      if (dataUrl) await onFoto(blob, dataUrl);
+    } finally {
+      setLeggo(false);
+    }
+  }
   const [indice, setIndice] = useState(-1);
   const [fuoco, setFuoco] = useState(false);
   const campo = useRef<HTMLInputElement>(null);
@@ -276,7 +363,7 @@ function AggiuntaRapida({
 
   return (
     <div data-giro="aggiungi" className="relative">
-      <div className={cn("flex items-center gap-3 border-b-2 pb-1 transition-colors", fuoco ? "border-becco" : "border-linea-forte")}>
+      <div className={cn("flex h-12 items-center gap-1.5 rounded-full bg-superficie-2 pl-5 pr-1.5 ring-2 transition-[box-shadow,background]", fuoco ? "bg-superficie ring-becco" : "ring-transparent")}>
         <input
           ref={campo}
           value={testo}
@@ -290,7 +377,7 @@ function AggiuntaRapida({
           placeholder="Cosa manca?"
           enterKeyHint="done"
           autoComplete="off"
-          className="h-12 min-w-0 flex-1 bg-transparent text-[1.125rem] outline-none placeholder:text-tenue/70"
+          className="h-full min-w-0 flex-1 bg-transparent text-[1.0625rem] outline-none placeholder:text-tenue"
         />
         {testo && (interpretata.quantita !== 1 || interpretata.unita) ? (
           <span className="numeri shrink-0 rounded-full bg-guancia-tenue px-3 py-1 text-[0.8125rem] font-semibold text-inchiostro">
@@ -298,10 +385,20 @@ function AggiuntaRapida({
           </span>
         ) : null}
         <button
+          onClick={() => fotocamera.current?.click()}
+          disabled={leggo}
+          aria-label="Aggiungi con una foto"
+          title="Aggiungi con una foto"
+          className="anello-focus grid size-9 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro"
+        >
+          {leggo ? <Loader2 className="size-[18px] animate-spin" /> : <Camera className="size-[18px]" />}
+        </button>
+        <input ref={fotocamera} type="file" accept="image/*" capture="environment" className="hidden" onChange={daFoto} />
+        <button
           onClick={() => conferma()}
           disabled={!testo.trim()}
           aria-label="Aggiungi alla lista"
-          className="anello-focus grid size-10 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:bg-superficie-3 disabled:text-tenue"
+          className="anello-focus grid size-9 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:opacity-60"
         >
           <Plus className="size-5" strokeWidth={2.4} />
         </button>
@@ -343,21 +440,54 @@ function AggiuntaRapida({
   );
 }
 
+/** Link temporanei alle foto dei prodotti, chiesti tutti insieme e tenuti finché la pagina è aperta. */
+function useFotoProdotti(prodotti: Prodotto[]) {
+  const [url, setUrl] = useState<Record<string, string>>({});
+  const percorsi = useMemo(() => prodotti.map((p) => p.foto_path).filter((x): x is string => Boolean(x)), [prodotti]);
+
+  useEffect(() => {
+    const mancanti = percorsi.filter((p) => !url[p]);
+    if (!mancanti.length) return;
+    let vivo = true;
+    createClient()
+      .storage.from("prodotti")
+      .createSignedUrls(mancanti, 60 * 60 * 6)
+      .then(({ data }) => {
+        if (!vivo || !data) return;
+        setUrl((u) => ({ ...u, ...Object.fromEntries(data.flatMap((d) => (d.signedUrl && d.path ? [[d.path, d.signedUrl] as const] : []))) }));
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [percorsi, url]);
+
+  return {
+    di(voce: VoceLista, elenco: Prodotto[]) {
+      const p = (voce.prodotto_id && elenco.find((x) => x.id === voce.prodotto_id)) || elenco.find((x) => x.nome.toLowerCase() === voce.nome.toLowerCase());
+      return p?.foto_path ? (url[p.foto_path] ?? null) : null;
+    },
+  };
+}
+
 function RigaVoce({
   voce,
-  dati,
+  foto,
   membri,
   userId,
   azioni,
+  onApri,
+  onFoto,
 }: {
   voce: VoceLista;
-  dati: DatiSpesa;
+  foto: string | null;
   membri: MembroCasa[];
   userId: string;
   azioni: AzioniSpesa;
+  onApri: () => void;
+  onFoto: () => void;
 }) {
-  const [aperta, setAperta] = useState(false);
   const chiPresa = membri.find((m) => m.id === voce.presa_da);
+  const sotto = voce.presa && chiPresa ? `Presa da ${chiPresa.id === userId ? "te" : chiPresa.nome}` : voce.note;
 
   function trascina(_: unknown, info: PanInfo) {
     if (info.offset.x < -110) azioni.elimina(voce);
@@ -378,15 +508,8 @@ function RigaVoce({
         <span className="flex items-center gap-2 text-becco-scuro"><Check className="size-4" /> Nel carrello</span>
         <span className="flex items-center gap-2 text-pericolo">Elimina <Trash2 className="size-4" /></span>
       </div>
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.5}
-        dragSnapToOrigin
-        onDragEnd={trascina}
-        className="relative bg-superficie"
-      >
-        <div className="group flex min-h-[58px] items-center gap-4 py-2.5">
+      <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.5} dragSnapToOrigin onDragEnd={trascina} className="relative bg-superficie">
+        <div className="flex min-h-[48px] items-center gap-3 py-1.5">
           <button
             onClick={() => azioni.segnaPresa(voce)}
             aria-label={voce.presa ? "Rimetti in lista" : "Segna come presa"}
@@ -404,128 +527,253 @@ function RigaVoce({
             </AnimatePresence>
           </button>
 
-          <button onClick={() => azioni.segnaPresa(voce)} className="min-w-0 flex-1 text-left">
-            <span className="flex items-center gap-2">
-              <span className={cn("truncate text-[1.0625rem] transition-colors", voce.presa && "text-tenue line-through decoration-tenue/50")}>
-                {voce.nome}
-              </span>
-              {voce.urgente && !voce.presa ? <span className="shrink-0 rounded-full bg-becco-tenue px-2 py-0.5 text-[0.6875rem] font-semibold text-becco-scuro">urgente</span> : null}
+          <button onClick={onApri} className="anello-focus min-w-0 flex-1 rounded-[8px] py-1 text-left">
+            <span className="flex items-center gap-1.5">
+              <span className={cn("truncate text-[1rem] transition-colors", voce.presa && "text-tenue line-through decoration-tenue/50")}>{voce.nome}</span>
+              {voce.urgente && !voce.presa ? <Flame className="size-3.5 shrink-0 text-becco" aria-label="urgente" /> : null}
             </span>
-            {voce.note || (voce.presa && chiPresa) ? (
-              <span className="mt-0.5 block truncate text-xs text-tenue">
-                {voce.presa && chiPresa ? `Presa da ${chiPresa.id === userId ? "te" : chiPresa.nome}` : voce.note}
-              </span>
-            ) : null}
+            {sotto ? <span className="block truncate text-[0.75rem] leading-tight text-tenue">{sotto}</span> : null}
           </button>
 
           {Number(voce.quantita) !== 1 || voce.unita !== "pz" ? (
-            <span className="numeri shrink-0 text-[0.9375rem] font-semibold text-inchiostro-2">
+            <button onClick={onApri} className="numeri shrink-0 text-[0.875rem] font-semibold text-inchiostro-2">
               {formattaQuantita(Number(voce.quantita))} {voce.unita}
-            </span>
+            </button>
           ) : null}
 
-
-          <button
-            onClick={() => setAperta((a) => !a)}
-            aria-label="Dettagli"
-            className={cn(
-              "anello-focus grid size-8 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro",
-              aperta && "bg-superficie-3 text-inchiostro",
-            )}
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
+          {foto ? (
+            <button onClick={onFoto} aria-label={`Foto di ${voce.nome}`} className="anello-focus size-9 shrink-0 overflow-hidden rounded-[10px] ring-1 ring-linea">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={foto} alt="" draggable={false} className={cn("size-full object-cover", voce.presa && "opacity-50 grayscale")} />
+            </button>
+          ) : null}
         </div>
-
-        <AnimatePresence initial={false}>
-          {aperta ? (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <DettaglioVoce voce={voce} dati={dati} azioni={azioni} />
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
       </motion.div>
     </motion.li>
   );
 }
 
-function DettaglioVoce({ voce, dati, azioni }: { voce: VoceLista; dati: DatiSpesa; azioni: AzioniSpesa }) {
+/** Tutto su una voce: foto, quantità, reparto, urgente, nota. */
+function SchedaVoce({
+  voce,
+  foto,
+  dati,
+  azioni,
+  onChiudi,
+  onFotoGrande,
+}: {
+  voce: VoceLista;
+  foto: string | null;
+  dati: DatiSpesa;
+  azioni: AzioniSpesa;
+  onChiudi: () => void;
+  onFotoGrande: () => void;
+}) {
   const passo = ["kg", "l"].includes(voce.unita) ? 0.5 : ["g", "ml"].includes(voce.unita) ? 100 : 1;
   const q = Number(voce.quantita);
+  const [nota, setNota] = useState(voce.note ?? "");
+  const [carico, setCarico] = useState(false);
+  const fotocamera = useRef<HTMLInputElement>(null);
+  const reparto = dati.reparti.find((r) => r.id === voce.reparto_id);
+
+  function salvaNota() {
+    if (nota !== (voce.note ?? "")) azioni.modificaVoce(voce, { note: nota.trim() || null });
+  }
+
+  function chiudi() {
+    salvaNota();
+    onChiudi();
+  }
+
+  useEffect(() => {
+    const esc = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onChiudi();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onChiudi]);
+
+  async function nuovaFoto(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setCarico(true);
+    try {
+      const { blob } = await preparaFile(file);
+      await azioni.fotoProdotto(voce, blob);
+    } finally {
+      setCarico(false);
+    }
+  }
+
   return (
-    <div className="mb-3 ml-[42px] flex flex-wrap items-center gap-2 rounded-[20px] bg-superficie-2 p-3">
-      <div className="flex h-9 items-center rounded-full bg-superficie ring-1 ring-linea">
-        <button onClick={() => q - passo > 0 && azioni.modificaVoce(voce, { quantita: q - passo })} className="grid size-9 place-items-center text-tenue hover:text-inchiostro" aria-label="Meno">
-          <Minus className="size-3.5" />
-        </button>
-        <span className="numeri min-w-8 text-center text-sm font-semibold">{formattaQuantita(q)}</span>
-        <button onClick={() => azioni.modificaVoce(voce, { quantita: q + passo })} className="grid size-9 place-items-center text-tenue hover:text-inchiostro" aria-label="Più">
-          <Plus className="size-3.5" />
-        </button>
-      </div>
-      <select
-        value={voce.unita}
-        onChange={(e) => azioni.modificaVoce(voce, { unita: e.target.value })}
-        className="h-9 rounded-full bg-superficie px-3 text-sm ring-1 ring-linea"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-dorso/40 p-3 backdrop-blur-md sm:items-center"
+      onClick={chiudi}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={voce.nome}
+        onClick={(e) => e.stopPropagation()}
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        className="pb-sicuro w-full max-w-md rounded-[32px] bg-superficie p-5 shadow-2xl"
       >
-        {[...new Set([...UNITA, voce.unita])].map((u) => (
-          <option key={u}>{u}</option>
-        ))}
-      </select>
-      <select
-        value={voce.reparto_id ?? ""}
-        onChange={(e) => azioni.modificaVoce(voce, { reparto_id: e.target.value || null })}
-        className="h-9 max-w-[11rem] rounded-full bg-superficie px-3 text-sm ring-1 ring-linea"
-      >
-        {dati.reparti
-          .slice()
-          .sort((a, b) => a.ordine - b.ordine)
-          .map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.nome}
-            </option>
-          ))}
-      </select>
-      <Interruttore attivo={voce.urgente} onClick={() => azioni.modificaVoce(voce, { urgente: !voce.urgente })}>
-        <Flame className="size-3.5" /> Urgente
-      </Interruttore>
-      <input
-        defaultValue={voce.note ?? ""}
-        onBlur={(e) => e.target.value !== (voce.note ?? "") && azioni.modificaVoce(voce, { note: e.target.value || null })}
-        placeholder="Nota (marca, formato…)"
-        className="h-9 min-w-40 flex-1 rounded-full bg-superficie px-4 text-sm outline-none ring-1 ring-linea focus:ring-becco"
-      />
-      <button onClick={() => azioni.elimina(voce)} className="grid size-9 place-items-center rounded-full text-pericolo hover:bg-pericolo-tenue" aria-label="Elimina">
-        <Trash2 className="size-4" />
-      </button>
-    </div>
+        <div className="flex items-start gap-4">
+          <div className="relative shrink-0">
+            {foto ? (
+              <button onClick={onFotoGrande} aria-label="Foto a tutto schermo" className="anello-focus block size-24 overflow-hidden rounded-[20px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={foto} alt="" draggable={false} className="size-full object-cover" />
+              </button>
+            ) : (
+              <button
+                onClick={() => fotocamera.current?.click()}
+                aria-label="Aggiungi una foto"
+                className="anello-focus grid size-24 place-items-center rounded-[20px] border-2 border-dashed border-linea-forte text-tenue transition hover:border-becco hover:text-inchiostro"
+              >
+                {carico ? <Loader2 className="size-6 animate-spin" /> : <Camera className="size-6" />}
+              </button>
+            )}
+            {foto ? (
+              <button
+                onClick={() => fotocamera.current?.click()}
+                aria-label="Cambia foto"
+                className="anello-focus absolute -bottom-2 -right-2 grid size-8 place-items-center rounded-full bg-dorso text-su-dorso shadow"
+              >
+                {carico ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+              </button>
+            ) : null}
+            <input ref={fotocamera} type="file" accept="image/*" capture="environment" className="hidden" onChange={nuovaFoto} />
+          </div>
+          <div className="min-w-0 flex-1 pt-1">
+            <p className="titolo break-words text-[1.375rem] leading-tight">{voce.nome.toLowerCase()}</p>
+            <label className="relative mt-1 inline-flex items-center gap-1 text-[0.8125rem] text-tenue">
+              <IconaReparto icona={reparto?.icona} className="size-3.5" />
+              <span className="underline decoration-dotted underline-offset-4">{reparto?.nome ?? "Altro"}</span>
+              <ChevronDown className="size-3.5" />
+              <select
+                value={voce.reparto_id ?? ""}
+                onChange={(e) => azioni.modificaVoce(voce, { reparto_id: e.target.value || null })}
+                aria-label="Reparto"
+                className="absolute inset-0 cursor-pointer opacity-0"
+              >
+                {dati.reparti
+                  .slice()
+                  .sort((a, b) => a.ordine - b.ordine)
+                  .map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.nome}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </div>
+          <button onClick={chiudi} aria-label="Chiudi" className="anello-focus grid size-9 shrink-0 place-items-center rounded-full bg-superficie-2 text-tenue hover:text-inchiostro">
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="flex h-10 items-center rounded-full ring-1 ring-linea">
+            <button onClick={() => q - passo > 0 && azioni.modificaVoce(voce, { quantita: q - passo })} className="grid size-10 place-items-center text-tenue hover:text-inchiostro" aria-label="Meno">
+              <Minus className="size-4" />
+            </button>
+            <span className="numeri min-w-8 text-center font-semibold">{formattaQuantita(q)}</span>
+            <button onClick={() => azioni.modificaVoce(voce, { quantita: q + passo })} className="grid size-10 place-items-center text-tenue hover:text-inchiostro" aria-label="Più">
+              <Plus className="size-4" />
+            </button>
+          </div>
+          <select value={voce.unita} onChange={(e) => azioni.modificaVoce(voce, { unita: e.target.value })} aria-label="Unità" className="h-10 rounded-full bg-superficie px-4 ring-1 ring-linea">
+            {[...new Set([...UNITA, voce.unita])].map((u) => (
+              <option key={u}>{u}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => azioni.modificaVoce(voce, { urgente: !voce.urgente })}
+            aria-pressed={voce.urgente}
+            className={cn(
+              "anello-focus ml-auto flex h-10 items-center gap-1.5 rounded-full px-4 text-[0.875rem] font-medium transition",
+              voce.urgente ? "bg-becco text-su-becco" : "text-tenue ring-1 ring-linea hover:text-inchiostro",
+            )}
+          >
+            <Flame className="size-4" /> Urgente
+          </button>
+        </div>
+
+        <label className="mt-4 flex flex-col-reverse gap-1 text-[0.75rem] text-tenue">
+          Nota
+          <input
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            onBlur={salvaNota}
+            placeholder="Marca, formato…"
+            className="campo-linea h-10 text-[1rem] text-inchiostro placeholder:text-tenue/60"
+          />
+        </label>
+
+        <div className="mt-5 flex items-center justify-between">
+          <button onClick={() => (azioni.elimina(voce), onChiudi())} aria-label="Elimina" className="anello-focus grid size-10 place-items-center rounded-full text-pericolo hover:bg-pericolo-tenue">
+            <Trash2 className="size-[18px]" />
+          </button>
+          <Pulsante onClick={chiudi}>Fatto</Pulsante>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
-function Interruttore({
-  attivo,
-  onClick,
-  children,
-}: {
-  attivo: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+/** Al supermercato: la foto a tutto schermo, e dentro al carrello con un tocco. */
+function FotoGrande({ voce, url, onCarrello, onChiudi }: { voce: VoceLista; url: string; onCarrello: () => void; onChiudi: () => void }) {
+  const dettagli = [voce.note, Number(voce.quantita) !== 1 || voce.unita !== "pz" ? `${formattaQuantita(Number(voce.quantita))} ${voce.unita}` : null].filter(Boolean).join(" · ");
+
+  useEffect(() => {
+    const esc = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onChiudi();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onChiudi]);
+
   return (
-    <button
-      onClick={onClick}
-      aria-pressed={attivo}
-      className={cn(
-        "anello-focus flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition",
-        attivo ? "bg-becco text-su-becco" : "bg-superficie text-tenue ring-1 ring-linea hover:text-inchiostro",
-      )}
+    <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Foto di ${voce.nome}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="pt-sicuro pb-sicuro fixed inset-0 z-[70] flex flex-col bg-[#0b0e1c]"
+      onClick={onChiudi}
     >
-      {children}
-    </button>
+      <div className="flex min-h-0 flex-1 items-center justify-center p-6">
+        <motion.img
+          src={url}
+          alt={voce.nome}
+          initial={{ scale: 0.94 }}
+          animate={{ scale: 1 }}
+          className="max-h-full max-w-full rounded-[24px] object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="px-6 pb-6 text-white" onClick={(e) => e.stopPropagation()}>
+        <p className="titolo text-[1.5rem]">{voce.nome.toLowerCase()}</p>
+        {dettagli ? <p className="text-white/75">{dettagli}</p> : null}
+        <div className="mt-4 flex gap-3">
+          {!voce.presa ? (
+            <button onClick={onCarrello} className="anello-focus flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-becco font-semibold text-su-becco active:scale-[0.98]">
+              <Check className="size-4" strokeWidth={3} /> Nel carrello
+            </button>
+          ) : (
+            <span className="flex-1" />
+          )}
+          <button onClick={onChiudi} aria-label="Chiudi" className="anello-focus grid size-12 place-items-center rounded-full bg-white/15 text-white">
+            <X className="size-5" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
   );
 }

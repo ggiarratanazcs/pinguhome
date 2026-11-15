@@ -224,6 +224,44 @@ function useAzioni(params: {
     [dati.dispensa, dati.luoghi, dati.prodotti, dati.reparti, famigliaId, setDati, supabase],
   );
 
+  /** Mette (o cambia) la foto del prodotto di una voce: resta legata al prodotto per le prossime volte. */
+  const fotoProdotto = useCallback(
+    async (voce: VoceLista, foto: Blob) => {
+      const prodotto = (voce.prodotto_id && dati.prodotti.find((p) => p.id === voce.prodotto_id)) || (await assicuraProdotto(voce.nome, voce.unita));
+      if (!prodotto) return avvisa("Non sono riuscito a salvare la foto");
+      const percorso = `${famigliaId}/${prodotto.id}-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("prodotti").upload(percorso, foto, { contentType: "image/jpeg" });
+      if (error) return avvisa("Non sono riuscito a salvare la foto");
+      setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, { ...prodotto, foto_path: percorso }) }));
+      await supabase.from("prodotti").update({ foto_path: percorso }).eq("id", prodotto.id);
+      if (prodotto.foto_path) await supabase.storage.from("prodotti").remove([prodotto.foto_path]);
+      if (!voce.prodotto_id) {
+        setDati((d) => ({ ...d, voci: aggiornaPerId(d.voci, { ...voce, prodotto_id: prodotto.id }) }));
+        await supabase.from("voci_lista").update({ prodotto_id: prodotto.id }).eq("id", voce.id);
+      }
+    },
+    [assicuraProdotto, avvisa, dati.prodotti, famigliaId, setDati, supabase],
+  );
+
+  /** Aggiunge alla lista partendo da una foto: Claude riconosce il prodotto, la foto resta sul prodotto. */
+  const aggiungiDaFoto = useCallback(
+    async (foto: Blob, dataUrl: string) => {
+      const r = await fetch("/api/prodotto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ immagine: dataUrl, tipo: "image/jpeg" }) });
+      const json = (await r.json().catch(() => null)) as { nome?: string | null; errore?: string } | null;
+      if (!r.ok || !json?.nome) return avvisa(json?.errore ?? "Non ho capito cosa c'è nella foto: scrivilo tu");
+      await aggiungi(json.nome);
+      const { data: prodotto } = await supabase.from("prodotti").select("*").eq("famiglia_id", famigliaId).ilike("nome", json.nome).limit(1).maybeSingle();
+      if (!prodotto) return;
+      const percorso = `${famigliaId}/${prodotto.id}-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("prodotti").upload(percorso, foto, { contentType: "image/jpeg" });
+      if (error) return;
+      setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, { ...prodotto, foto_path: percorso }) }));
+      await supabase.from("prodotti").update({ foto_path: percorso }).eq("id", prodotto.id);
+      if (prodotto.foto_path) await supabase.storage.from("prodotti").remove([prodotto.foto_path]);
+    },
+    [aggiungi, avvisa, famigliaId, setDati, supabase],
+  );
+
   /** Salva i posti scelti; le cose nei posti tolti passano in quello più vicino. */
   const salvaLuoghi = useCallback(
     async (luoghi: string[]) => {
@@ -469,7 +507,7 @@ function useAzioni(params: {
     [setDati, supabase],
   );
 
-  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, segnaAbituale, salvaDispensa, eliminaDispensa, salvaLuoghi, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
+  return { aggiungi, segnaPresa, modificaVoce, elimina, chiudiSpesa, rimettiInLista, creaLista, rinominaLista, eliminaLista, modificaProdotto, segnaAbituale, salvaDispensa, eliminaDispensa, salvaLuoghi, fotoProdotto, aggiungiDaFoto, creaSpesa, allegaScontrino, modificaSpesa, eliminaSpesa };
 }
 
 export function AppSpesa({
@@ -511,6 +549,9 @@ export function AppSpesa({
           const id = (p.old as { id: string }).id;
           setDati((d) => ({ ...d, voci: d.voci.filter((x) => x.id !== id) }));
         } else setDati((d) => ({ ...d, voci: aggiornaPerId(d.voci, p.new as VoceLista) }));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "prodotti", filter: filtro }, (p) => {
+        if (p.eventType !== "DELETE") setDati((d) => ({ ...d, prodotti: aggiornaPerId(d.prodotti, p.new as Prodotto) }));
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "dispensa", filter: filtro }, (p) => {
         if (p.eventType === "DELETE") {
