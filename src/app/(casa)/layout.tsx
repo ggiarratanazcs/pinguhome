@@ -7,6 +7,24 @@ import { GiroGuidato } from "@/components/giro-guidato";
 
 export default async function LayoutCasa({ children }: LayoutProps<"/">) {
   const { profilo, famiglia, membri } = await getContesto();
+  // Casa sospesa dall'amministratore: al posto delle sezioni, un avviso
+  if (famiglia.sospesa_il) {
+    return (
+      <main className="foglio pt-sicuro flex min-h-dvh flex-col items-start justify-center px-6 md:px-16">
+        <div className="max-w-md">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icona-512.png" alt="" className="size-14 rounded-[14px]" />
+          <h1 className="titolo mt-6 text-[1.75rem]">casa sospesa</h1>
+          <p className="mt-2 text-tenue">Al momento Uchi non è disponibile per {famiglia.nome}.</p>
+          <form action="/auth/esci" method="post" className="mt-6">
+            <button type="submit" className="anello-focus text-[0.9375rem] font-semibold underline decoration-becco decoration-2 underline-offset-4">
+              Esci
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
   return (
     <FornitoreMascotte tipo={profilo.mascotte} percorso={profilo.mascotte_path}>
     <div className="flex min-h-dvh bg-dorso">

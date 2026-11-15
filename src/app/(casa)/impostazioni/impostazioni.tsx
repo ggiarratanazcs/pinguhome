@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Check, ChevronRight, Home, Images, KeyRound, Loader2, LogOut, Palette, Share2, Smile, Sparkles, Upload, X, type LucideIcon } from "lucide-react";
+import { Bell, Check, ChevronRight, Home, Images, KeyRound, Loader2, LogOut, Palette, Share2, ShieldCheck, Smile, Sparkles, Upload, X, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Famiglia, Profilo } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -32,7 +32,19 @@ const TESTO_NOTIFICHE: Record<StatoNotifiche, string> = {
  * Impostazioni compatte: una riga per voce con il valore attuale a destra;
  * toccandola si apre un riquadro con solo quella configurazione.
  */
-export function Impostazioni({ profilo, famiglia, membri, foto }: { profilo: Profilo; famiglia: Famiglia; membri: MembroCasa[]; foto: FotoSalvata[] }) {
+export function Impostazioni({
+  profilo,
+  famiglia,
+  membri,
+  foto,
+  admin = false,
+}: {
+  profilo: Profilo;
+  famiglia: Famiglia;
+  membri: MembroCasa[];
+  foto: FotoSalvata[];
+  admin?: boolean;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [aperto, setAperto] = useState<Pannello | null>(null);
@@ -113,6 +125,7 @@ export function Impostazioni({ profilo, famiglia, membri, foto }: { profilo: Pro
 
       <Gruppo>
         <Riga icona={Sparkles} colore="#ff9f1c" nome="Rivedi il tutorial" valore="" onClick={() => window.dispatchEvent(new Event(EVENTO_GIRO))} />
+        {admin ? <Riga icona={ShieldCheck} colore="#1d2340" nome="Console di admin" valore="" onClick={() => (window.location.href = "/admin")} /> : null}
         <Riga icona={KeyRound} colore="#8a8f99" nome="Password" valore="" onClick={() => setAperto("password")} />
         <form action="/auth/esci" method="post">
           <button className="anello-focus flex w-full items-center gap-3 px-4 py-3.5 text-left text-pericolo transition hover:bg-superficie-3">

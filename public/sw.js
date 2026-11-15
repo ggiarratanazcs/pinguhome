@@ -14,15 +14,15 @@ self.addEventListener("activate", (e) =>
 
 self.addEventListener("fetch", (evento) => {
   const r = evento.request;
-  if (r.method !== "GET") return;
   const url = new URL(r.url);
   if (url.origin !== self.location.origin) return;
 
-  // Uscendo dall'app, la copia delle carte si cancella
+  // Uscendo dall'app (il modulo "Esci" fa una POST), la copia delle carte si cancella
   if (url.pathname.startsWith("/auth/esci")) {
-    evento.respondWith(caches.delete(CACHE).then(() => fetch(r)));
+    evento.waitUntil(caches.delete(CACHE));
     return;
   }
+  if (r.method !== "GET") return;
 
   // File dell'app (con il nome che cambia a ogni versione) e immagini: prima la copia, poi la rete
   if (url.pathname.startsWith("/_next/static/") || url.pathname === "/icona-512.png") {

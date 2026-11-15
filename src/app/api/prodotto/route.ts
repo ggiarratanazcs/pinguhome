@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { registraErrore, registraLettura } from "@/lib/eventi-server";
 
 export const maxDuration = 60;
 
@@ -54,17 +55,20 @@ export async function POST(request: Request) {
   });
 
   if (!risposta.ok) {
+    await registraErrore(supabase, "prodotto", `Claude ha risposto ${risposta.status}`);
     console.error("Lettura prodotto non riuscita", risposta.status, (await risposta.text().catch(() => "")).slice(0, 500));
     return NextResponse.json({ errore: risposta.status === 429 ? "Troppe letture ravvicinate: riprova tra poco." : "Non sono riuscito a riconoscere il prodotto." }, { status: 502 });
   }
 
   try {
-    const json = (await risposta.json()) as { content?: { type: string; text?: string }[] };
+    const json = (await risposta.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    await registraLettura(supabase, "prodotto", json.usage);
     const grezzo = estraiJson((json.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n"));
     const nome = typeof grezzo.nome === "string" && grezzo.nome.trim() && grezzo.nome.trim().toLowerCase() !== "null" ? grezzo.nome.trim().slice(0, 60) : null;
     return NextResponse.json({ nome });
   } catch (e) {
     console.error("Risposta prodotto non leggibile", e);
+    await registraErrore(supabase, "prodotto", "Risposta di Claude non leggibile");
     return NextResponse.json({ errore: "Non ho capito cosa c'è nella foto." }, { status: 422 });
   }
 }

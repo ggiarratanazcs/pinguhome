@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { registraErrore, registraLettura } from "@/lib/eventi-server";
 import type { ScontrinoLetto } from "@/lib/tipi-scontrino";
 
 export const maxDuration = 60;
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
   });
 
   if (!risposta.ok) {
+    await registraErrore(supabase, "scontrino", `Claude ha risposto ${risposta.status}`);
     const dettaglio = await risposta.text().catch(() => "");
     console.error("Lettura scontrino non riuscita", risposta.status, dettaglio.slice(0, 500));
     const messaggio =
@@ -133,11 +135,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const json = (await risposta.json()) as { content?: { type: string; text?: string }[] };
+    const json = (await risposta.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    await registraLettura(supabase, "scontrino", json.usage);
     const testo = (json.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n");
     return NextResponse.json(pulisci(estraiJson(testo), daComprare));
   } catch (e) {
     console.error("Risposta scontrino non leggibile", e);
+    await registraErrore(supabase, "scontrino", "Risposta di Claude non leggibile");
     return NextResponse.json({ errore: "Non ho capito lo scontrino: prova con una foto più nitida e dritta." }, { status: 422 });
   }
 }

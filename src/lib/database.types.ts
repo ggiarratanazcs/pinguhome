@@ -27,6 +27,8 @@ export type Famiglia = {
   /** I posti di "In casa" che la casa gestisce; null = non ancora scelti */
   luoghi: string[] | null;
   nome: string;
+  /** Sospesa dall'amministratore: l'app mostra un avviso al posto delle sezioni */
+  sospesa_il: string | null;
 };
 
 export type Lista = {
@@ -222,7 +224,7 @@ export type Database = {
     Tables: {
       carte: Tabella<Carta, Opz<Carta, "colore" | "creata_da" | "creata_il" | "foto_path" | "formato" | "id" | "titolare">>;
       dispensa: Tabella<Dispensa, Opz<Dispensa, "aggiornata_il" | "id" | "posizione" | "prodotto_id" | "quantita" | "scadenza" | "scorta_minima" | "unita">>;
-      famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id" | "luoghi">>;
+      famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id" | "luoghi" | "sospesa_il">>;
       liste: Tabella<Lista, Opz<Lista, "archiviata" | "colore" | "creata_il" | "id" | "ordine">>;
       membri: Tabella<Membro, Opz<Membro, "entrato_il" | "ruolo">>;
       prodotti: Tabella<Prodotto, Opz<Prodotto, "abituale" | "creato_il" | "eco" | "foto_path" | "id" | "nascosto" | "reparto_id" | "ultimo_acquisto" | "unita" | "volte_acquistato">>;
@@ -250,6 +252,18 @@ export type Database = {
       unisciti_famiglia: { Args: { p_codice: string }; Returns: string };
       promemoria_dati: { Args: { p_segreto: string }; Returns: Json };
       promemoria_registra: { Args: { p_segreto: string; p_inviati: Json; p_scadute: string[] }; Returns: undefined };
+      registra_evento: { Args: { p_tipo: string; p_dove?: string | null; p_messaggio?: string | null; p_ingresso?: number | null; p_uscita?: number | null }; Returns: undefined };
+      e_admin: { Args: Record<string, never>; Returns: boolean };
+      admin_panoramica: { Args: Record<string, never>; Returns: Json };
+      admin_eventi: { Args: { p_tipo: string; p_limite?: number }; Returns: Json };
+      admin_dispositivi: { Args: Record<string, never>; Returns: Json };
+      admin_iscrizioni: { Args: { p_casa?: string | null; p_utente?: string | null }; Returns: PushIscrizione[] };
+      admin_togli_iscrizione: { Args: { p_id: string }; Returns: undefined };
+      admin_nuovo_codice: { Args: { p_casa: string }; Returns: string };
+      admin_codice: { Args: { p_casa: string }; Returns: string };
+      admin_sospendi: { Args: { p_casa: string; p_sospesa: boolean }; Returns: undefined };
+      admin_togli_membro: { Args: { p_casa: string; p_utente: string }; Returns: undefined };
+      admin_elimina_casa: { Args: { p_casa: string }; Returns: undefined };
       attivita_dati: { Args: { p_segreto: string; p_famiglia: string; p_autore: string; p_lista: string | null }; Returns: Json };
     };
     Enums: { [_ in never]: never };

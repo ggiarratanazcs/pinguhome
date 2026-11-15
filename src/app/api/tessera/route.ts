@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { registraErrore, registraLettura } from "@/lib/eventi-server";
 import { insegnaNegozio } from "@/lib/spesa";
 
 export const maxDuration = 60;
@@ -59,12 +60,14 @@ export async function POST(request: Request) {
   });
 
   if (!risposta.ok) {
+    await registraErrore(supabase, "tessera", `Claude ha risposto ${risposta.status}`);
     console.error("Lettura tessera non riuscita", risposta.status, (await risposta.text().catch(() => "")).slice(0, 500));
     return NextResponse.json({ errore: risposta.status === 429 ? "Troppe letture ravvicinate: riprova tra poco." : "Non sono riuscito a leggere la tessera." }, { status: 502 });
   }
 
   try {
-    const json = (await risposta.json()) as { content?: { type: string; text?: string }[] };
+    const json = (await risposta.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    await registraLettura(supabase, "tessera", json.usage);
     const grezzo = estraiJson((json.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n"));
     const testo = (v: unknown) => (typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null" ? v.trim() : null);
     const formato = FORMATI.find((f) => f === testo(grezzo.formato)) ?? null;
@@ -76,6 +79,7 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     console.error("Risposta tessera non leggibile", e);
+    await registraErrore(supabase, "tessera", "Risposta di Claude non leggibile");
     return NextResponse.json({ errore: "Non ho capito la foto: prova più da vicino e dritta." }, { status: 422 });
   }
 }
