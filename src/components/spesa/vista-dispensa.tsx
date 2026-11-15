@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as TastoReact } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeftRight, Minus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, Minus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from "lucide-react";
 import type { Dispensa, Lista } from "@/lib/database.types";
-import { interpretaVoce, POSIZIONI, postiAttivi, UNITA, type Posto } from "@/lib/spesa";
+import { indovinaReparto, interpretaVoce, nomeArticolo, posizioneDaReparto, POSIZIONI, postiAttivi, postoAttivo, UNITA, type Posto } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
@@ -59,6 +59,8 @@ export function VistaDispensa({
   const righe = useMemo(() => dati.dispensa.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [dati.dispensa]);
   const attivi = useMemo(() => postiAttivi(dati.luoghi), [dati.luoghi]);
   const [aperta, setAperta] = useState<string | null>(null);
+  const [appena, setAppena] = useState<string | null>(null);
+  const timerAppena = useRef<ReturnType<typeof setTimeout> | null>(null);
   // La prima volta la casa sceglie i posti da gestire
   const [configura, setConfigura] = useState(dati.luoghi === null);
   const posAperta = attivi.find((p) => p.id === aperta);
@@ -76,6 +78,18 @@ export function VistaDispensa({
     avvisa(`${r.nome} aggiunto a ${lista.nome}`);
   }
 
+  /** Mette in casa: se c'è già (stesso nome, unità e posto) aumenta la quantità */
+  async function metti(nome: string, quantita: number, unita: string, posto: Posto) {
+    const gia = dati.dispensa.find((r) => r.nome.toLowerCase() === nome.toLowerCase() && r.unita === unita && r.posizione === posto.id);
+    if (gia) await azioni.salvaDispensa({ id: gia.id, nome: gia.nome, quantita: Number(gia.quantita) + quantita });
+    else await azioni.salvaDispensa({ nome, quantita, unita, posizione: posto.id });
+    const quanto = unita === "pz" ? (quantita === 1 ? "" : `${formattaQuantita(quantita)} `) : `${formattaQuantita(quantita)} ${unita} `;
+    avvisa(`${quanto}${nome} in ${posto.nome}`);
+    setAppena(posto.id);
+    if (timerAppena.current) clearTimeout(timerAppena.current);
+    timerAppena.current = setTimeout(() => setAppena(null), 1600);
+  }
+
   async function sposta(r: Dispensa, posto: Posto) {
     await azioni.salvaDispensa({ id: r.id, nome: r.nome, posizione: posto.id });
     avvisa(`${r.nome} spostato in ${posto.nome}`);
@@ -84,7 +98,7 @@ export function VistaDispensa({
   return (
     <div className="mt-8">
       <div className="flex max-w-5xl items-center gap-2">
-        <NuovaInDispensa attivi={attivi} onSalva={azioni.salvaDispensa} onConfigura={() => setConfigura(true)} />
+        <AggiuntaCasa dati={dati} attivi={attivi} onMetti={metti} onConfigura={() => setConfigura(true)} />
       </div>
 
       <div className={cn("mt-8 grid max-w-5xl grid-cols-3 gap-3 md:gap-5", COLONNE[attivi.length])}>
@@ -94,7 +108,10 @@ export function VistaDispensa({
             <button
               key={pos.id}
               onClick={() => setAperta(pos.id)}
-              className="anello-focus group flex flex-col items-center rounded-[24px] bg-superficie-2 px-2 pb-3 pt-4 transition-transform active:scale-[0.97] md:rounded-[32px] md:px-6 md:pb-5 md:pt-6"
+              className={cn(
+                "anello-focus group flex flex-col items-center rounded-[24px] px-2 pb-3 pt-4 ring-2 transition-[transform,background-color,box-shadow] duration-500 active:scale-[0.97] md:rounded-[32px] md:px-6 md:pb-5 md:pt-6",
+                appena === pos.id ? "bg-becco-tenue ring-becco" : "bg-superficie-2 ring-transparent",
+              )}
             >
               <div className="relative aspect-[3/4] w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -382,32 +399,109 @@ function RigaDispensa({
 
 /* ---------- Aggiungi ---------- */
 
-function NuovaInDispensa({ attivi, onSalva, onConfigura }: { attivi: Posto[]; onSalva: AzioniSpesa["salvaDispensa"]; onConfigura: () => void }) {
-  const [aperta, setAperta] = useState(false);
-  const predefinito = attivi.some((p) => p.id === "dispensa") ? "dispensa" : (attivi[0]?.id ?? "dispensa");
+/** Un campo solo: scrivi cosa avete, scegli la quantità; il posto lo indovina l'app (e si può cambiare). */
+function AggiuntaCasa({
+  dati,
+  attivi,
+  onMetti,
+  onConfigura,
+}: {
+  dati: DatiSpesa;
+  attivi: Posto[];
+  onMetti: (nome: string, quantita: number, unita: string, posto: Posto) => Promise<void>;
+  onConfigura: () => void;
+}) {
+  const [testo, setTesto] = useState("");
+  const [fuoco, setFuoco] = useState(false);
+  const [indice, setIndice] = useState(-1);
+  // Quello che tocchi a mano vince su quello che l'app capisce dal testo
+  const [quantitaMano, setQuantitaMano] = useState<number | null>(null);
+  const [unitaMano, setUnitaMano] = useState<string | null>(null);
+  const [postoMano, setPostoMano] = useState<string | null>(null);
+  const campo = useRef<HTMLInputElement>(null);
 
-  async function invia(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const f = new FormData(form);
-    const v = interpretaVoce(String(f.get("nome") ?? ""));
-    if (!v.nome) return;
-    await onSalva({
-      nome: v.nome,
-      quantita: v.quantita,
-      unita: v.unita ?? String(f.get("unita") ?? "pz"),
-      posizione: String(f.get("posizione") ?? predefinito),
-    });
-    form.reset();
+  const letta = interpretaVoce(testo);
+  const nome = letta.nome;
+
+  const suggerimenti = useMemo(() => {
+    const q = nome.toLowerCase();
+    if (!q) return [];
+    return dati.prodotti
+      .filter((p) => p.nome.toLowerCase().includes(q) && p.nome.toLowerCase() !== q)
+      .sort((a, b) => Number(b.nome.toLowerCase().startsWith(q)) - Number(a.nome.toLowerCase().startsWith(q)) || b.volte_acquistato - a.volte_acquistato)
+      .slice(0, 5);
+  }, [dati.prodotti, nome]);
+
+  function postoPer(n: string) {
+    const prodotto = dati.prodotti.find((p) => p.nome.toLowerCase() === n.toLowerCase());
+    const repartoId = prodotto?.reparto_id ?? indovinaReparto(n, dati.reparti);
+    const reparto = dati.reparti.find((r) => r.id === repartoId)?.nome;
+    const id = postoAttivo(posizioneDaReparto(reparto, n), attivi);
+    return attivi.find((p) => p.id === id) ?? attivi[0];
   }
 
-  if (!aperta) {
-    return (
-      <>
-        <Pulsante variante="secondario" onClick={() => setAperta(true)}>
-          <Plus className="size-4" /> Aggiungi quello che avete già
-        </Pulsante>
-        {/* Accanto ad "Aggiungi": scegliere i posti della casa */}
+  const quantita = quantitaMano ?? letta.quantita;
+  const prodotto = dati.prodotti.find((p) => p.nome.toLowerCase() === nome.toLowerCase());
+  const unita = unitaMano ?? letta.unita ?? prodotto?.unita ?? "pz";
+  const posto = (postoMano && attivi.find((p) => p.id === postoMano)) || (nome ? postoPer(nome) : attivi[0]);
+  const passo = ["kg", "l"].includes(unita) ? 0.5 : ["g", "ml"].includes(unita) ? 100 : 1;
+
+  function azzera() {
+    setTesto("");
+    setQuantitaMano(null);
+    setUnitaMano(null);
+    setPostoMano(null);
+    setIndice(-1);
+  }
+
+  async function conferma(scelto?: string) {
+    const n = nomeArticolo(scelto ?? nome);
+    if (!n || !posto) return;
+    const p = postoMano ? posto : postoPer(n);
+    azzera();
+    campo.current?.focus();
+    await onMetti(n, quantita, unita, p);
+  }
+
+  function tasti(e: TastoReact<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setIndice((i) => Math.min(i + 1, suggerimenti.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setIndice((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      conferma(indice >= 0 ? suggerimenti[indice]?.nome : undefined);
+    } else if (e.key === "Escape") azzera();
+  }
+
+  return (
+    <div className="relative w-full">
+      <div className="flex items-center gap-2">
+        <div className={cn("flex h-12 flex-1 items-center gap-1.5 rounded-full pl-5 pr-1.5 ring-2 transition-[box-shadow,background]", fuoco || testo ? "bg-superficie ring-becco" : "bg-superficie-2 ring-transparent")}>
+          <input
+            ref={campo}
+            value={testo}
+            onChange={(e) => (setTesto(e.target.value), setIndice(-1))}
+            onKeyDown={tasti}
+            onFocus={() => setFuoco(true)}
+            onBlur={() => setTimeout(() => setFuoco(false), 150)}
+            placeholder="Cosa avete già?"
+            enterKeyHint="done"
+            autoComplete="off"
+            className="h-full min-w-0 flex-1 bg-transparent text-[1.0625rem] outline-none placeholder:text-tenue"
+          />
+          <button
+            onClick={() => conferma()}
+            disabled={!nome}
+            aria-label="Metti in casa"
+            className="anello-focus grid size-9 shrink-0 place-items-center rounded-full bg-becco text-su-becco transition hover:bg-becco-hover active:scale-95 disabled:opacity-60"
+          >
+            <Plus className="size-5" strokeWidth={2.4} />
+          </button>
+        </div>
+        {/* Scegliere i posti della casa */}
         <button
           onClick={onConfigura}
           aria-label="Scegli i posti della casa"
@@ -416,40 +510,79 @@ function NuovaInDispensa({ attivi, onSalva, onConfigura }: { attivi: Posto[]; on
         >
           <SlidersHorizontal className="size-[18px]" />
         </button>
-      </>
-    );
-  }
-
-  return (
-    <form onSubmit={invia} className="grid w-full gap-5 rounded-[28px] bg-superficie-2 p-5 md:grid-cols-[minmax(0,2fr)_100px_150px] md:items-end md:p-6">
-      <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
-        Prodotto
-        <input name="nome" required autoFocus placeholder="Es. 1 l latte" className="campo-linea h-10 text-[1rem] text-inchiostro" />
-      </label>
-      <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
-        Unità
-        <select name="unita" className="campo-linea h-10 text-inchiostro">
-          {UNITA.map((u) => (
-            <option key={u}>{u}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1 text-[0.8125rem] text-tenue">
-        Dove
-        <select name="posizione" defaultValue={predefinito} className="campo-linea h-10 text-inchiostro">
-          {attivi.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="flex gap-2 md:col-span-3">
-        <Pulsante type="submit">Metti in casa</Pulsante>
-        <Pulsante type="button" variante="fantasma" onClick={() => setAperta(false)}>
-          Chiudi
-        </Pulsante>
       </div>
-    </form>
+
+      <AnimatePresence initial={false}>
+        {nome ? (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2 pt-3">
+              <div className="flex h-10 items-center rounded-full bg-superficie-2">
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => quantita - passo > 0 && setQuantitaMano(quantita - passo)}
+                  aria-label="Meno"
+                  className="grid size-10 place-items-center text-tenue hover:text-inchiostro"
+                >
+                  <Minus className="size-4" />
+                </button>
+                <span className="numeri min-w-6 text-center font-semibold">{formattaQuantita(quantita)}</span>
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => setQuantitaMano(quantita + passo)} aria-label="Più" className="grid size-10 place-items-center text-tenue hover:text-inchiostro">
+                  <Plus className="size-4" />
+                </button>
+              </div>
+              <label className="relative flex h-10 items-center gap-1 rounded-full bg-superficie-2 px-3 text-[0.9375rem]">
+                {unita}
+                <ChevronDown className="size-3.5 text-tenue" />
+                <select value={unita} onChange={(e) => setUnitaMano(e.target.value)} aria-label="Unità" className="absolute inset-0 cursor-pointer opacity-0">
+                  {[...new Set([...UNITA, unita])].map((u) => (
+                    <option key={u}>{u}</option>
+                  ))}
+                </select>
+              </label>
+              {posto ? (
+                <label className="relative ml-auto flex h-10 items-center gap-1.5 rounded-full bg-superficie-2 pl-1.5 pr-3 text-[0.9375rem]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={IMMAGINI[posto.id]} alt="" draggable={false} className="size-7 object-contain" />
+                  {posto.nome}
+                  <ChevronDown className="size-3.5 text-tenue" />
+                  <select value={posto.id} onChange={(e) => setPostoMano(e.target.value)} aria-label="Dove" className="absolute inset-0 cursor-pointer opacity-0">
+                    {attivi.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fuoco && suggerimenti.length ? (
+          <motion.ul
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute inset-x-0 top-[112px] z-30 overflow-hidden rounded-[22px] bg-superficie py-2 shadow-[0_24px_60px_-20px_rgba(var(--ombra),0.45)] ring-1 ring-linea"
+          >
+            {suggerimenti.map((p, i) => (
+              <li key={p.id}>
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => conferma(p.nome)}
+                  onMouseEnter={() => setIndice(i)}
+                  className={cn("flex w-full items-center gap-3 px-5 py-2.5 text-left", i === indice && "bg-superficie-2")}
+                >
+                  {p.nome}
+                </button>
+              </li>
+            ))}
+          </motion.ul>
+        ) : null}
+      </AnimatePresence>
+    </div>
   );
 }
