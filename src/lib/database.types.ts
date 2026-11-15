@@ -232,6 +232,13 @@ export type Accantonamento = {
   obiettivo_id: string;
 };
 
+export type Budget = {
+  aggiornato_il: string;
+  categoria: string;
+  famiglia_id: string;
+  importo: number;
+};
+
 export type Carta = {
   colore: string;
   creata_da: string | null;
@@ -253,6 +260,7 @@ export type Database = {
     Tables: {
       obiettivi: Tabella<Obiettivo, Opz<Obiettivo, "automatico" | "colore" | "creato_da" | "creato_il" | "di_chi" | "giorno_auto" | "icona" | "id" | "quota_auto" | "scadenza">>;
       accantonamenti: Tabella<Accantonamento, Opz<Accantonamento, "automatico" | "chi" | "creato_il" | "data" | "id">>;
+      budget: Tabella<Budget, Opz<Budget, "aggiornato_il">>;
       carte: Tabella<Carta, Opz<Carta, "colore" | "creata_da" | "creata_il" | "foto_path" | "formato" | "id" | "titolare">>;
       dispensa: Tabella<Dispensa, Opz<Dispensa, "aggiornata_il" | "id" | "posizione" | "prodotto_id" | "quantita" | "scadenza" | "scorta_minima" | "unita">>;
       famiglie: Tabella<Famiglia, Opz<Famiglia, "codice_invito" | "creata_da" | "creata_il" | "id" | "luoghi" | "sospesa_il">>;

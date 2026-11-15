@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Accantonamento, Conto, Impegno, ImpegnoFatto, Movimento, Obiettivo } from "@/lib/database.types";
+import type { Accantonamento, Budget, Conto, Impegno, ImpegnoFatto, Movimento, Obiettivo } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { oggiRoma, RICORRENZE } from "@/lib/agenda";
 import {
@@ -45,8 +45,9 @@ import { Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { AnalisiFinanze } from "./analisi-finanze";
 import { VistaObiettivi } from "./vista-obiettivi";
+import { VistaBudget } from "./vista-budget";
 
-export type VistaFinanze = "conto" | "obiettivi" | "analisi";
+export type VistaFinanze = "conto" | "obiettivi" | "budget" | "analisi";
 
 const ICONE: Record<string, LucideIcon> = {
   casa: House,
@@ -108,6 +109,7 @@ export function AppFinanze({
     pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
     obiettivi: Obiettivo[];
     accantonamenti: Accantonamento[];
+    budget: Budget[];
   };
   vistaIniziale?: VistaFinanze;
 }) {
@@ -118,6 +120,7 @@ export function AppFinanze({
   const [movimenti, setMovimenti] = useState<Movimento[]>(iniziali.movimenti);
   const [obiettivi, setObiettivi] = useState<Obiettivo[]>(iniziali.obiettivi);
   const [accantonamenti, setAccantonamenti] = useState<Accantonamento[]>(iniziali.accantonamenti);
+  const [budget, setBudget] = useState<Budget[]>(iniziali.budget);
   const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
   const [maschera, setMaschera] = useState(false);
   const [avviso, setAvviso] = useState<string | null>(null);
@@ -149,6 +152,15 @@ export function AppFinanze({
           setObiettivi((x) => x.filter((o) => o.id !== id));
           setAccantonamenti((x) => x.filter((a) => a.obiettivo_id !== id));
         } else setObiettivi((x) => aggiornaPerId(x, p.new as Obiettivo));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "budget", filter: filtro }, (p) => {
+        if (p.eventType === "DELETE") {
+          const cat = (p.old as { categoria?: string }).categoria;
+          if (cat) setBudget((x) => x.filter((b) => b.categoria !== cat));
+        } else {
+          const riga = p.new as Budget;
+          setBudget((x) => [...x.filter((b) => b.categoria !== riga.categoria), riga]);
+        }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "accantonamenti", filter: filtro }, (p) => {
         if (p.eventType === "DELETE") {
@@ -250,11 +262,33 @@ export function AppFinanze({
     }
   }
 
+  async function salvaBudget(categoria: string, importo: number) {
+    const prima = budget;
+    const riga: Budget = { famiglia_id: famigliaId, categoria, importo, aggiornato_il: new Date().toISOString() };
+    setBudget((x) => [...x.filter((b) => b.categoria !== categoria), riga]);
+    const { error } = await supabase.from("budget").upsert(riga);
+    if (error) {
+      setBudget(prima);
+      avvisa("Non sono riuscito a salvare il budget");
+    }
+  }
+
+  async function eliminaBudget(categoria: string) {
+    const prima = budget;
+    setBudget((x) => x.filter((b) => b.categoria !== categoria));
+    const { error } = await supabase.from("budget").delete().eq("famiglia_id", famigliaId).eq("categoria", categoria);
+    if (error) {
+      setBudget(prima);
+      avvisa("Non sono riuscito a toglierlo");
+    }
+  }
+
   const accantonato = accantonamenti.reduce((t, a) => t + Number(a.importo), 0);
 
   const schede: { id: VistaFinanze; nome: string }[] = [
     { id: "conto", nome: "Conto" },
     { id: "obiettivi", nome: "Obiettivi" },
+    { id: "budget", nome: "Budget" },
     { id: "analisi", nome: "Analisi" },
   ];
 
@@ -303,6 +337,8 @@ export function AppFinanze({
           onElimina={eliminaObiettivo}
           onAccantona={accantona}
         />
+      ) : vista === "budget" ? (
+        <VistaBudget budget={budget} movimenti={movimenti} oggi={oggi} nascoste={nascoste} onSalva={salvaBudget} onElimina={eliminaBudget} />
       ) : (
         <AnalisiFinanze movimenti={movimenti} oggi={oggi} />
       )}
