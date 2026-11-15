@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Conto, Impegno, ImpegnoFatto, Movimento } from "@/lib/database.types";
+import type { Accantonamento, Conto, Impegno, ImpegnoFatto, Movimento, Obiettivo } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { oggiRoma, RICORRENZE } from "@/lib/agenda";
 import {
@@ -44,8 +44,9 @@ import {
 import { Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { AnalisiFinanze } from "./analisi-finanze";
+import { VistaObiettivi } from "./vista-obiettivi";
 
-export type VistaFinanze = "conto" | "analisi";
+export type VistaFinanze = "conto" | "obiettivi" | "analisi";
 
 const ICONE: Record<string, LucideIcon> = {
   casa: House,
@@ -105,6 +106,8 @@ export function AppFinanze({
     movimenti: Movimento[];
     scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo">[];
     pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
+    obiettivi: Obiettivo[];
+    accantonamenti: Accantonamento[];
   };
   vistaIniziale?: VistaFinanze;
 }) {
@@ -113,6 +116,9 @@ export function AppFinanze({
   const [vista, setVista] = useState<VistaFinanze>(vistaIniziale);
   const [conto, setConto] = useState<Conto | null>(iniziali.conto);
   const [movimenti, setMovimenti] = useState<Movimento[]>(iniziali.movimenti);
+  const [obiettivi, setObiettivi] = useState<Obiettivo[]>(iniziali.obiettivi);
+  const [accantonamenti, setAccantonamenti] = useState<Accantonamento[]>(iniziali.accantonamenti);
+  const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
   const [maschera, setMaschera] = useState(false);
   const [avviso, setAvviso] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,6 +142,19 @@ export function AppFinanze({
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "conti", filter: filtro }, (p) => {
         if (p.eventType !== "DELETE") setConto(p.new as Conto);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "obiettivi", filter: filtro }, (p) => {
+        if (p.eventType === "DELETE") {
+          const id = (p.old as { id: string }).id;
+          setObiettivi((x) => x.filter((o) => o.id !== id));
+          setAccantonamenti((x) => x.filter((a) => a.obiettivo_id !== id));
+        } else setObiettivi((x) => aggiornaPerId(x, p.new as Obiettivo));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "accantonamenti", filter: filtro }, (p) => {
+        if (p.eventType === "DELETE") {
+          const id = (p.old as { id: string }).id;
+          setAccantonamenti((x) => x.filter((a) => a.id !== id));
+        } else setAccantonamenti((x) => aggiornaPerId(x, p.new as Accantonamento));
       })
       .subscribe();
     return () => {
@@ -179,8 +198,63 @@ export function AppFinanze({
     }
   }
 
+  async function salvaObiettivo(o: Obiettivo) {
+    const riga = { ...o, famiglia_id: famigliaId };
+    const prima = obiettivi.find((x) => x.id === o.id);
+    setObiettivi((x) => aggiornaPerId(x, riga));
+    const { error } = await supabase.from("obiettivi").upsert({
+      id: riga.id,
+      famiglia_id: famigliaId,
+      nome: riga.nome,
+      meta: riga.meta,
+      scadenza: riga.scadenza,
+      icona: riga.icona,
+      colore: riga.colore,
+      di_chi: riga.di_chi,
+      automatico: riga.automatico,
+      quota_auto: riga.quota_auto,
+      giorno_auto: riga.giorno_auto,
+    });
+    if (error) {
+      setObiettivi((x) => (prima ? aggiornaPerId(x, prima) : x.filter((y) => y.id !== o.id)));
+      avvisa("Non sono riuscito a salvare l'obiettivo");
+    }
+  }
+
+  async function eliminaObiettivo(o: Obiettivo) {
+    setObiettivi((x) => x.filter((y) => y.id !== o.id));
+    setAccantonamenti((x) => x.filter((a) => a.obiettivo_id !== o.id));
+    const { error } = await supabase.from("obiettivi").delete().eq("id", o.id);
+    if (error) {
+      setObiettivi((x) => [...x, o]);
+      avvisa("Non sono riuscito a eliminarlo");
+    }
+  }
+
+  async function accantona(o: Obiettivo, importo: number) {
+    const riga: Accantonamento = {
+      id: crypto.randomUUID(),
+      famiglia_id: famigliaId,
+      obiettivo_id: o.id,
+      importo,
+      chi: userId,
+      data: oggi,
+      automatico: false,
+      creato_il: new Date().toISOString(),
+    };
+    setAccantonamenti((x) => [...x, riga]);
+    const { error } = await supabase.from("accantonamenti").insert({ id: riga.id, famiglia_id: famigliaId, obiettivo_id: o.id, importo, chi: userId, data: oggi });
+    if (error) {
+      setAccantonamenti((x) => x.filter((a) => a.id !== riga.id));
+      avvisa("Non sono riuscito a salvarlo");
+    }
+  }
+
+  const accantonato = accantonamenti.reduce((t, a) => t + Number(a.importo), 0);
+
   const schede: { id: VistaFinanze; nome: string }[] = [
     { id: "conto", nome: "Conto" },
+    { id: "obiettivi", nome: "Obiettivi" },
     { id: "analisi", nome: "Analisi" },
   ];
 
@@ -204,7 +278,31 @@ export function AppFinanze({
       </nav>
 
       {vista === "conto" ? (
-        <VistaConto conto={conto} movimenti={movimenti} scadenze={iniziali.scadenze} pagate={iniziali.pagate} oggi={oggi} membri={membri} onSaldo={salvaSaldo} onNuovo={() => setMaschera(true)} onElimina={elimina} />
+        <VistaConto
+          conto={conto}
+          movimenti={movimenti}
+          scadenze={iniziali.scadenze}
+          pagate={iniziali.pagate}
+          oggi={oggi}
+          membri={membri}
+          accantonato={accantonato}
+          onObiettivi={() => setVista("obiettivi")}
+          onSaldo={salvaSaldo}
+          onNuovo={() => setMaschera(true)}
+          onElimina={elimina}
+        />
+      ) : vista === "obiettivi" ? (
+        <VistaObiettivi
+          obiettivi={obiettivi}
+          accantonamenti={accantonamenti}
+          oggi={oggi}
+          userId={userId}
+          membri={membri}
+          nascoste={nascoste}
+          onSalva={salvaObiettivo}
+          onElimina={eliminaObiettivo}
+          onAccantona={accantona}
+        />
       ) : (
         <AnalisiFinanze movimenti={movimenti} oggi={oggi} />
       )}
@@ -251,6 +349,8 @@ function VistaConto({
   pagate,
   oggi,
   membri,
+  accantonato,
+  onObiettivi,
   onSaldo,
   onNuovo,
   onElimina,
@@ -261,6 +361,9 @@ function VistaConto({
   pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
   oggi: string;
   membri: MembroCasa[];
+  /** Soldi messi da parte negli obiettivi: restano sul conto ma non sono liberi */
+  accantonato: number;
+  onObiettivi: () => void;
   onSaldo: (n: number) => Promise<void>;
   onNuovo: () => void;
   onElimina: (m: Movimento) => void;
@@ -332,6 +435,20 @@ function VistaConto({
               <Plus className="size-6" strokeWidth={2.4} />
             </button>
           </div>
+
+          {/* Quanto è davvero libero: il residuo meno i soldi messi da parte negli obiettivi */}
+          {accantonato > 0 && totale !== null ? (
+            <button
+              onClick={onObiettivi}
+              className="anello-focus mt-4 flex w-full items-center gap-2 rounded-[16px] bg-superficie-2 px-4 py-2.5 text-left text-[0.8125rem] transition hover:bg-superficie-3"
+            >
+              <span className="flex-1">
+                Liberi <strong className={cn("numeri", !nascoste && totale - accantonato < 0 && "text-pericolo")}>{nascoste ? NASCOSTO : euro(totale - accantonato, false)}</strong>
+              </span>
+              <span className="text-tenue">{nascoste ? NASCOSTO : euro(accantonato, false)} negli obiettivi</span>
+              <ChevronRight className="size-4 text-tenue" />
+            </button>
+          ) : null}
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-[18px] bg-eco-tenue px-4 py-3">
