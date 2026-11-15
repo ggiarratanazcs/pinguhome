@@ -24,10 +24,11 @@ function istruzioni(daComprare: string[]) {
     : `\n- "in_lista": sempre null.`;
   return `Leggi questo scontrino fiscale italiano (supermercato, negozio, farmacia...).
 Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, con questa forma:
-{"data":"AAAA-MM-GG o null","negozio":"nome del negozio o null","totale":numero o null,"prodotti":[{"nome":"...","quantita":numero,"unita":"pz|kg|g|l|ml|conf","prezzo":numero o null,"reparto":"...","in_lista":"... o null"}]}
+{"data":"AAAA-MM-GG o null","negozio":"insegna del negozio o null","totale":numero o null,"prodotti":[{"nome":"...","quantita":numero,"unita":"pz|kg|g|l|ml|conf","prezzo":numero o null,"reparto":"...","in_lista":"... o null"}]}
 Regole:
 - "totale" è l'importo pagato (TOTALE / TOTALE COMPLESSIVO / IMPORTO PAGATO), in euro con il punto decimale.
 - "data" è la data di emissione dello scontrino.
+- "negozio": solo l'insegna, come la chiamerebbe chiunque, senza ragione sociale, cooperativa, sede o città. Esempi: "Coop.fi (Unicoop Firenze) - San Giovanni Valdarno" → "Coop"; "UNICOOP FIRENZE SC" → "Coop"; "SUPERMERCATI PAM SPA" → "Pam"; "ESSELUNGA S.P.A. VIA..." → "Esselunga".
 - In "prodotti" metti solo gli articoli acquistati: niente subtotali, totali, IVA, resto, contanti, carte, punti fedeltà, buoni, sacchetti.
 - Se c'è uno sconto su un articolo, sottrailo dal suo prezzo invece di creare una riga a parte.
 - "nome": il nome semplice e generico dell'articolo, come lo scriveresti nella lista della spesa, in italiano, con l'iniziale maiuscola, di 1-3 parole. Togli marche, negozio, formati e codici. Esempi: "BANANE CHIQUITA COOP X3" → "Banane"; "LATTE PS UHT GRANAROLO 1L" → "Latte"; "MOZZ.FIORDILATTE 125G" → "Mozzarella"; "DETERS.PIATTI LIMONE" → "Detersivo piatti"; "PETTO POLLO AIA" → "Petto di pollo".

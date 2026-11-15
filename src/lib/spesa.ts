@@ -135,3 +135,52 @@ export function stessoArticolo(a: string, b: string) {
   const [corto, lungo] = ra.length <= rb.length ? [ra, rb] : [rb, ra];
   return corto.every((p) => lungo.includes(p));
 }
+
+/* ---------- Negozi ---------- */
+
+/** Le insegne più comuni: chi le riconosce nel nome le riporta a una sola (Coop.fi, Unicoop Firenze... → Coop). */
+const INSEGNE: [RegExp, string][] = [
+  [/\b(coop|unicoop|ipercoop|coop\s*fi|coopfi|novacoop|coop\s*alleanza)\b|\bcoop\./i, "Coop"],
+  [/\bconad\b|\bsapori\s*&\s*dintorni\b/i, "Conad"],
+  [/\besselunga\b|\bla\s*esse\b/i, "Esselunga"],
+  [/\blidl\b/i, "Lidl"],
+  [/\bpam\b|\bpanorama\b/i, "Pam"],
+  [/\bcarrefour\b/i, "Carrefour"],
+  [/\beurospin\b/i, "Eurospin"],
+  [/\baldi\b/i, "Aldi"],
+  [/\bpenny\b/i, "Penny"],
+  [/\bmd\b|\bmd\s*discount\b/i, "MD"],
+  [/\b(despar|eurospar|interspar)\b/i, "Despar"],
+  [/\bcrai\b/i, "Crai"],
+  [/\bsigma\b/i, "Sigma"],
+  [/\bsimply\b/i, "Simply"],
+  [/\bbennet\b/i, "Bennet"],
+  [/\bfamila\b/i, "Famila"],
+  [/\b(tuod[iì]|todis)\b/i, "Todis"],
+  [/\bnaturas[iì]\b/i, "NaturaSì"],
+  [/\bacqua\s*(&|e)\s*sapone\b/i, "Acqua & Sapone"],
+  [/\bobi\b/i, "Obi"],
+  [/\bikea\b/i, "Ikea"],
+  [/\bleroy\s*merlin\b/i, "Leroy Merlin"],
+  [/\bdecathlon\b/i, "Decathlon"],
+  [/\bamazon\b/i, "Amazon"],
+];
+
+/**
+ * Il nome del negozio come lo vogliamo vedere: l'insegna se la riconosce,
+ * altrimenti il nome ripulito (senza ragione sociale e sede dopo il trattino), con le iniziali maiuscole.
+ */
+export function insegnaNegozio(n: string | null | undefined): string | null {
+  const t = (n ?? "").replace(/\s+/g, " ").trim();
+  if (!t) return null;
+  const nota = INSEGNE.find(([re]) => re.test(t));
+  if (nota) return nota[1];
+  const pulito = t
+    .split(/\s[-–]\s/)[0]
+    .replace(/\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|soc\.?\s*coop\.?)(?=\s|$)/gi, " ")
+    .replace(/[.,;:'"]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  return pulito ? pulito.replace(/(^|[\s(&'-])(\p{L})/gu, (_, sp: string, l: string) => sp + l.toUpperCase()) : null;
+}

@@ -8,6 +8,7 @@ import { leggiScontrino } from "@/lib/scontrini";
 import { Messaggio, Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { AzioniSpesa } from "./app-spesa";
+import { insegnaNegozio } from "@/lib/spesa";
 import { AllegaScontrino } from "./allega-scontrino";
 
 type Modo = "mano" | "scontrino";
@@ -67,7 +68,7 @@ export function NuovaSpesa({
       const r = await leggiScontrino(file, daComprare);
       if (r.data) setData(r.data > oggi ? oggi : r.data);
       if (r.totale !== null) setImporto(r.totale.toFixed(2).replace(".", ","));
-      if (r.negozio) setNegozio(r.negozio);
+      if (r.negozio) setNegozio(insegnaNegozio(r.negozio) ?? r.negozio);
       setRighe(r.prodotti.map((p) => ({ ...p, chiave: crypto.randomUUID() })));
       setLettura("fatta");
       if (r.totale === null) setErrore("Non ho trovato il totale: scrivilo tu.");

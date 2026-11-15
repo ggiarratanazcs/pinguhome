@@ -7,7 +7,7 @@ import { Pulsante } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Dispensa, Lista, Prodotto, Reparto, Spesa, VoceLista } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
-import { indovinaReparto, interpretaVoce, posizioneDaReparto, postiAttivi, postoAttivo, stessoArticolo } from "@/lib/spesa";
+import { indovinaReparto, insegnaNegozio, interpretaVoce, posizioneDaReparto, postiAttivi, postoAttivo, stessoArticolo } from "@/lib/spesa";
 import { caricaScontrino } from "@/lib/scontrini";
 import { cn } from "@/lib/utils";
 import { VistaLista } from "./vista-lista";
@@ -395,7 +395,7 @@ function useAzioni(params: {
         num_prodotti: nuova.prodotti.length,
         pagata_da: userId,
         note: null,
-        negozio: nuova.negozio,
+        negozio: insegnaNegozio(nuova.negozio),
         origine: nuova.origine,
         scontrino_path,
         creata_il: new Date().toISOString(),
@@ -452,7 +452,8 @@ function useAzioni(params: {
   );
 
   const modificaSpesa = useCallback(
-    async (s: Spesa, modifiche: Partial<Pick<Spesa, "importo" | "data" | "note" | "negozio">>) => {
+    async (s: Spesa, campi: Partial<Pick<Spesa, "importo" | "data" | "note" | "negozio">>) => {
+      const modifiche = "negozio" in campi ? { ...campi, negozio: insegnaNegozio(campi.negozio) } : campi;
       setDati((d) => ({ ...d, spese: aggiornaPerId(d.spese, { ...s, ...modifiche }) }));
       await supabase.from("spese").update(modifiche).eq("id", s.id);
     },

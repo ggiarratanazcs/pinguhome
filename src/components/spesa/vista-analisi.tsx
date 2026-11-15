@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import type { Lista, Spesa } from "@/lib/database.types";
-import { indovinaReparto } from "@/lib/spesa";
+import { indovinaReparto, insegnaNegozio } from "@/lib/spesa";
 import { cn } from "@/lib/utils";
 import type { DatiSpesa } from "./app-spesa";
 
@@ -40,14 +40,6 @@ function iso(d: Date) {
 
 function maiuscola(t: string) {
   return t.charAt(0).toUpperCase() + t.slice(1);
-}
-
-function chiaveNegozio(n: string | null) {
-  return (n ?? "").toLowerCase().replace(/[.,;:'"]/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function nomeNegozio(chiave: string) {
-  return chiave.replace(/(^|\s)(\p{L})/gu, (_, sp: string, l: string) => sp + l.toUpperCase());
 }
 
 /** Intervallo del periodo scelto e di quello precedente, come date "aaaa-mm-gg". */
@@ -122,10 +114,10 @@ export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] 
     }
 
     if (vista === "negozio") {
-      // Lo stesso negozio scritto in modi diversi ("esselunga", "Esselunga ") conta una volta sola
-      const m = somma((s) => chiaveNegozio(s.negozio));
+      // Lo stesso negozio scritto in modi diversi ("Coop.fi Montevarchi", "Unicoop Firenze", "COOP") conta una volta sola
+      const m = somma((s) => insegnaNegozio(s.negozio) ?? "");
       const ordinate = [...m.entries()].sort((a, b) => (a[0] === "" ? 1 : b[0] === "" ? -1 : b[1] - a[1]));
-      return ordinate.map(([id, valore], i) => ({ id, nome: id ? nomeNegozio(id) : "Non indicato", valore, colore: id ? COLORI[i % COLORI.length] : GRIGIO }));
+      return ordinate.map(([id, valore], i) => ({ id, nome: id || "Non indicato", valore, colore: id ? COLORI[i % COLORI.length] : GRIGIO }));
     }
 
     // Reparto: quanti prodotti comprati per reparto, e gli euro quando lo scontrino ha i prezzi
