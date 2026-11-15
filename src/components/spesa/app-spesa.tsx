@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { Pulsante } from "@/components/ui";
@@ -593,10 +593,10 @@ export function AppSpesa({
               const prossima = liste.find((x) => x.id !== l.id);
               if (await azioni.eliminaLista(l)) setListaId(prossima?.id ?? "");
             }}
+            avanzamento={vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
           />
           </div>
           </div>
-          {vociLista.length > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
         </header>
       ) : null}
 
@@ -633,7 +633,7 @@ export function AppSpesa({
 function Avanzamento({ fatte, totale }: { fatte: number; totale: number }) {
   const quota = totale ? fatte / totale : 0;
   return (
-    <div className="mt-4 flex items-center gap-4">
+    <div className="flex items-center gap-4">
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-superficie-3">
         <motion.div
           className={cn("h-full rounded-full", quota === 1 ? "bg-eco" : "bg-becco")}
@@ -649,10 +649,15 @@ function Avanzamento({ fatte, totale }: { fatte: number; totale: number }) {
   );
 }
 
+/**
+ * Le liste come pillole su una riga (scorre di lato se sono tante): un tocco per cambiare lista,
+ * "+" per crearne una. Sotto, l'avanzamento e il "⋯" per rinominare o eliminare la lista attiva.
+ */
 function SelettoreListe({
   liste,
   voci,
   corrente,
+  avanzamento,
   onScegli,
   onCrea,
   onRinomina,
@@ -661,6 +666,7 @@ function SelettoreListe({
   liste: Lista[];
   voci: VoceLista[];
   corrente: string | undefined;
+  avanzamento: ReactNode;
   onScegli: (id: string) => void;
   onCrea: (nome: string) => void;
   onRinomina: (l: Lista, nome: string) => void;
@@ -669,38 +675,78 @@ function SelettoreListe({
   const [nuova, setNuova] = useState<string | null>(null);
   const [gestione, setGestione] = useState<"chiusa" | "menu" | "rinomina" | "conferma">("chiusa");
   const attiva = liste.find((l) => l.id === corrente);
-  const altre = liste.filter((l) => l.id !== corrente);
   const vociAttiva = attiva ? voci.filter((v) => v.lista_id === attiva.id).length : 0;
+
   return (
     <div>
-      <div className="flex items-center gap-2">
-        {gestione === "rinomina" && attiva ? (
-          <form
-            className="min-w-0 flex-1"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const nome = String(new FormData(e.currentTarget).get("nome") ?? "").trim();
-              if (nome && nome !== attiva.nome) onRinomina(attiva, nome);
-              setGestione("chiusa");
-            }}
-          >
-            <input
-              name="nome"
-              autoFocus
-              defaultValue={attiva.nome}
-              onBlur={(e) => e.currentTarget.form?.requestSubmit()}
-              className="campo-linea titolo titolo-pagina h-12 w-full normal-case"
-            />
-          </form>
-        ) : (
-          <h1 className="titolo titolo-pagina min-w-0 break-words">{attiva?.nome ?? "lista"}</h1>
-        )}
-        {attiva && gestione !== "rinomina" ? (
+      <h1 className="sr-only">{attiva?.nome ?? "lista"}</h1>
+      <div className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max items-center gap-2 py-1">
+          {liste.map((l) => {
+            const selezionata = l.id === corrente;
+            const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
+            return (
+              <button
+                key={l.id}
+                onClick={() => {
+                  onScegli(l.id);
+                  setGestione("chiusa");
+                }}
+                aria-pressed={selezionata}
+                className={cn(
+                  "anello-focus flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[0.9375rem] transition",
+                  selezionata ? "bg-dorso font-semibold text-su-dorso" : "text-inchiostro ring-[1.5px] ring-inset ring-linea-forte hover:ring-inchiostro",
+                )}
+              >
+                <span className="size-2 shrink-0 rounded-full" style={{ background: l.colore }} />
+                {l.nome}
+                {daPrendere > 0 ? (
+                  <span className={cn("numeri rounded-full px-1.5 text-[0.75rem]", selezionata ? "bg-white/15" : "text-tenue")}>{daPrendere}</span>
+                ) : null}
+              </button>
+            );
+          })}
+          {nuova === null ? (
+            <button
+              onClick={() => setNuova("")}
+              aria-label="Nuova lista"
+              className="anello-focus grid size-10 shrink-0 place-items-center rounded-full text-tenue ring-[1.5px] ring-inset ring-linea-forte transition hover:text-inchiostro hover:ring-inchiostro"
+            >
+              <Plus className="size-[18px]" />
+            </button>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (nuova.trim()) onCrea(nuova.trim());
+                setNuova(null);
+              }}
+            >
+              <input
+                autoFocus
+                value={nuova}
+                onChange={(e) => setNuova(e.target.value)}
+                onBlur={() => setNuova(null)}
+                placeholder="Es. Farmacia"
+                className="h-10 w-40 rounded-full px-4 text-[0.9375rem] outline-none ring-[1.5px] ring-inset ring-becco"
+              />
+            </form>
+          )}
+        </div>
+      </div>
+
+      {/* Avanzamento della lista attiva e il "⋯" per gestirla */}
+      <div className="mt-4 flex items-center gap-2">
+        <div className="min-w-0 flex-1">{avanzamento}</div>
+        {attiva ? (
           <button
             onClick={() => setGestione((g) => (g === "chiusa" ? "menu" : "chiusa"))}
-            aria-label="Gestisci la lista"
+            aria-label={`Gestisci la lista ${attiva.nome}`}
             aria-expanded={gestione !== "chiusa"}
-            className={cn("anello-focus grid size-9 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro", gestione !== "chiusa" && "bg-superficie-3 text-inchiostro")}
+            className={cn(
+              "anello-focus grid size-9 shrink-0 place-items-center rounded-full text-tenue transition hover:bg-superficie-3 hover:text-inchiostro",
+              gestione !== "chiusa" && "bg-superficie-3 text-inchiostro",
+            )}
           >
             <MoreHorizontal className="size-5" />
           </button>
@@ -709,7 +755,7 @@ function SelettoreListe({
 
       {/* Gestione della lista: rinomina o elimina (con conferma, senza finestre del browser) */}
       <AnimatePresence initial={false}>
-        {attiva && (gestione === "menu" || gestione === "conferma") ? (
+        {attiva && gestione !== "chiusa" ? (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             {gestione === "menu" ? (
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -724,6 +770,24 @@ function SelettoreListe({
                   <span className="text-[0.8125rem] text-tenue">È l&apos;unica lista: per eliminarla creane prima un&apos;altra.</span>
                 )}
               </div>
+            ) : gestione === "rinomina" ? (
+              <form
+                className="mt-3 flex items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const nome = String(new FormData(e.currentTarget).get("nome") ?? "").trim();
+                  if (nome && nome !== attiva.nome) onRinomina(attiva, nome);
+                  setGestione("chiusa");
+                }}
+              >
+                <input name="nome" autoFocus defaultValue={attiva.nome} className="campo-linea h-10 min-w-0 flex-1 text-[1rem]" />
+                <Pulsante type="submit" className="h-9 px-4 text-sm">
+                  Salva
+                </Pulsante>
+                <Pulsante type="button" variante="fantasma" onClick={() => setGestione("chiusa")} className="h-9 px-3 text-sm">
+                  Annulla
+                </Pulsante>
+              </form>
             ) : (
               <div className="mt-3 rounded-[20px] bg-pericolo-tenue p-4">
                 <p className="text-[0.9375rem] text-inchiostro">
@@ -749,40 +813,6 @@ function SelettoreListe({
           </motion.div>
         ) : null}
       </AnimatePresence>
-      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.9375rem]">
-        {altre.map((l) => {
-          const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
-          return (
-            <button key={l.id} onClick={() => onScegli(l.id)} className="anello-focus group flex items-center gap-2 text-tenue hover:text-inchiostro">
-              <span className="size-2 rounded-full" style={{ background: l.colore }} />
-              <span className="underline decoration-linea-forte decoration-1 underline-offset-4 group-hover:decoration-inchiostro">{l.nome}</span>
-              {daPrendere > 0 ? <span className="numeri text-[0.8125rem]">{daPrendere}</span> : null}
-            </button>
-          );
-        })}
-        {nuova === null ? (
-          <button onClick={() => setNuova("")} className="anello-focus flex items-center gap-1 text-tenue hover:text-inchiostro">
-            <Plus className="size-4" /> nuova lista
-          </button>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (nuova.trim()) onCrea(nuova.trim());
-              setNuova(null);
-            }}
-          >
-            <input
-              autoFocus
-              value={nuova}
-              onChange={(e) => setNuova(e.target.value)}
-              onBlur={() => setNuova(null)}
-              placeholder="Es. Farmacia"
-              className="campo-linea h-8 w-40 text-[0.9375rem]"
-            />
-          </form>
-        )}
-      </div>
     </div>
   );
 }
