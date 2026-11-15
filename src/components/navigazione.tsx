@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarCheck, House, LogOut, Settings2, ShoppingBasket, Wallet } from "lucide-react";
 import { Mascotte } from "@/components/mascotte";
+import { Marchio } from "@/components/pinguino";
 import { Avatar } from "@/components/ui";
 import { alternaBarra } from "@/lib/temi";
 import { cn } from "@/lib/utils";
@@ -41,7 +42,7 @@ export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCa
           <Mascotte className="mascotte-barra relative" />
         </button>
         <div className="solo-aperta mt-5 text-center">
-          <p className="titolo text-[1.0625rem] text-su-dorso">uchi</p>
+          <Marchio chiaro />
           <p className="mt-1.5 truncate text-[0.8125rem] text-su-dorso-tenue">{casa}</p>
         </div>
       </div>
@@ -125,12 +126,12 @@ const TITOLI_MOBILE: [string, string][] = [
  */
 export function TestataMobile({ casa }: { casa: string }) {
   const pathname = usePathname();
-  const titolo = TITOLI_MOBILE.find(([p]) => pathname.startsWith(p))?.[1] ?? "uchi";
+  const titolo = TITOLI_MOBILE.find(([p]) => pathname.startsWith(p))?.[1];
   return (
     <div className="sticky top-0 z-30 lg:hidden">
       <header className="pt-sicuro bg-dorso text-su-dorso">
         <div className="flex h-14 items-center justify-between gap-3 px-5">
-          <p className="titolo truncate text-[1.375rem]">{titolo}</p>
+          {titolo ? <p className="titolo truncate text-[1.375rem]">{titolo}</p> : <Marchio chiaro />}
           <Link href="/" aria-label={`${casa}: torna alla Home`} className="anello-focus relative grid size-11 shrink-0 place-items-center">
             <span aria-hidden className="absolute inset-x-0 bottom-0 top-[40%] rounded-[50%] bg-lastra" />
             <Mascotte className="relative w-10" />
