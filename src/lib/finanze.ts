@@ -1,4 +1,4 @@
-import type { Conto, Movimento } from "@/lib/database.types";
+import type { Conto, Impegno, ImpegnoFatto, Movimento } from "@/lib/database.types";
 import { occorrenze } from "@/lib/agenda";
 
 export type Categoria = { id: string; nome: string; colore: string };
@@ -69,6 +69,53 @@ export function residuo(conto: Conto | null, movimenti: Movimento[], oggi: strin
   if (!conto) return null;
   const dopo = movimentiTra(movimenti, conto.data_saldo, oggi).filter((o) => o.data > conto.data_saldo);
   return Number(conto.saldo) + dopo.reduce((t, o) => t + segno(o.movimento), 0);
+}
+
+/**
+ * Proiezione a fine mese: il residuo di oggi più i movimenti già previsti da domani a fine mese
+ * (anche quelli che si ripetono) e le scadenze dell'Agenda con un importo, non ancora pagate, da oggi a fine mese.
+ */
+export function proiezioneFineMese(
+  attuale: number | null,
+  movimenti: Movimento[],
+  scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo">[],
+  pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[],
+  oggi: string,
+) {
+  if (attuale === null) return null;
+  const [a, m] = oggi.split("-").map(Number);
+  const fine = `${oggi.slice(0, 7)}-${String(new Date(a, m, 0).getDate()).padStart(2, "0")}`;
+  const futuri = movimentiTra(movimenti, oggi, fine).filter((o) => o.data > oggi);
+  const fatte = new Set(pagate.map((p) => `${p.impegno_id}|${p.data}`));
+  const daPagare = scadenze.flatMap((i) =>
+    Number(i.importo) > 0 ? occorrenze(i, oggi, fine).filter((d) => !fatte.has(`${i.id}|${d}`)).map(() => Number(i.importo)) : [],
+  );
+  const entrate = futuri.filter((o) => o.movimento.tipo === "entrata").reduce((t, o) => t + Number(o.movimento.importo), 0);
+  const uscite = futuri.filter((o) => o.movimento.tipo === "uscita").reduce((t, o) => t + Number(o.movimento.importo), 0) + daPagare.reduce((t, n) => t + n, 0);
+  return { totale: attuale + entrate - uscite, entrate, uscite };
+}
+
+/* Cifre nascoste: una scelta per dispositivo, ricordata nel browser */
+const CHIAVE_NASCOSTE = "uchi:cifre-nascoste";
+const ascoltatori = new Set<() => void>();
+export function leggiNascoste() {
+  try {
+    return localStorage.getItem(CHIAVE_NASCOSTE) === "1";
+  } catch {
+    return false;
+  }
+}
+export function impostaNascoste(v: boolean) {
+  try {
+    localStorage.setItem(CHIAVE_NASCOSTE, v ? "1" : "0");
+  } catch {}
+  ascoltatori.forEach((f) => f());
+}
+export function ascoltaNascoste(f: () => void) {
+  ascoltatori.add(f);
+  return () => {
+    ascoltatori.delete(f);
+  };
 }
 
 export function euro(n: number, decimali = true) {

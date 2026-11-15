@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Briefcase,
@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  Eye,
+  EyeOff,
   Gift,
   HeartPulse,
   House,
@@ -16,14 +18,29 @@ import {
   Plus,
   ShoppingCart,
   Trash2,
+  TrendingDown,
+  TrendingUp,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Conto, Movimento } from "@/lib/database.types";
+import type { Conto, Impegno, ImpegnoFatto, Movimento } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
 import { oggiRoma, RICORRENZE } from "@/lib/agenda";
-import { CATEGORIE_ENTRATA, CATEGORIE_USCITA, categoria, euro, interpretaMovimento, movimentiTra, residuo, type Occorrenza } from "@/lib/finanze";
+import {
+  ascoltaNascoste,
+  CATEGORIE_ENTRATA,
+  CATEGORIE_USCITA,
+  categoria,
+  euro,
+  impostaNascoste,
+  interpretaMovimento,
+  leggiNascoste,
+  movimentiTra,
+  proiezioneFineMese,
+  residuo,
+  type Occorrenza,
+} from "@/lib/finanze";
 import { Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { AnalisiFinanze } from "./analisi-finanze";
@@ -83,7 +100,12 @@ export function AppFinanze({
   famigliaId: string;
   userId: string;
   membri: MembroCasa[];
-  iniziali: { conto: Conto | null; movimenti: Movimento[] };
+  iniziali: {
+    conto: Conto | null;
+    movimenti: Movimento[];
+    scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo">[];
+    pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
+  };
   vistaIniziale?: VistaFinanze;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -182,7 +204,7 @@ export function AppFinanze({
       </nav>
 
       {vista === "conto" ? (
-        <VistaConto conto={conto} movimenti={movimenti} oggi={oggi} membri={membri} onSaldo={salvaSaldo} onNuovo={() => setMaschera(true)} onElimina={elimina} />
+        <VistaConto conto={conto} movimenti={movimenti} scadenze={iniziali.scadenze} pagate={iniziali.pagate} oggi={oggi} membri={membri} onSaldo={salvaSaldo} onNuovo={() => setMaschera(true)} onElimina={elimina} />
       ) : (
         <AnalisiFinanze movimenti={movimenti} oggi={oggi} />
       )}
@@ -220,9 +242,13 @@ export function AppFinanze({
 
 /* ---------- Conto ---------- */
 
+const NASCOSTO = "•••••";
+
 function VistaConto({
   conto,
   movimenti,
+  scadenze,
+  pagate,
   oggi,
   membri,
   onSaldo,
@@ -231,6 +257,8 @@ function VistaConto({
 }: {
   conto: Conto | null;
   movimenti: Movimento[];
+  scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo">[];
+  pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
   oggi: string;
   membri: MembroCasa[];
   onSaldo: (n: number) => Promise<void>;
@@ -240,6 +268,8 @@ function VistaConto({
   const [mese, setMese] = useState(oggi.slice(0, 7));
   const [allinea, setAllinea] = useState(false);
   const totale = residuo(conto, movimenti, oggi);
+  const proiezione = useMemo(() => proiezioneFineMese(totale, movimenti, scadenze, pagate, oggi), [totale, movimenti, scadenze, pagate, oggi]);
+  const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
 
   const delMese = useMemo(() => movimentiTra(movimenti, `${mese}-01`, fineMese(mese)).filter((o) => o.data <= oggi), [movimenti, mese, oggi]);
   const entrate = delMese.filter((o) => o.movimento.tipo === "entrata").reduce((t, o) => t + Number(o.movimento.importo), 0);
@@ -267,8 +297,32 @@ function VistaConto({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/casa/salvadanaio.webp" alt="" className="size-16 shrink-0 object-contain drop-shadow-[0_8px_12px_rgba(var(--ombra),0.18)]" />
             <div className="min-w-0 flex-1">
-              <p className="text-[0.8125rem] text-tenue">Residuo sul conto</p>
-              <p className={cn("titolo-normale numeri truncate text-[2rem] leading-tight", (totale ?? 0) < 0 && "text-pericolo")}>{euro(totale ?? 0)}</p>
+              <p className="flex items-center gap-1.5 text-[0.8125rem] text-tenue">
+                Residuo sul conto
+                <button
+                  onClick={() => impostaNascoste(!nascoste)}
+                  aria-label={nascoste ? "Mostra le cifre" : "Nascondi le cifre"}
+                  aria-pressed={nascoste}
+                  className="anello-focus -m-1.5 grid size-7 place-items-center rounded-full text-tenue transition hover:bg-superficie-2 hover:text-inchiostro"
+                >
+                  {nascoste ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </p>
+              <p className={cn("titolo-normale numeri truncate text-[2rem] leading-tight", !nascoste && (totale ?? 0) < 0 && "text-pericolo")}>
+                {nascoste ? NASCOSTO : euro(totale ?? 0)}
+              </p>
+              {proiezione ? (
+                <p
+                  className="mt-0.5 flex items-center gap-1 text-[0.75rem] text-tenue"
+                  title={nascoste ? undefined : `Previste da qui a fine mese: +${euro(proiezione.entrate)} / −${euro(proiezione.uscite)}`}
+                >
+                  {proiezione.totale >= (totale ?? 0) ? <TrendingUp className="size-3.5 text-eco" /> : <TrendingDown className="size-3.5 text-pericolo" />}
+                  a fine mese
+                  <span className={cn("numeri font-semibold", !nascoste && proiezione.totale < 0 ? "text-pericolo" : "text-inchiostro")}>
+                    {nascoste ? NASCOSTO : euro(proiezione.totale, false)}
+                  </span>
+                </p>
+              ) : null}
             </div>
             <button
               onClick={onNuovo}
@@ -282,11 +336,11 @@ function VistaConto({
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-[18px] bg-eco-tenue px-4 py-3">
               <p className="text-[0.75rem] text-eco">Entrate {nomeMeseCorto}</p>
-              <p className="numeri text-[1.125rem] font-semibold text-inchiostro">+{euro(entrate, false)}</p>
+              <p className="numeri text-[1.125rem] font-semibold text-inchiostro">{nascoste ? NASCOSTO : `+${euro(entrate, false)}`}</p>
             </div>
             <div className="rounded-[18px] bg-pericolo-tenue px-4 py-3">
               <p className="text-[0.75rem] text-pericolo">Uscite {nomeMeseCorto}</p>
-              <p className="numeri text-[1.125rem] font-semibold text-inchiostro">−{euro(uscite, false)}</p>
+              <p className="numeri text-[1.125rem] font-semibold text-inchiostro">{nascoste ? NASCOSTO : `−${euro(uscite, false)}`}</p>
             </div>
           </div>
 
@@ -330,7 +384,7 @@ function VistaConto({
                   <ul>
                     <AnimatePresence initial={false}>
                       {elenco.map((o) => (
-                        <RigaMovimento key={`${o.movimento.id}|${o.data}`} o={o} membri={membri} onElimina={() => onElimina(o.movimento)} />
+                        <RigaMovimento key={`${o.movimento.id}|${o.data}`} o={o} membri={membri} nascosto={nascoste} onElimina={() => onElimina(o.movimento)} />
                       ))}
                     </AnimatePresence>
                   </ul>
@@ -394,7 +448,7 @@ function ImpostaSaldo({
   );
 }
 
-function RigaMovimento({ o, membri, onElimina }: { o: Occorrenza; membri: MembroCasa[]; onElimina: () => void }) {
+function RigaMovimento({ o, membri, nascosto, onElimina }: { o: Occorrenza; membri: MembroCasa[]; nascosto: boolean; onElimina: () => void }) {
   const m = o.movimento;
   const cat = categoria(m.tipo, m.categoria);
   const Icona = ICONE[m.categoria] ?? Circle;
@@ -423,8 +477,7 @@ function RigaMovimento({ o, membri, onElimina }: { o: Occorrenza; membri: Membro
           <span className="block truncate text-[0.75rem] text-tenue">{sotto}</span>
         </span>
         <span className={cn("numeri shrink-0 text-[0.9375rem] font-semibold", m.tipo === "entrata" ? "text-eco" : "text-inchiostro")}>
-          {m.tipo === "entrata" ? "+" : "−"}
-          {euro(Number(m.importo))}
+          {nascosto ? NASCOSTO : `${m.tipo === "entrata" ? "+" : "−"}${euro(Number(m.importo))}`}
         </span>
       </button>
       <AnimatePresence initial={false}>
