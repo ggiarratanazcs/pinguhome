@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, ty
 import { AnimatePresence, motion } from "motion/react";
 import { Camera, ChevronLeft, ImageIcon, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Carta } from "@/lib/database.types";
+import type { Carta, Documento } from "@/lib/database.types";
+import { VistaDocumenti } from "./vista-documenti";
 import type { MembroCasa } from "@/lib/sessione";
 import { insegnaNegozio } from "@/lib/spesa";
 import { preparaFile } from "@/lib/scontrini";
@@ -24,8 +25,23 @@ function aggiornaPerId<T extends { id: string }>(elenco: T[], riga: T) {
 
 /* ---------- Pagina ---------- */
 
-export function AppWallet({ famigliaId, userId, membri, iniziali }: { famigliaId: string; userId: string; membri: MembroCasa[]; iniziali: Carta[] }) {
+export function AppWallet({
+  famigliaId,
+  userId,
+  membri,
+  iniziali,
+  documenti,
+  vistaIniziale = "carte",
+}: {
+  famigliaId: string;
+  userId: string;
+  membri: MembroCasa[];
+  iniziali: Carta[];
+  documenti: Documento[];
+  vistaIniziale?: "carte" | "documenti";
+}) {
   const supabase = useMemo(() => createClient(), []);
+  const [vista, setVista] = useState<"carte" | "documenti">(vistaIniziale);
   const [carte, setCarte] = useState<Carta[]>(iniziali);
   const [aperta, setAperta] = useState<string | null>(null);
   const [maschera, setMaschera] = useState<{ carta: Carta | null } | null>(null);
@@ -105,35 +121,59 @@ export function AppWallet({ famigliaId, userId, membri, iniziali }: { famigliaId
     <div className="mx-auto w-full max-w-[1120px] px-5 pb-16 pt-1 md:px-12 lg:pt-10">
       <h1 className="titolo titolo-pagina mb-6 hidden lg:block">wallet</h1>
 
-      <div className="flex items-center justify-between">
-        <p className="text-[0.875rem] text-tenue">{carte.length === 1 ? "1 carta" : `${carte.length} carte`}</p>
-        <button
-          onClick={() => setMaschera({ carta: null })}
-          aria-label="Nuova carta"
-          className="anello-focus grid size-11 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
-        >
-          <Plus className="size-6" strokeWidth={2.4} />
-        </button>
-      </div>
+      <nav className="flex items-center gap-5 text-[0.9375rem] md:gap-6">
+        {(
+          [
+            ["carte", "Carte"],
+            ["documenti", "Documenti"],
+          ] as const
+        ).map(([id, nome]) => (
+          <button
+            key={id}
+            onClick={() => setVista(id)}
+            className={cn("anello-focus relative pb-1.5 transition-colors", vista === id ? "font-semibold text-inchiostro" : "text-tenue hover:text-inchiostro")}
+          >
+            {nome}
+            {vista === id ? <motion.span layoutId="sezione-wallet" className="absolute inset-x-0 -bottom-0.5 h-[3px] rounded-full bg-becco" /> : null}
+          </button>
+        ))}
+      </nav>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
-        <AnimatePresence initial={false}>
-          {carte.map((c) => (
-            <motion.button
-              key={c.id}
-              layout
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.94 }}
-              onClick={() => setAperta(c.id)}
-              className="anello-focus block rounded-[18px] transition-transform active:scale-[0.97]"
-              aria-label={`Carta ${c.negozio}`}
+      {vista === "documenti" ? (
+        <VistaDocumenti famigliaId={famigliaId} iniziali={documenti} avvisa={avvisa} />
+      ) : (
+        <div className="mt-6">
+      <div className="flex items-center justify-between">
+            <p className="text-[0.875rem] text-tenue">{carte.length === 1 ? "1 carta" : `${carte.length} carte`}</p>
+            <button
+              onClick={() => setMaschera({ carta: null })}
+              aria-label="Nuova carta"
+              className="anello-focus grid size-11 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
             >
-              <Tessera negozio={c.negozio} colore={c.colore} titolare={nomeDi(c.titolare)} />
-            </motion.button>
-          ))}
-        </AnimatePresence>
-      </div>
+              <Plus className="size-6" strokeWidth={2.4} />
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
+            <AnimatePresence initial={false}>
+              {carte.map((c) => (
+                <motion.button
+                  key={c.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.94 }}
+                  onClick={() => setAperta(c.id)}
+                  className="anello-focus block rounded-[18px] transition-transform active:scale-[0.97]"
+                  aria-label={`Carta ${c.negozio}`}
+                >
+                  <Tessera negozio={c.negozio} colore={c.colore} titolare={nomeDi(c.titolare)} />
+                </motion.button>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {cartaAperta ? (

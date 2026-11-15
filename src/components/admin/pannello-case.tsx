@@ -137,7 +137,7 @@ function SchedaCasa({ casa, onEliminata }: { casa: CasaAdmin; onEliminata: () =>
     esegui("elimina", async () => {
       setConferma(null);
       // Prima i file della casa (foto, scontrini, carte, prodotti), poi i dati
-      for (const bucket of ["scontrini", "foto", "carte", "prodotti"]) {
+      for (const bucket of ["scontrini", "foto", "carte", "prodotti", "documenti"]) {
         for (;;) {
           const { data } = await supabase.storage.from(bucket).list(casa.id, { limit: 100 });
           const file = (data ?? []).filter((f) => f.id).map((f) => `${casa.id}/${f.name}`);

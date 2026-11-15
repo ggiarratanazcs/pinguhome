@@ -232,6 +232,21 @@ export type Accantonamento = {
   obiettivo_id: string;
 };
 
+export type Documento = {
+  caricato_da: string | null;
+  categoria: "casa" | "auto" | "garanzie" | "persone" | "altro";
+  creato_il: string;
+  dimensione: number;
+  famiglia_id: string;
+  file_path: string;
+  id: string;
+  impegno_id: string | null;
+  nome: string;
+  note: string | null;
+  scadenza: string | null;
+  tipo_file: string;
+};
+
 export type Budget = {
   aggiornato_il: string;
   categoria: string;
@@ -260,6 +275,7 @@ export type Database = {
     Tables: {
       obiettivi: Tabella<Obiettivo, Opz<Obiettivo, "automatico" | "colore" | "creato_da" | "creato_il" | "di_chi" | "giorno_auto" | "icona" | "id" | "quota_auto" | "scadenza">>;
       accantonamenti: Tabella<Accantonamento, Opz<Accantonamento, "automatico" | "chi" | "creato_il" | "data" | "id">>;
+      documenti: Tabella<Documento, Opz<Documento, "caricato_da" | "categoria" | "creato_il" | "dimensione" | "id" | "impegno_id" | "note" | "scadenza">>;
       budget: Tabella<Budget, Opz<Budget, "aggiornato_il">>;
       carte: Tabella<Carta, Opz<Carta, "colore" | "creata_da" | "creata_il" | "foto_path" | "formato" | "id" | "titolare">>;
       dispensa: Tabella<Dispensa, Opz<Dispensa, "aggiornata_il" | "id" | "posizione" | "prodotto_id" | "quantita" | "scadenza" | "scorta_minima" | "unita">>;

@@ -4,9 +4,22 @@ import { AppWallet } from "@/components/wallet/app-wallet";
 
 export const metadata = { title: "Wallet" };
 
-export default async function PaginaWallet() {
+export default async function PaginaWallet({ searchParams }: PageProps<"/wallet">) {
   const { profilo, famiglia, membri } = await getContesto();
   const supabase = await createClient();
-  const { data: carte } = await supabase.from("carte").select("*").eq("famiglia_id", famiglia.id).order("creata_il");
-  return <AppWallet famigliaId={famiglia.id} userId={profilo.id} membri={membri} iniziali={carte ?? []} />;
+  const [{ data: carte }, { data: documenti }] = await Promise.all([
+    supabase.from("carte").select("*").eq("famiglia_id", famiglia.id).order("creata_il"),
+    supabase.from("documenti").select("*").eq("famiglia_id", famiglia.id).order("nome"),
+  ]);
+  const { vista } = await searchParams;
+  return (
+    <AppWallet
+      famigliaId={famiglia.id}
+      userId={profilo.id}
+      membri={membri}
+      iniziali={carte ?? []}
+      documenti={documenti ?? []}
+      vistaIniziale={vista === "documenti" ? "documenti" : "carte"}
+    />
+  );
 }
