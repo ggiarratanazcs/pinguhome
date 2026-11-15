@@ -77,6 +77,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return NextResponse.json({ errore: "Non sei collegato." }, { status: 401 });
+  // Le letture costano: solo per chi fa parte di una casa attiva
+  const { data: puo } = await supabase.rpc("puo_usare_claude");
+  if (!puo) return NextResponse.json({ errore: "Le letture sono disponibili solo per chi fa parte di una casa." }, { status: 403 });
 
   const chiave = (process.env.ANTHROPIC_API_KEY ?? "").trim().replace(/["'\s]/g, "");
   if (!chiave) {

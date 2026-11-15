@@ -16,19 +16,23 @@ function traduciErrore(messaggio: string) {
   if (/already registered/i.test(messaggio)) return "Questa email è già registrata: accedi.";
   if (/password should be/i.test(messaggio)) return "La password deve avere almeno 6 caratteri.";
   if (/rate limit/i.test(messaggio)) return "Troppi tentativi ravvicinati. Riprova tra qualche minuto.";
+  // Il database rifiuta la registrazione senza un codice valido
+  if (/database error saving new user|codice/i.test(messaggio)) return "Codice non valido: chiedilo a chi ti ha invitato.";
   return "Operazione non riuscita. Controlla i dati e riprova.";
 }
 
 const TITOLI: Record<Modo, [string, string]> = {
   accesso: ["bentornato", "Entra nella vostra casa."],
-  registrazione: ["nuovo account", "Dopo crei la casa, oppure entri con il codice che ti hanno mandato."],
+  registrazione: ["nuovo account", "Serve il codice che ti hanno mandato: per entrare in una casa o per crearne una."],
   recupero: ["password persa", "Ti mandiamo un link per sceglierne una nuova."],
 };
 
 export function ModuloAccesso() {
   const router = useRouter();
   const params = useSearchParams();
-  const [modo, setModo] = useState<Modo>("accesso");
+  // Un link con ?codice=… apre direttamente la registrazione con il codice già scritto
+  const codiceLink = (params.get("codice") ?? "").toUpperCase().slice(0, 12);
+  const [modo, setModo] = useState<Modo>(codiceLink ? "registrazione" : "accesso");
   const [inCorso, setInCorso] = useState(false);
   const [errore, setErrore] = useState<string | null>(
     params.get("errore") === "link" ? "Il link è scaduto o è già stato usato." : null,
@@ -69,7 +73,7 @@ export function ModuloAccesso() {
         email,
         password,
         options: {
-          data: { nome: String(dati.get("nome") ?? "").trim() },
+          data: { nome: String(dati.get("nome") ?? "").trim(), codice: String(dati.get("codice") ?? "").trim().toUpperCase() },
           emailRedirectTo: `${window.location.origin}/auth/conferma?next=/benvenuto`,
         },
       });
@@ -109,7 +113,21 @@ export function ModuloAccesso() {
 
           <form onSubmit={invia} className="mt-10 flex flex-col gap-6">
             {modo === "registrazione" ? (
-              <Campo etichetta="Come ti chiami" id="nome" name="nome" autoComplete="given-name" required />
+              <>
+                <Campo
+                  etichetta="Codice"
+                  id="codice"
+                  name="codice"
+                  defaultValue={codiceLink}
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  maxLength={12}
+                  aiuto="Te l'ha mandato chi ti ha invitato."
+                  required
+                  className="numeri uppercase tracking-[0.2em]"
+                />
+                <Campo etichetta="Come ti chiami" id="nome" name="nome" autoComplete="given-name" required />
+              </>
             ) : null}
             <Campo etichetta="Email" id="email" name="email" type="email" autoComplete="email" required />
             {modo !== "recupero" ? (

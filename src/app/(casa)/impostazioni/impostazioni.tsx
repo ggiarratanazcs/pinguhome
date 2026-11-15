@@ -125,7 +125,7 @@ export function Impostazioni({
 
       <Gruppo>
         <Riga icona={Sparkles} colore="#ff9f1c" nome="Rivedi il tutorial" valore="" onClick={() => window.dispatchEvent(new Event(EVENTO_GIRO))} />
-        {admin ? <Riga icona={ShieldCheck} colore="#1d2340" nome="Console di admin" valore="" onClick={() => (window.location.href = "/admin")} /> : null}
+        {admin ? <Riga icona={ShieldCheck} colore="#1d2340" nome="Console di admin" valore="" onClick={() => router.push("/admin")} /> : null}
         <Riga icona={KeyRound} colore="#8a8f99" nome="Password" valore="" onClick={() => setAperto("password")} />
         <form action="/auth/esci" method="post">
           <button className="anello-focus flex w-full items-center gap-3 px-4 py-3.5 text-left text-pericolo transition hover:bg-superficie-3">
@@ -481,7 +481,7 @@ function PannelloCasa({
   }
 
   async function condividi() {
-    const testo = `Entra nella nostra casa su Uchi con il codice ${famiglia.codice_invito}: ${window.location.origin}`;
+    const testo = `Entra nella nostra casa su Uchi con il codice ${famiglia.codice_invito}: ${window.location.origin}/accesso?codice=${famiglia.codice_invito}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Uchi", text: testo });

@@ -10,15 +10,22 @@ export function SceltaCasa() {
   const router = useRouter();
   const [inCorso, setInCorso] = useState<"crea" | "entra" | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
+  const [serveCodice, setServeCodice] = useState(false);
 
   async function crea(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const nome = String(new FormData(e.currentTarget).get("nome") ?? "");
+    const f = new FormData(e.currentTarget);
+    const nome = String(f.get("nome") ?? "");
+    const codice = String(f.get("codice_casa") ?? "").trim();
     setInCorso("crea");
     setErrore(null);
-    const { error } = await createClient().rpc("crea_famiglia", { p_nome: nome });
+    const { error } = await createClient().rpc("crea_famiglia", { p_nome: nome, p_codice: codice || null });
     if (error) {
-      setErrore("Non sono riuscito a creare la casa. Riprova.");
+      // Per una casa nuova serve il codice dato dall'amministratore
+      if (/codice_casa_mancante/i.test(error.message)) {
+        setServeCodice(true);
+        setErrore(codice ? "Codice per la casa nuova non valido o già usato." : "Per creare una casa nuova serve il codice che ti hanno dato.");
+      } else setErrore("Non sono riuscito a creare la casa. Riprova.");
       setInCorso(null);
       return;
     }
@@ -47,6 +54,16 @@ export function SceltaCasa() {
         <h2 className="titolo text-[1.25rem]">crea la casa</h2>
         <p className="mt-2 text-[0.9375rem] text-tenue">Trovi già i reparti e due liste: Supermercato e Cose per la casa.</p>
         <input name="nome" placeholder="Es. Casa Firenze" required className="campo-linea mt-6 h-12 text-[1.125rem]" />
+        {serveCodice ? (
+          <input
+            name="codice_casa"
+            placeholder="Codice per la casa nuova"
+            autoCapitalize="characters"
+            autoComplete="off"
+            maxLength={12}
+            className="campo-linea numeri mt-4 h-12 text-[1.125rem] uppercase tracking-[0.2em]"
+          />
+        ) : null}
         <Pulsante type="submit" disabled={inCorso !== null} className="mt-6 self-start">
           {inCorso === "crea" ? <Loader2 className="size-4 animate-spin" /> : null}
           Crea la casa

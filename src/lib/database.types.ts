@@ -247,7 +247,11 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
-      crea_famiglia: { Args: { p_nome: string }; Returns: string };
+      crea_famiglia: { Args: { p_nome: string; p_codice?: string | null }; Returns: string };
+      puo_usare_claude: { Args: Record<string, never>; Returns: boolean };
+      admin_crea_codice_casa: { Args: Record<string, never>; Returns: string };
+      admin_codici_casa: { Args: Record<string, never>; Returns: Json };
+      admin_annulla_codice_casa: { Args: { p_codice: string }; Returns: undefined };
       segna_presa: { Args: { p_presa: boolean; p_voce: string }; Returns: undefined };
       unisciti_famiglia: { Args: { p_codice: string }; Returns: string };
       promemoria_dati: { Args: { p_segreto: string }; Returns: Json };
