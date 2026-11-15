@@ -54,26 +54,25 @@ export function CorniceFoto({
   }, [famigliaId, supabase]);
 
   const conFoto = foto.length > 0;
-  const chiaro = conFoto || polaroid;
 
   return (
     <div
       className={cn(
-        "relative aspect-[4/3] w-full max-w-3xl overflow-hidden rounded-[28px] md:aspect-[16/9] md:rounded-[36px]",
-        polaroid ? "bg-dorso" : "bg-lastra",
+        // Su telefono la foto va da bordo a bordo e passa sotto la testata; su schermo grande resta un riquadro
+        "relative -mx-4 h-[calc(340px+env(safe-area-inset-top))] overflow-hidden bg-dorso md:-mx-12",
+        "lg:mx-0 lg:aspect-[16/9] lg:h-auto lg:max-w-3xl lg:rounded-[36px]",
       )}
     >
       {conFoto ? polaroid ? <Polaroid foto={foto} /> : <Scorrimento foto={foto} /> : null}
 
+      {/* Scuro in alto per la testata e in basso per il saluto */}
+      {conFoto ? (
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] bg-linear-to-b from-black/45 via-transparent via-40% to-black/55 lg:from-transparent" />
+      ) : null}
+
       {/* Data e saluto sopra le foto */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-4 pt-10",
-          conFoto && !polaroid && "bg-linear-to-t from-black/55 via-black/25 to-transparent",
-          chiaro ? "text-white" : "text-inchiostro",
-        )}
-      >
-        <p className={cn("text-[0.8125rem] first-letter:uppercase", chiaro ? "text-white/85" : "text-tenue")}>{data}</p>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-9 text-white lg:px-6 lg:pb-5">
+        <p className="text-[0.8125rem] text-white/85 first-letter:uppercase">{data}</p>
         <p className="titolo mt-0.5 text-[1.5rem] leading-tight md:text-[2rem]">{saluto}</p>
       </div>
     </div>
@@ -130,9 +129,9 @@ const PUNTINE = ["#e0625a", "#ff9f1c", "#5a8fe6", "#3fa36a", "#f2c94c"];
 type Appuntata = { chiave: string; foto: FotoCornice; slot: number; rot: number; dx: number; dy: number; puntina: string };
 
 function sottoscriviSchermo(cb: () => void) {
-  const m = window.matchMedia("(min-width: 768px)");
-  m.addEventListener("change", cb);
-  return () => m.removeEventListener("change", cb);
+  const m = [window.matchMedia("(min-width: 768px)"), window.matchMedia("(min-width: 1024px)")];
+  m.forEach((q) => q.addEventListener("change", cb));
+  return () => m.forEach((q) => q.removeEventListener("change", cb));
 }
 
 function caso(min: number, max: number) {
@@ -150,6 +149,8 @@ function mescola<T>(elenco: T[]) {
 
 function Polaroid({ foto }: { foto: FotoCornice[] }) {
   const largo = useSyncExternalStore(sottoscriviSchermo, () => window.matchMedia("(min-width: 768px)").matches, () => false);
+  // Da computer la cornice è un riquadro; su telefono e tablet è la foto in testa alla pagina
+  const riquadro = useSyncExternalStore(sottoscriviSchermo, () => window.matchMedia("(min-width: 1024px)").matches, () => false);
   const colonne = largo ? 6 : 4;
   const righe = 2;
   const posti = colonne * righe;
@@ -204,13 +205,33 @@ function Polaroid({ foto }: { foto: FotoCornice[] }) {
     return () => timer.forEach(clearTimeout);
   }, [n, posti]);
 
-  // Zona utile: sopra la fascia con data e saluto
-  const altezzaUtile = 74;
+  // Zona utile: sotto la testata (su telefono) e sopra la fascia con data e saluto
+  const altezzaUtile = riquadro ? 74 : 100;
+  const scala = riquadro ? 0.74 : 0.66;
+  // Il fondo è la foto della prima polaroid del giro, sfocata
+  const fondo = appuntate[0]?.foto ?? foto[0];
   const larghezzaSlot = 100 / colonne;
   const altezzaSlot = altezzaUtile / righe;
 
   return (
     <div className="absolute inset-0" aria-hidden="true">
+      <AnimatePresence initial={false}>
+        {fondo ? (
+          <motion.img
+            key={fondo.id}
+            src={fondo.url}
+            alt=""
+            draggable={false}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2 }}
+            className="absolute inset-0 size-full scale-125 select-none object-cover blur-2xl"
+          />
+        ) : null}
+      </AnimatePresence>
+      <div className="absolute inset-0 bg-dorso/45" />
+      <div className={cn("absolute", riquadro ? "inset-0" : "inset-x-2 top-[calc(60px+env(safe-area-inset-top))] bottom-[92px]")}>
       <AnimatePresence>
         {appuntate.map((p, i) => {
           const col = p.slot % colonne;
@@ -220,9 +241,9 @@ function Polaroid({ foto }: { foto: FotoCornice[] }) {
               key={p.chiave}
               className="absolute"
               style={{
-                width: `${larghezzaSlot * 0.74}%`,
-                left: `${(col + 0.13 + p.dx) * larghezzaSlot}%`,
-                top: `${riga * altezzaSlot + 4 + p.dy * altezzaSlot}%`,
+                width: `${larghezzaSlot * scala}%`,
+                left: `${(col + (1 - scala) / 2 + p.dx) * larghezzaSlot}%`,
+                top: `${riga * altezzaSlot + (riquadro ? 4 : 2) + p.dy * altezzaSlot * (riquadro ? 1 : 0.5)}%`,
               }}
               initial={{ opacity: 0, y: -26, scale: 1.25, rotate: p.rot }}
               animate={
@@ -245,6 +266,7 @@ function Polaroid({ foto }: { foto: FotoCornice[] }) {
           );
         })}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

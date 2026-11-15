@@ -131,9 +131,9 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
   const daComprare = dati.liste.reduce((t, l) => t + l.daPrendere, 0);
 
   return (
-    <main className="mx-auto w-full max-w-[1120px] px-4 pt-1 md:px-12 lg:pt-10">
+    <main className="mx-auto w-full max-w-[1120px] px-4 md:px-12 lg:pt-10">
       {/* Testata: data, saluto e i tre numeri che contano */}
-      <section className="pt-3 md:pt-0">
+      <section>
         <CorniceFoto
           famigliaId={dati.famigliaId}
           stile={dati.cornice}
@@ -142,7 +142,9 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           saluto={`${dati.saluto}, ${dati.nome.toLowerCase()}`}
         />
 
-        <div data-giro="indicatori" className="mt-4 grid max-w-3xl grid-cols-3 gap-3 md:mt-6 md:gap-6">
+        {/* Su telefono il foglio bianco sale sopra la foto */}
+        <div className="relative z-10 -mx-4 -mt-5 rounded-t-[22px] bg-superficie px-4 pt-5 md:-mx-12 md:px-12 lg:mx-0 lg:mt-6 lg:rounded-none lg:bg-transparent lg:p-0">
+        <div data-giro="indicatori" className="grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
           <Indicatore href="/spesa" scena="carrello" etichetta="da comprare" ritardo={0}>
             <Contatore valore={daComprare} />
           </Indicatore>
@@ -152,6 +154,7 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           <Indicatore href="/finanze" immagine="/casa/salvadanaio.webp" rapporto={621 / 640} etichetta="residuo sul conto" ritardo={0.12}>
             {dati.residuo === null ? <span className="text-tenue">—</span> : <Contatore valore={dati.residuo} formato={(n) => euro(n, false)} />}
           </Indicatore>
+        </div>
         </div>
       </section>
 

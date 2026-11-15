@@ -127,20 +127,24 @@ const TITOLI_MOBILE: [string, string][] = [
 export function TestataMobile({ casa }: { casa: string }) {
   const pathname = usePathname();
   const titolo = TITOLI_MOBILE.find(([p]) => pathname.startsWith(p))?.[1] ?? "uchi";
+  // In Home la testata è trasparente e sta sopra la foto
+  const home = pathname === "/";
   return (
-    <div className="sticky top-0 z-30 lg:hidden">
-      <header className="pt-sicuro bg-dorso text-su-dorso">
+    <div className={cn("z-30 lg:hidden", home ? "absolute inset-x-0 top-0" : "sticky top-0")}>
+      <header className={cn("pt-sicuro text-su-dorso", !home && "bg-dorso")}>
         <div className="flex h-14 items-center justify-between gap-3 px-5">
           <Marchio chiaro nome={titolo} className="min-w-0" />
           <Link href="/" aria-label={`${casa}: torna alla Home`} className="anello-focus relative grid size-11 shrink-0 place-items-center">
-            <span aria-hidden className="absolute inset-x-0 bottom-0 top-[40%] rounded-[50%] bg-lastra" />
+            {home ? null : <span aria-hidden className="absolute inset-x-0 bottom-0 top-[40%] rounded-[50%] bg-lastra" />}
             <Mascotte className="relative w-10" />
           </Link>
         </div>
       </header>
-      <div aria-hidden className="h-4 bg-dorso">
-        <div className="h-4 rounded-t-[22px] bg-superficie" />
-      </div>
+      {home ? null : (
+        <div aria-hidden className="h-4 bg-dorso">
+          <div className="h-4 rounded-t-[22px] bg-superficie" />
+        </div>
+      )}
     </div>
   );
 }

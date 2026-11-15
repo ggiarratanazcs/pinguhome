@@ -13,7 +13,7 @@ export default async function LayoutCasa({ children }: LayoutProps<"/">) {
       <SincronizzaTema tema={profilo.tema} />
       <AvvioServiceWorker />
       <BarraLaterale casa={famiglia.nome} membri={membri} />
-      <div className="foglio min-w-0 flex-1 pb-28 lg:pb-0">
+      <div className="foglio relative min-w-0 flex-1 pb-28 lg:pb-0">
         <TestataMobile casa={famiglia.nome} />
         {children}
       </div>
