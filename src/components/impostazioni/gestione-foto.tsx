@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ImagePlus, Loader2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -23,11 +23,14 @@ export function GestioneFoto({
   userId,
   stileIniziale,
   iniziali,
+  onCambio,
 }: {
   famigliaId: string;
   userId: string;
   stileIniziale: Stile;
   iniziali: FotoSalvata[];
+  /** Avvisa chi la contiene quando cambiano stile o foto (per il riepilogo) */
+  onCambio?: (stato: { stile: Stile; foto: FotoSalvata[] }) => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [stile, setStile] = useState<Stile>(stileIniziale);
@@ -35,6 +38,9 @@ export function GestioneFoto({
   const [carico, setCarico] = useState(0);
   const [daEliminare, setDaEliminare] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    onCambio?.({ stile, foto });
+  }, [stile, foto, onCambio]);
 
   async function scegli(s: Stile) {
     setStile(s);
