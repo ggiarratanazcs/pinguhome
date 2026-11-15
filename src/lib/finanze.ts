@@ -95,6 +95,36 @@ export function proiezioneFineMese(
   return { totale: attuale + entrate - uscite, entrate, uscite };
 }
 
+export type InArrivo = { chiave: string; nome: string; data: string; importo: number; categoria: string; daAgenda: boolean };
+
+/**
+ * Le uscite in arrivo nei prossimi mesi: le scadenze dell'Agenda con un importo non ancora pagate
+ * e le uscite già previste sul conto (anche quelle che si ripetono).
+ */
+export function usciteInArrivo(
+  movimenti: Movimento[],
+  scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo" | "titolo">[],
+  pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[],
+  oggi: string,
+  mesi = 3,
+): InArrivo[] {
+  const [a, m, g] = oggi.split("-").map(Number);
+  const fineData = new Date(a, m - 1 + mesi, g);
+  const fine = `${fineData.getFullYear()}-${String(fineData.getMonth() + 1).padStart(2, "0")}-${String(fineData.getDate()).padStart(2, "0")}`;
+  const fatte = new Set(pagate.map((p) => `${p.impegno_id}|${p.data}`));
+  const daAgenda = scadenze.flatMap((i) =>
+    Number(i.importo) > 0
+      ? occorrenze(i, oggi, fine)
+          .filter((d) => !fatte.has(`${i.id}|${d}`))
+          .map((d) => ({ chiave: `a-${i.id}-${d}`, nome: i.titolo, data: d, importo: Number(i.importo), categoria: interpretaMovimento(i.titolo).categoria, daAgenda: true }))
+      : [],
+  );
+  const dalConto = movimentiTra(movimenti, oggi, fine)
+    .filter((o) => o.movimento.tipo === "uscita" && o.data > oggi)
+    .map((o) => ({ chiave: `m-${o.movimento.id}-${o.data}`, nome: o.movimento.descrizione || categoria("uscita", o.movimento.categoria).nome, data: o.data, importo: Number(o.movimento.importo), categoria: o.movimento.categoria, daAgenda: false }));
+  return [...daAgenda, ...dalConto].sort((x, y) => x.data.localeCompare(y.data) || y.importo - x.importo);
+}
+
 /* Cifre nascoste: una scelta per dispositivo, ricordata nel browser */
 const CHIAVE_NASCOSTE = "uchi:cifre-nascoste";
 const ascoltatori = new Set<() => void>();

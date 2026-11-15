@@ -12,7 +12,7 @@ export default async function PaginaFinanze({ searchParams }: PageProps<"/finanz
   const [conto, movimenti, scadenze, pagate, obiettivi, accantonamenti, budget] = await Promise.all([
     supabase.from("conti").select("*").eq("famiglia_id", famiglia.id).maybeSingle(),
     supabase.from("movimenti").select("*").eq("famiglia_id", famiglia.id).order("data", { ascending: false }),
-    supabase.from("impegni").select("id, data, ricorrenza, importo").eq("famiglia_id", famiglia.id).gt("importo", 0),
+    supabase.from("impegni").select("id, data, ricorrenza, importo, titolo").eq("famiglia_id", famiglia.id).gt("importo", 0),
     supabase.from("impegni_fatti").select("impegno_id, data").eq("famiglia_id", famiglia.id).gte("data", inizioMese),
     supabase.from("obiettivi").select("*").eq("famiglia_id", famiglia.id).order("creato_il"),
     supabase.from("accantonamenti").select("*").eq("famiglia_id", famiglia.id).order("data"),

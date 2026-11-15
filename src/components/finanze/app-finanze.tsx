@@ -6,6 +6,7 @@ import {
   Briefcase,
   Car,
   ChevronLeft,
+  CalendarClock,
   ChevronRight,
   Circle,
   Eye,
@@ -38,6 +39,7 @@ import {
   leggiNascoste,
   movimentiTra,
   proiezioneFineMese,
+  usciteInArrivo,
   residuo,
   type Occorrenza,
 } from "@/lib/finanze";
@@ -105,7 +107,7 @@ export function AppFinanze({
   iniziali: {
     conto: Conto | null;
     movimenti: Movimento[];
-    scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo">[];
+    scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo" | "titolo">[];
     pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
     obiettivi: Obiettivo[];
     accantonamenti: Accantonamento[];
@@ -403,7 +405,7 @@ function VistaConto({
 }: {
   conto: Conto | null;
   movimenti: Movimento[];
-  scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo">[];
+  scadenze: Pick<Impegno, "id" | "data" | "ricorrenza" | "importo" | "titolo">[];
   pagate: Pick<ImpegnoFatto, "impegno_id" | "data">[];
   oggi: string;
   membri: MembroCasa[];
@@ -419,6 +421,8 @@ function VistaConto({
   const totale = residuo(conto, movimenti, oggi);
   const proiezione = useMemo(() => proiezioneFineMese(totale, movimenti, scadenze, pagate, oggi), [totale, movimenti, scadenze, pagate, oggi]);
   const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
+  const inArrivo = useMemo(() => usciteInArrivo(movimenti, scadenze, pagate, oggi), [movimenti, scadenze, pagate, oggi]);
+  const [tutteInArrivo, setTutteInArrivo] = useState(false);
 
   const delMese = useMemo(() => movimentiTra(movimenti, `${mese}-01`, fineMese(mese)).filter((o) => o.data <= oggi), [movimenti, mese, oggi]);
   const entrate = delMese.filter((o) => o.movimento.tipo === "entrata").reduce((t, o) => t + Number(o.movimento.importo), 0);
@@ -524,6 +528,42 @@ function VistaConto({
               </button>
             )}
           </div>
+
+          {/* Le uscite dei prossimi 3 mesi: scadenze dell'Agenda non pagate e uscite già previste */}
+          {inArrivo.length ? (
+            <section className="mt-8">
+              <p className="flex items-center gap-1.5 text-[0.75rem] font-semibold uppercase tracking-wider text-tenue">
+                <CalendarClock className="size-3.5" /> In arrivo · prossimi 3 mesi
+              </p>
+              <ul className="mt-1">
+                {(tutteInArrivo ? inArrivo : inArrivo.slice(0, 6)).map((u) => {
+                  const cat = categoria("uscita", u.categoria);
+                  const quando = new Date(`${u.data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+                  return (
+                    <li key={u.chiave} className="flex items-center gap-3 border-b border-linea py-2.5 last:border-0">
+                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: cat.colore }} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[0.9375rem]">{u.nome}</span>
+                        <span className="block text-[0.75rem] text-tenue">
+                          {quando}
+                          {u.daAgenda ? " · in agenda" : ""}
+                        </span>
+                      </span>
+                      <span className="numeri shrink-0 font-semibold">{nascoste ? NASCOSTO : euro(u.importo, false)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {inArrivo.length > 6 ? (
+                <button onClick={() => setTutteInArrivo((t) => !t)} className="anello-focus mt-1 text-[0.8125rem] text-tenue underline underline-offset-4 hover:text-inchiostro">
+                  {tutteInArrivo ? "Mostra meno" : `Mostra tutte (${inArrivo.length})`}
+                </button>
+              ) : null}
+              <p className="mt-2 text-[0.8125rem] text-tenue">
+                Totale nei 3 mesi: <strong className="numeri text-inchiostro">{nascoste ? NASCOSTO : euro(inArrivo.reduce((t, u) => t + u.importo, 0), false)}</strong>
+              </p>
+            </section>
+          ) : null}
         </div>
 
         <div className="min-w-0">
