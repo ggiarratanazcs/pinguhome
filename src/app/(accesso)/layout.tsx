@@ -13,6 +13,8 @@ export default function LayoutAccesso({ children }: LayoutProps<"/">) {
         <p className="titolo max-w-md text-[2rem]">la casa, in due.</p>
       </aside>
 
+      {/* Sotto l'ora e la batteria del telefono: il blu della testata, così si leggono */}
+      <div aria-hidden className="fixed inset-x-0 top-0 z-50 h-[env(safe-area-inset-top)] bg-dorso lg:hidden" />
       <main className="foglio pt-sicuro flex flex-col justify-center px-6 py-12 md:px-16">
         <div className="mx-auto w-full max-w-sm">
           <Marchio className="mb-14 lg:hidden" />

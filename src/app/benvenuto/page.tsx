@@ -14,6 +14,8 @@ export default async function Benvenuto() {
 
   return (
     <main className="foglio pt-sicuro">
+      {/* Sotto l'ora e la batteria del telefono: il blu della testata, così si leggono */}
+      <div aria-hidden className="fixed inset-x-0 top-0 z-50 h-[env(safe-area-inset-top)] bg-dorso lg:hidden" />
       <div className="mx-auto flex max-w-3xl flex-col px-6 py-10 md:py-16">
         <Marchio />
         <div className="mt-14 md:mt-20">
