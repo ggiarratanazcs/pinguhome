@@ -6,6 +6,7 @@ import { Camera, ChevronLeft, ImageIcon, Loader2, Pencil, Plus, Trash2, X } from
 import { createClient } from "@/lib/supabase/client";
 import type { Carta, Documento } from "@/lib/database.types";
 import { VistaDocumenti } from "./vista-documenti";
+import { BloccoDocumenti } from "./blocco-documenti";
 import type { MembroCasa } from "@/lib/sessione";
 import { insegnaNegozio } from "@/lib/spesa";
 import { preparaFile } from "@/lib/scontrini";
@@ -140,7 +141,9 @@ export function AppWallet({
       </nav>
 
       {vista === "documenti" ? (
-        <VistaDocumenti famigliaId={famigliaId} iniziali={documenti} avvisa={avvisa} />
+        <BloccoDocumenti>
+          <VistaDocumenti famigliaId={famigliaId} iniziali={documenti} avvisa={avvisa} />
+        </BloccoDocumenti>
       ) : (
         <div className="mt-6">
       <div className="flex items-center justify-between">
