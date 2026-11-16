@@ -136,16 +136,7 @@ function SchedaCasa({ casa, onEliminata }: { casa: CasaAdmin; onEliminata: () =>
   const elimina = () =>
     esegui("elimina", async () => {
       setConferma(null);
-      // Prima i file della casa (foto, scontrini, carte, prodotti), poi i dati
-      for (const bucket of ["scontrini", "foto", "carte", "prodotti", "documenti"]) {
-        for (;;) {
-          const { data } = await supabase.storage.from(bucket).list(casa.id, { limit: 100 });
-          const file = (data ?? []).filter((f) => f.id).map((f) => `${casa.id}/${f.name}`);
-          if (!file.length) break;
-          const { error } = await supabase.storage.from(bucket).remove(file);
-          if (error) throw new Error("Non sono riuscito a eliminare i file della casa");
-        }
-      }
+      // I file restano nello storage, ma senza casa nessuno può più leggerli (l'admin non ha accesso ai file)
       const { error } = await supabase.rpc("admin_elimina_casa", { p_casa: casa.id });
       if (error) throw new Error("Non sono riuscito a eliminare la casa");
       onEliminata();
@@ -241,7 +232,7 @@ function SchedaCasa({ casa, onEliminata }: { casa: CasaAdmin; onEliminata: () =>
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <div className="mt-3 rounded-[16px] bg-pericolo-tenue p-4 text-[0.875rem]">
               <p>
-                Elimino <strong>{casa.nome}</strong> con tutti i suoi dati, le foto e gli scontrini? Non si può annullare.
+                Elimino <strong>{casa.nome}</strong> con tutti i suoi dati? Non si può annullare.
               </p>
               <div className="mt-3 flex gap-2">
                 <Pulsante onClick={elimina} className="h-9 bg-pericolo px-4 text-sm text-white hover:bg-pericolo hover:brightness-95">
