@@ -99,7 +99,8 @@ export function GiroGuidato({ profiloId, daMostrare, passi = PASSI }: { profiloI
     const inizio = performance.now();
     const cerca = () => {
       if (fermo) return;
-      el = document.querySelector(`[data-giro="${passo.bersaglio}"]`);
+      // Il primo visibile: su PC alcuni comandi del telefono sono nascosti
+      el = [...document.querySelectorAll(`[data-giro="${passo.bersaglio}"]`)].find((x) => x.getBoundingClientRect().width > 0) ?? null;
       if (!el) {
         if (performance.now() - inizio < 5000) requestAnimationFrame(cerca);
         return;

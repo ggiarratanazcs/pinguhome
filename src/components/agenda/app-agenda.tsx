@@ -23,6 +23,7 @@ import {
 import { Avatar, Pulsante } from "@/components/ui";
 import { Mascotte } from "@/components/mascotte";
 import { cn } from "@/lib/utils";
+import { CONTENITORE, TestataSezione } from "@/components/testata-sezione";
 
 type Occorrenza = { impegno: Impegno; data: string; fatto: boolean };
 
@@ -200,10 +201,14 @@ export function AppAgenda({
   const vuota = impegni.length === 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
-      <h1 className="titolo titolo-pagina hidden lg:block">agenda</h1>
+    <div className={CONTENITORE}>
+      <TestataSezione titolo="agenda">
+        <Pulsante onClick={() => setMaschera(oggi)} data-giro="nuovo-impegno" className="h-11 px-5">
+          <Plus className="size-5" strokeWidth={2.4} /> Nuovo impegno
+        </Pulsante>
+      </TestataSezione>
 
-      <div className="mt-4 grid gap-10 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mt-4 grid gap-10 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-8">
         {/* Calendario */}
         <section className="min-w-0">
           <div className="flex items-center gap-1">
@@ -230,7 +235,7 @@ export function AppAgenda({
               onClick={() => setMaschera(oggi)}
               data-giro="nuovo-impegno"
               aria-label="Nuovo impegno"
-              className="anello-focus ml-auto grid size-12 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
+              className="anello-focus ml-auto grid size-12 shrink-0 place-items-center rounded-full bg-becco lg:hidden text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
             >
               <Plus className="size-6" strokeWidth={2.4} />
             </button>
@@ -256,15 +261,27 @@ export function AppAgenda({
                   aria-pressed={selezionato}
                   aria-label={`${i + 1} ${nomeMese}${delGiorno.length ? `: ${delGiorno.length} impegni` : ""}`}
                   className={cn(
-                    "anello-focus flex aspect-square flex-col items-start justify-between rounded-[14px] p-1.5 text-left transition md:aspect-[1.15] md:rounded-[16px] md:p-2.5",
+                    "anello-focus flex aspect-square flex-col items-start justify-between rounded-[14px] p-1.5 text-left transition md:aspect-[1.15] md:rounded-[16px] md:p-2.5 lg:aspect-auto lg:h-[7.5rem] lg:justify-start lg:gap-1.5",
                     selezionato ? "bg-dorso text-su-dorso" : delGiorno.length ? "bg-superficie-2 hover:bg-superficie-3" : "hover:bg-superficie-2",
                     passato && !selezionato && "text-tenue",
                     eOggi && !selezionato && "ring-2 ring-inset ring-becco",
                   )}
                 >
                   <span className="numeri text-[0.8125rem] md:text-[0.875rem]">{i + 1}</span>
+                  {/* PC: i titoli degli impegni dentro il giorno */}
                   {delGiorno.length ? (
-                    <span className="flex flex-wrap gap-[3px]">
+                    <span className="hidden w-full min-w-0 flex-col gap-1 lg:flex">
+                      {delGiorno.slice(0, 3).map((o) => (
+                        <span key={o.impegno.id} className={cn("flex min-w-0 items-center gap-1.5 text-[0.75rem] leading-tight", o.fatto && "line-through opacity-50")}>
+                          <span className="size-1.5 shrink-0 rounded-full" style={{ background: coloreCategoria(o.impegno.categoria) }} />
+                          <span className="truncate">{o.impegno.titolo}</span>
+                        </span>
+                      ))}
+                      {delGiorno.length > 3 ? <span className="pl-3 text-[0.6875rem] opacity-70">+{delGiorno.length - 3}</span> : null}
+                    </span>
+                  ) : null}
+                  {delGiorno.length ? (
+                    <span className="flex flex-wrap gap-[3px] lg:hidden">
                       {delGiorno.slice(0, 4).map((o) => (
                         <span
                           key={o.impegno.id}

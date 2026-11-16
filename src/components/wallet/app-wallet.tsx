@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Carta, Documento } from "@/lib/database.types";
 import { VistaDocumenti } from "./vista-documenti";
 import { BloccoDocumenti } from "./blocco-documenti";
+import { CONTENITORE, TestataSezione } from "@/components/testata-sezione";
 import type { MembroCasa } from "@/lib/sessione";
 import { insegnaNegozio } from "@/lib/spesa";
 import { preparaFile } from "@/lib/scontrini";
@@ -119,10 +120,24 @@ export function AppWallet({
   const cartaAperta = carte.find((c) => c.id === aperta) ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pb-16 pt-1 md:px-12 lg:pt-10">
-      <h1 className="titolo titolo-pagina mb-6 hidden lg:block">wallet</h1>
+    <div className={cn(CONTENITORE, "pb-16")}>
+      <TestataSezione
+        titolo="wallet"
+        schede={[
+          { id: "carte", nome: "Carte" },
+          { id: "documenti", nome: "Documenti" },
+        ]}
+        attiva={vista}
+        onScheda={setVista}
+      >
+        {vista === "carte" ? (
+          <Pulsante onClick={() => setMaschera({ carta: null })} className="h-11 px-5">
+            <Plus className="size-5" strokeWidth={2.4} /> Nuova carta
+          </Pulsante>
+        ) : null}
+      </TestataSezione>
 
-      <nav className="flex items-center gap-5 text-[0.9375rem] md:gap-6">
+      <nav className="flex items-center gap-5 text-[0.9375rem] md:gap-6 lg:hidden">
         {(
           [
             ["carte", "Carte"],
@@ -145,19 +160,19 @@ export function AppWallet({
           <VistaDocumenti famigliaId={famigliaId} iniziali={documenti} avvisa={avvisa} />
         </BloccoDocumenti>
       ) : (
-        <div className="mt-6">
+        <div className="mt-6 lg:mt-0">
       <div className="flex items-center justify-between">
             <p className="text-[0.875rem] text-tenue">{carte.length === 1 ? "1 carta" : `${carte.length} carte`}</p>
             <button
               onClick={() => setMaschera({ carta: null })}
               aria-label="Nuova carta"
-              className="anello-focus grid size-11 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
+              className="anello-focus grid size-11 lg:hidden shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
             >
               <Plus className="size-6" strokeWidth={2.4} />
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-5 lg:grid-cols-4 lg:gap-6 2xl:grid-cols-5">
             <AnimatePresence initial={false}>
               {carte.map((c) => (
                 <motion.button

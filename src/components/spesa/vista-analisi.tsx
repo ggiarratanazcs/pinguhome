@@ -193,7 +193,7 @@ export function VistaAnalisi({ dati, liste }: { dati: DatiSpesa; liste: Lista[] 
   }, [spese]);
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 lg:mt-0">
       <div className="flex gap-2">
         {PERIODI.map((p) => (
           <button

@@ -152,16 +152,16 @@ export function VistaDocumenti({ famigliaId, iniziali, avvisa }: { famigliaId: s
   }
 
   return (
-    <div className="mt-6 max-w-3xl">
+    <div className="mt-6 max-w-3xl lg:mt-0 lg:max-w-none">
       <div className="flex items-center gap-2">
-        <label className="flex h-11 flex-1 items-center gap-2 rounded-full bg-superficie-2 px-4 text-tenue focus-within:ring-2 focus-within:ring-becco">
+        <label className="flex h-11 flex-1 lg:max-w-md items-center gap-2 rounded-full bg-superficie-2 px-4 text-tenue focus-within:ring-2 focus-within:ring-becco">
           <Search className="size-4 shrink-0" />
           <input value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca" className="h-full min-w-0 flex-1 bg-transparent text-[1rem] text-inchiostro outline-none placeholder:text-tenue" />
         </label>
         <button
           onClick={() => setMaschera({ documento: null })}
           aria-label="Nuovo documento"
-          className="anello-focus grid size-11 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
+          className="anello-focus ml-auto grid size-11 shrink-0 place-items-center rounded-full bg-becco text-su-becco shadow-[0_10px_24px_-12px_var(--becco)] transition hover:bg-becco-hover active:scale-95"
         >
           <Plus className="size-6" strokeWidth={2.4} />
         </button>
@@ -192,7 +192,7 @@ export function VistaDocumenti({ famigliaId, iniziali, avvisa }: { famigliaId: s
         <p className="mt-6 text-tenue">Nessun documento trovato.</p>
       ) : null}
 
-      <ul className="mt-3">
+      <ul className="mt-3 lg:grid lg:grid-cols-2 lg:gap-x-10 2xl:grid-cols-3">
         <AnimatePresence initial={false}>
           {visibili.map((d) => {
             const cat = CATEGORIE.find((c) => c.id === d.categoria) ?? CATEGORIE[4];

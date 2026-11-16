@@ -10,6 +10,7 @@ import type { MembroCasa } from "@/lib/sessione";
 import { indovinaReparto, insegnaNegozio, interpretaVoce, nomeArticolo, posizioneDaReparto, postiAttivi, postoAttivo, stessoArticolo } from "@/lib/spesa";
 import { caricaScontrino } from "@/lib/scontrini";
 import { cn } from "@/lib/utils";
+import { CONTENITORE, TestataSezione } from "@/components/testata-sezione";
 import { VistaLista } from "./vista-lista";
 import { VistaDispensa } from "./vista-dispensa";
 import { VistaAbituali } from "./vista-abituali";
@@ -598,6 +599,23 @@ export function AppSpesa({
   const prese = vociLista.filter((v) => v.presa).length;
   const altri = membri.filter((m) => m.id !== userId && inLinea.includes(m.id));
 
+  const propsSelettore = {
+    liste,
+    voci: dati.voci,
+    corrente: lista?.id,
+    onScegli: setListaId,
+    onCrea: async (nome: string) => {
+      const nuova = await azioni.creaLista(nome);
+      if (nuova) setListaId(nuova.id);
+    },
+    onRinomina: azioni.rinominaLista,
+    onElimina: async (l: Lista) => {
+      const prossima = liste.find((x) => x.id !== l.id);
+      if (await azioni.eliminaLista(l)) setListaId(prossima?.id ?? "");
+    },
+    avanzamento: null as ReactNode,
+  };
+
   const schede: { id: Vista; nome: string }[] = [
     { id: "lista", nome: "Da comprare" },
     { id: "dispensa", nome: "In casa" },
@@ -607,9 +625,21 @@ export function AppSpesa({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
-      {/* Sezioni del modulo, come parole */}
-      <nav data-giro="schede-spesa" className="senza-barra -mx-5 flex items-center gap-5 overflow-x-auto whitespace-nowrap px-5 text-[0.9375rem] md:mx-0 md:gap-6 md:px-0">
+    <div className={CONTENITORE}>
+      <TestataSezione titolo="spesa" schede={schede} attiva={vista} onScheda={setVista} giro="schede-spesa">
+        {altri.length > 0 ? (
+          <span className="flex items-center gap-2 text-[0.8125rem] text-tenue">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-eco opacity-60" />
+              <span className="relative inline-flex size-2 rounded-full bg-eco" />
+            </span>
+            {altri.map((m) => m.nome.split(" ")[0]).join(", ")} sta guardando
+          </span>
+        ) : null}
+      </TestataSezione>
+
+      {/* Sezioni del modulo, come parole (telefono) */}
+      <nav data-giro="schede-spesa" className="senza-barra -mx-5 flex items-center gap-5 overflow-x-auto whitespace-nowrap px-5 text-[0.9375rem] md:mx-0 md:gap-6 md:px-0 lg:hidden">
         {schede.map((s) => {
           const attiva = vista === s.id;
           return (
@@ -623,52 +653,51 @@ export function AppSpesa({
             </button>
           );
         })}
-        {altri.length > 0 ? (
-          <span className="ml-auto flex items-center gap-2 text-[0.8125rem] text-tenue">
+        {altri.length > 0 ? <span className="ml-auto">{altri.length > 0 ? (
+          <span className="flex items-center gap-2 text-[0.8125rem] text-tenue">
             <span className="relative flex size-2">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-eco opacity-60" />
               <span className="relative inline-flex size-2 rounded-full bg-eco" />
             </span>
             {altri.map((m) => m.nome.split(" ")[0]).join(", ")} sta guardando
           </span>
-        ) : null}
+        ) : null}</span> : null}
       </nav>
-
-      {/* Titolo: nome della lista come parola grande, le altre liste accanto più piccole */}
-      {vista === "lista" ? (
-        <header className="mt-5 md:mt-8">
-          <div className="flex items-end justify-between gap-4">
-          <div className="min-w-0 flex-1">
-          <SelettoreListe
-            liste={liste}
-            voci={dati.voci}
-            corrente={lista?.id}
-            onScegli={setListaId}
-            onCrea={async (nome) => {
-              const nuova = await azioni.creaLista(nome);
-              if (nuova) setListaId(nuova.id);
-            }}
-            onRinomina={azioni.rinominaLista}
-            onElimina={async (l) => {
-              const prossima = liste.find((x) => x.id !== l.id);
-              if (await azioni.eliminaLista(l)) setListaId(prossima?.id ?? "");
-            }}
-            avanzamento={prese > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null}
-          />
-          </div>
-          </div>
-        </header>
-      ) : null}
 
       {/* Cambio di sezione immediato: nessuna attesa per l'uscita della vista precedente */}
       <motion.div key={vista} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.12 }} className="pb-16">
-          {vista === "lista" && lista ? (
-            <VistaLista lista={lista} voci={vociLista} dati={dati} membri={membri} userId={userId} azioni={azioni} />
-          ) : null}
-          {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
-          {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
-          {vista === "spese" ? <VistaSpese dati={dati} liste={liste} membri={membri} userId={userId} azioni={azioni} /> : null}
-          {vista === "analisi" ? <VistaAnalisi dati={dati} liste={liste} /> : null}
+        {vista === "lista" ? (
+          <div className="lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-8">
+            {/* Su PC: le liste in colonna a sinistra */}
+            <aside className="hidden lg:block">
+              <div className="sticky top-8 rounded-[24px] bg-superficie-2 p-3">
+                <SelettoreListe colonna {...propsSelettore} />
+              </div>
+            </aside>
+            <div className="min-w-0">
+              {/* Telefono: le liste come pillole sopra */}
+              <header className="mt-5 md:mt-8 lg:hidden">
+                <SelettoreListe {...propsSelettore} avanzamento={prese > 0 ? <Avanzamento fatte={prese} totale={vociLista.length} /> : null} />
+              </header>
+              {/* PC: il nome della lista e quanto è già nel carrello */}
+              {lista ? (
+                <div className="mb-5 hidden items-center gap-6 lg:flex">
+                  <h2 className="titolo shrink-0 text-[1.5rem]">{lista.nome.toLowerCase()}</h2>
+                  {prese > 0 ? (
+                    <div className="max-w-md flex-1">
+                      <Avanzamento fatte={prese} totale={vociLista.length} />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              {lista ? <VistaLista lista={lista} voci={vociLista} dati={dati} membri={membri} userId={userId} azioni={azioni} /> : null}
+            </div>
+          </div>
+        ) : null}
+        {vista === "dispensa" ? <VistaDispensa dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
+        {vista === "abituali" ? <VistaAbituali dati={dati} lista={lista} azioni={azioni} avvisa={avvisa} /> : null}
+        {vista === "spese" ? <VistaSpese dati={dati} liste={liste} membri={membri} userId={userId} azioni={azioni} /> : null}
+        {vista === "analisi" ? <VistaAnalisi dati={dati} liste={liste} /> : null}
       </motion.div>
 
       {/* Avvisi brevi */}
@@ -723,11 +752,14 @@ function SelettoreListe({
   onCrea,
   onRinomina,
   onElimina,
+  colonna = false,
 }: {
   liste: Lista[];
   voci: VoceLista[];
   corrente: string | undefined;
   avanzamento: ReactNode;
+  /** Su PC: una lista sotto l'altra, nella colonna di sinistra */
+  colonna?: boolean;
   onScegli: (id: string) => void;
   onCrea: (nome: string) => void;
   onRinomina: (l: Lista, nome: string) => void;
@@ -740,9 +772,9 @@ function SelettoreListe({
 
   return (
     <div>
-      <h1 className="sr-only">{attiva?.nome ?? "lista"}</h1>
-      <div className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-        <div data-giro="liste" className="flex w-max items-center gap-2 py-1">
+      {colonna ? null : <h1 className="sr-only">{attiva?.nome ?? "lista"}</h1>}
+      <div className={cn(!colonna && "-mx-5 overflow-x-auto px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden")}>
+        <div data-giro="liste" className={cn("flex items-center gap-2 py-1", colonna ? "flex-col items-stretch gap-0.5" : "w-max")}>
           {liste.map((l) => {
             const selezionata = l.id === corrente;
             const daPrendere = voci.filter((v) => v.lista_id === l.id && !v.presa).length;
@@ -760,14 +792,21 @@ function SelettoreListe({
                 aria-expanded={selezionata ? gestione !== "chiusa" : undefined}
                 aria-label={selezionata ? `${l.nome}: rinomina o elimina` : undefined}
                 className={cn(
-                  "anello-focus flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[0.9375rem] transition",
-                  selezionata ? "bg-dorso font-semibold text-su-dorso" : "text-inchiostro ring-[1.5px] ring-inset ring-linea-forte hover:ring-inchiostro",
+                  "anello-focus flex shrink-0 items-center gap-2 text-[0.9375rem] transition",
+                  colonna ? "h-11 w-full rounded-[14px] px-3 text-left" : "h-10 rounded-full px-4",
+                  colonna
+                    ? selezionata
+                      ? "bg-superficie font-semibold text-inchiostro shadow-[0_1px_3px_rgba(var(--ombra),0.12)]"
+                      : "text-inchiostro-2 hover:bg-superficie/70"
+                    : selezionata
+                      ? "bg-dorso font-semibold text-su-dorso"
+                      : "text-inchiostro ring-[1.5px] ring-inset ring-linea-forte hover:ring-inchiostro",
                 )}
               >
                 <span className="size-2 shrink-0 rounded-full" style={{ background: l.colore }} />
-                {l.nome}
+                <span className={cn(colonna && "min-w-0 flex-1 truncate")}>{l.nome}</span>
                 {daPrendere > 0 ? (
-                  <span className={cn("numeri rounded-full px-1.5 text-[0.75rem]", selezionata ? "bg-white/15" : "text-tenue")}>{daPrendere}</span>
+                  <span className={cn("numeri rounded-full px-1.5 text-[0.75rem]", selezionata && !colonna ? "bg-white/15" : "text-tenue")}>{daPrendere}</span>
                 ) : null}
                 {selezionata ? (
                   <motion.span animate={{ rotate: gestione !== "chiusa" ? 180 : 0 }} className="-mr-1 inline-flex opacity-70">
@@ -781,7 +820,10 @@ function SelettoreListe({
             <button
               onClick={() => setNuova("")}
               aria-label="Nuova lista"
-              className="anello-focus grid size-10 shrink-0 place-items-center rounded-full text-tenue ring-[1.5px] ring-inset ring-linea-forte transition hover:text-inchiostro hover:ring-inchiostro"
+              className={cn(
+                "anello-focus grid shrink-0 place-items-center text-tenue transition hover:text-inchiostro",
+                colonna ? "mt-1 h-11 w-full rounded-[14px] border-[1.5px] border-dashed border-linea-forte hover:border-inchiostro" : "size-10 rounded-full ring-[1.5px] ring-inset ring-linea-forte hover:ring-inchiostro",
+              )}
             >
               <Plus className="size-[18px]" />
             </button>
@@ -799,7 +841,7 @@ function SelettoreListe({
                 onChange={(e) => setNuova(e.target.value)}
                 onBlur={() => setNuova(null)}
                 placeholder="Es. Farmacia"
-                className="h-10 w-40 rounded-full px-4 text-[0.9375rem] outline-none ring-[1.5px] ring-inset ring-becco"
+                className={cn("h-10 rounded-full px-4 text-[0.9375rem] outline-none ring-[1.5px] ring-inset ring-becco", colonna ? "mt-1 w-full bg-superficie" : "w-40")}
               />
             </form>
           )}

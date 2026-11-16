@@ -196,13 +196,13 @@ body {
   }
 }
 
-/* Barra laterale richiudibile: aperta 248px, chiusa 92px (data-barra su <html>) */
+/* Barra laterale richiudibile: aperta 236px, chiusa 76px (data-barra su <html>) */
 :root {
-  --larghezza-barra: 248px;
+  --larghezza-barra: 236px;
   --curva: cubic-bezier(0.22, 0.9, 0.24, 1);
 }
 [data-barra="chiusa"] {
-  --larghezza-barra: 92px;
+  --larghezza-barra: 76px;
 }
 .barra-laterale {
   width: var(--larghezza-barra);

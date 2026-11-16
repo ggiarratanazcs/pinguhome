@@ -31,7 +31,73 @@ export type DatiHome = {
   cornice: "scorrimento" | "polaroid";
   /** Le carte del Wallet (per il ventaglio dell'accesso rapido) */
   carte: { negozio: string; colore: string }[];
+  /** Su PC, accanto alla foto: gli impegni di oggi e domani */
+  prossimi: { id: string; titolo: string; data: string; ora: string | null; categoria: string }[];
+  oggi: string;
+  /** Su PC: gli obiettivi con quanto è già messo da parte */
+  obiettivi: { id: string; nome: string; colore: string; meta: number; messi: number }[];
 };
+
+/** PC: gli impegni di oggi e domani, accanto alla foto */
+function OggiDomani({ prossimi, oggi }: { prossimi: DatiHome["prossimi"]; oggi: string }) {
+  return (
+    <section className="hidden min-h-0 flex-col rounded-[28px] bg-superficie-2 p-6 lg:flex">
+      <h2 className="flex items-center justify-between">
+        <span className="titolo text-[1.25rem]">oggi e domani</span>
+        <Link href="/agenda" className="anello-focus flex items-center gap-1 text-[0.8125rem] font-semibold text-tenue hover:text-inchiostro">
+          Agenda <ArrowUpRight className="size-4" />
+        </Link>
+      </h2>
+      {prossimi.length ? (
+        <ul className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto">
+          {prossimi.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 border-t border-linea py-3 first:border-t-0">
+              <span className={cn("w-16 shrink-0 text-[0.75rem] font-semibold", p.data === oggi ? "text-becco-scuro" : "text-tenue")}>
+                {p.data === oggi ? "oggi" : "domani"}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[0.9375rem]">{p.titolo}</span>
+              {p.ora ? <span className="numeri shrink-0 text-[0.8125rem] text-tenue">{p.ora}</span> : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-[0.9375rem] text-tenue">Niente in agenda.</p>
+      )}
+    </section>
+  );
+}
+
+/** PC: gli obiettivi con la barra di quanto è già messo da parte */
+function ObiettiviHome({ obiettivi, nascoste }: { obiettivi: DatiHome["obiettivi"]; nascoste: boolean }) {
+  if (!obiettivi.length) return null;
+  return (
+    <Link href="/finanze?vista=obiettivi" className="anello-focus hidden rounded-[24px] bg-superficie-2 p-5 transition hover:bg-superficie-3 lg:block">
+      <span className="flex items-center justify-between">
+        <span className="titolo text-[1.0625rem]">obiettivi</span>
+        <ChevronRight className="size-5 text-tenue" />
+      </span>
+      <span className="mt-3 flex flex-col gap-3">
+        {obiettivi.slice(0, 3).map((o) => (
+          <span key={o.id} className="block">
+            <span className="flex items-baseline justify-between gap-2 text-[0.875rem]">
+              <span className="truncate">{o.nome}</span>
+              <span className="numeri shrink-0 text-[0.8125rem] text-tenue">{nascoste ? "•••" : `${Math.round(o.meta ? (o.messi / o.meta) * 100 : 0)}%`}</span>
+            </span>
+            <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-superficie-3">
+              <motion.span
+                className="block h-full rounded-full"
+                style={{ background: o.colore }}
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, o.meta ? (o.messi / o.meta) * 100 : 0)}%` }}
+                transition={{ duration: 0.9, ease: [0.22, 0.9, 0.24, 1] }}
+              />
+            </span>
+          </span>
+        ))}
+      </span>
+    </Link>
+  );
+}
 
 /** Accesso rapido al Wallet: le prime carte a ventaglio */
 function AccessoWallet({ carte }: { carte: DatiHome["carte"] }) {
@@ -39,7 +105,7 @@ function AccessoWallet({ carte }: { carte: DatiHome["carte"] }) {
   return (
     <Link
       href="/wallet"
-      className="anello-focus mt-3 flex max-w-3xl items-center gap-4 rounded-[20px] bg-superficie-2 py-3 pl-4 pr-3 transition hover:bg-superficie-3 active:scale-[0.99] md:mt-6"
+      className="anello-focus mt-3 flex max-w-3xl items-center gap-4 rounded-[20px] bg-superficie-2 py-3 pl-4 pr-3 transition hover:bg-superficie-3 active:scale-[0.99] md:mt-6 lg:mt-0 lg:rounded-[24px]"
     >
       <span className="relative h-14 w-24 shrink-0">
         {prime.length ? (
@@ -199,9 +265,10 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
   const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
 
   return (
-    <main className="mx-auto w-full max-w-[1120px] px-4 md:px-12 lg:pt-10">
+    <main className="mx-auto w-full max-w-[1120px] px-4 md:px-12 lg:max-w-[1480px] lg:px-10 lg:pt-8">
       {/* Testata: data, saluto e i tre numeri che contano */}
       <section>
+        <div className="lg:grid lg:h-[380px] lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-6">
         <CorniceFoto
           famigliaId={dati.famigliaId}
           stile={dati.cornice}
@@ -209,10 +276,13 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
           data={dati.data}
           saluto={`${dati.saluto}, ${dati.nome.toLowerCase()}`}
         />
+        <OggiDomani prossimi={dati.prossimi} oggi={dati.oggi} />
+        </div>
 
         {/* Su telefono il foglio bianco sale sopra la foto */}
         <div className="relative z-10 -mx-4 -mt-5 rounded-t-[22px] bg-superficie px-4 pt-5 md:-mx-12 md:px-12 lg:mx-0 lg:mt-6 lg:rounded-none lg:bg-transparent lg:p-0">
-        <div data-giro="indicatori" className="grid max-w-3xl grid-cols-3 gap-3 md:gap-6">
+        <div className="lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] lg:gap-6">
+        <div data-giro="indicatori" className="grid max-w-3xl grid-cols-3 gap-3 md:gap-6 lg:max-w-none">
           <Indicatore href="/spesa" scena="carrello" etichetta="da comprare" ritardo={0}>
             <Contatore valore={daComprare} />
           </Indicatore>
@@ -230,14 +300,19 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
             {dati.residuo === null ? <span className="text-tenue">—</span> : nascoste ? <span className="tracking-wider">•••••</span> : <Contatore valore={dati.residuo} formato={(n) => euro(n, false)} />}
           </Indicatore>
         </div>
-        <AccessoWallet carte={dati.carte} />
+        <div className="lg:flex lg:flex-col lg:gap-4">
+          <ObiettiviHome obiettivi={dati.obiettivi} nascoste={nascoste} />
+          <AccessoWallet carte={dati.carte} />
+        </div>
+        </div>
         </div>
       </section>
 
 
-      <div className="mt-10 hidden gap-10 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+      <div className="mt-10 hidden gap-10 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12 lg:mt-8 lg:grid-cols-1">
         {/* Liste con avanzamento: solo su schermi grandi, su telefono ci sono le carte */}
-        <section className="hidden md:block">
+        <section className="hidden md:block lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] lg:gap-6">
+          <div>
           <h2 className="flex items-baseline justify-between border-b-2 border-inchiostro pb-2">
             <span className="titolo text-[1.125rem]">spesa</span>
             <Link href="/spesa" className="anello-focus flex items-center gap-1 text-[0.875rem] font-semibold underline decoration-becco decoration-2 underline-offset-4">
@@ -271,9 +346,10 @@ export function VistaHome({ dati }: { dati: DatiHome }) {
               );
             })}
           </ul>
+          </div>
 
           {/* In casa: una lastra di ghiaccio per ogni posto */}
-          <div className="mt-8 grid grid-cols-3 gap-2.5 lg:grid-cols-5">
+          <div className="mt-8 grid grid-cols-3 content-start gap-2.5 lg:mt-0 lg:grid-cols-2">
             {postiAttivi(dati.luoghi).map((p) => (
               <Link key={p.id} href="/spesa" className="anello-focus rounded-[20px] bg-lastra/55 px-4 py-3.5 transition hover:bg-lastra">
                 <p className="titolo-normale numeri text-[1.5rem] leading-none">{dati.inCasa[p.id] ?? 0}</p>

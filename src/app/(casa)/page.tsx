@@ -48,7 +48,7 @@ export default async function Home() {
     };
   });
 
-  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }, { data: righeFoto }, { data: carte }] = await Promise.all([
+  const [{ data: voci }, { data: liste }, { data: dispensa }, { data: spese }, { data: reparti }, { data: impegni }, { data: conto }, { data: movimenti }, { data: righeFoto }, { data: carte }, { data: obiettivi }, { data: accantonamenti }] = await Promise.all([
     supabase.from("voci_lista").select("lista_id, presa, urgente").eq("famiglia_id", f),
     supabase.from("liste").select("id, nome, colore").eq("famiglia_id", f).eq("archiviata", false).order("ordine"),
     supabase.from("dispensa").select("posizione").eq("famiglia_id", f),
@@ -61,11 +61,13 @@ export default async function Home() {
       .order("data", { ascending: false })
       .order("creata_il", { ascending: false }),
     supabase.from("reparti").select("*").eq("famiglia_id", f),
-    supabase.from("impegni").select("data, ricorrenza").eq("famiglia_id", f),
+    supabase.from("impegni").select("id, titolo, data, ora, ricorrenza, categoria").eq("famiglia_id", f),
     supabase.from("conti").select("*").eq("famiglia_id", f).maybeSingle(),
     supabase.from("movimenti").select("*").eq("famiglia_id", f),
     supabase.from("foto").select("id, path").eq("famiglia_id", f),
     supabase.from("carte").select("negozio, colore").eq("famiglia_id", f).order("creata_il"),
+    supabase.from("obiettivi").select("id, nome, colore, meta").eq("famiglia_id", f).order("creato_il"),
+    supabase.from("accantonamenti").select("obiettivo_id, importo").eq("famiglia_id", f),
   ]);
   // Foto della cornice: ordine casuale a ogni apertura, con link temporanei
   const elencoFoto = mescola(righeFoto ?? []);
@@ -74,6 +76,21 @@ export default async function Home() {
 
   const impegni30 = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 29)).length, 0);
   const impegniSettimana = (impegni ?? []).reduce((t, i) => t + occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, piuGiorni(oggi, 6)).length, 0);
+
+  // Su PC: gli impegni di oggi e domani accanto alla foto
+  const domani = piuGiorni(oggi, 1);
+  const prossimi = (impegni ?? [])
+    .flatMap((i) =>
+      occorrenze(i as { data: string; ricorrenza: "nessuna" | "settimanale" | "mensile" | "annuale" }, oggi, domani).map((d) => ({
+        id: `${i.id}|${d}`,
+        titolo: i.titolo as string,
+        data: d,
+        ora: (i.ora as string | null)?.slice(0, 5) ?? null,
+        categoria: i.categoria as string,
+      })),
+    )
+    .sort((a, b) => a.data.localeCompare(b.data) || (a.ora ?? "99").localeCompare(b.ora ?? "99"))
+    .slice(0, 6);
 
   const inCasa: Record<string, number> = {};
   for (const d of dispensa ?? []) inCasa[d.posizione] = (inCasa[d.posizione] ?? 0) + 1;
@@ -120,6 +137,15 @@ export default async function Home() {
         foto,
         cornice: profilo.cornice ?? "scorrimento",
         carte: carte ?? [],
+        prossimi,
+        oggi,
+        obiettivi: (obiettivi ?? []).map((o) => ({
+          id: o.id,
+          nome: o.nome,
+          colore: o.colore,
+          meta: Number(o.meta),
+          messi: (accantonamenti ?? []).filter((a) => a.obiettivo_id === o.id).reduce((t, a) => t + Number(a.importo), 0),
+        })),
       }}
     />
   );

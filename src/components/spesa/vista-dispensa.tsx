@@ -96,7 +96,7 @@ export function VistaDispensa({
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 lg:mt-0">
       <div className="flex max-w-5xl items-center gap-2">
         <AggiuntaCasa dati={dati} attivi={attivi} onMetti={metti} onConfigura={() => setConfigura(true)} />
       </div>

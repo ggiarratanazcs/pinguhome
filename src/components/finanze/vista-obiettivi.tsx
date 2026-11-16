@@ -149,7 +149,7 @@ export function VistaObiettivi({
   const apertoObiettivo = obiettivi.find((o) => o.id === aperto) ?? null;
 
   return (
-    <div className="mt-6 max-w-3xl">
+    <div className="mt-6 max-w-3xl lg:mt-0 lg:max-w-none">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-[0.8125rem] text-tenue">Messi da parte</p>
@@ -174,7 +174,7 @@ export function VistaObiettivi({
         </button>
       ) : null}
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3 lg:gap-4">
         {ordinati.map(({ o, s }) => {
           const Icona = ICONE_OBIETTIVO[o.icona] ?? Target;
           return (

@@ -45,6 +45,8 @@ import {
   type Occorrenza,
 } from "@/lib/finanze";
 import { Pulsante } from "@/components/ui";
+import { CONTENITORE, TestataSezione } from "@/components/testata-sezione";
+import { useDesktop } from "@/lib/schermo";
 import { cn } from "@/lib/utils";
 import { AnalisiFinanze } from "./analisi-finanze";
 import { VistaObiettivi } from "./vista-obiettivi";
@@ -305,9 +307,15 @@ export function AppFinanze({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 pt-1 md:px-12 lg:pt-10">
-      <h1 className="titolo titolo-pagina mb-6 hidden lg:block">finanze</h1>
-      <nav className="flex items-center gap-5 text-[0.9375rem] md:gap-6">
+    <div className={CONTENITORE}>
+      <TestataSezione titolo="finanze" schede={schede} attiva={vista} onScheda={setVista}>
+        {vista === "conto" && conto ? (
+          <Pulsante onClick={() => setMaschera(true)} className="h-11 px-5">
+            <Plus className="size-5" strokeWidth={2.4} /> Aggiungi movimento
+          </Pulsante>
+        ) : null}
+      </TestataSezione>
+      <nav className="flex items-center gap-5 text-[0.9375rem] md:gap-6 lg:hidden">
         {schede.map((s) => {
           const attiva = vista === s.id;
           return (
@@ -424,6 +432,7 @@ function VistaConto({
   const nascoste = useSyncExternalStore(ascoltaNascoste, leggiNascoste, () => false);
   const inArrivo = useMemo(() => usciteInArrivo(movimenti, scadenze, pagate, oggi), [movimenti, scadenze, pagate, oggi]);
   const [tutteInArrivo, setTutteInArrivo] = useState(false);
+  const desktop = useDesktop();
 
   const delMese = useMemo(() => movimentiTra(movimenti, `${mese}-01`, fineMese(mese)).filter((o) => o.data <= oggi), [movimenti, mese, oggi]);
   const entrate = delMese.filter((o) => o.movimento.tipo === "entrata").reduce((t, o) => t + Number(o.movimento.importo), 0);
@@ -443,10 +452,58 @@ function VistaConto({
     );
   }
 
+  const occhio = (
+    <button
+      onClick={() => impostaNascoste(!nascoste)}
+      aria-label={nascoste ? "Mostra le cifre" : "Nascondi le cifre"}
+      aria-pressed={nascoste}
+      className="anello-focus -m-1.5 grid size-7 place-items-center rounded-full text-tenue transition hover:bg-superficie-2 hover:text-inchiostro"
+    >
+      {nascoste ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+    </button>
+  );
+
   return (
-    <div className="mt-6 pb-16">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-12">
-        <div data-giro="residuo">
+    <div className="mt-6 pb-16 lg:mt-0">
+      {/* PC: i quattro numeri del mese in fila */}
+      <div className="mb-6 hidden grid-cols-4 gap-5 lg:grid">
+        <div className="rounded-[24px] bg-superficie-2 p-5">
+          <p className="flex items-center gap-1.5 text-[0.8125rem] text-tenue">Residuo sul conto {occhio}</p>
+          <p className={cn("titolo-normale numeri mt-1 truncate text-[1.875rem] leading-tight", !nascoste && (totale ?? 0) < 0 && "text-pericolo")}>
+            {nascoste ? NASCOSTO : euro(totale ?? 0)}
+          </p>
+          {proiezione ? (
+            <p className="mt-1 flex items-center gap-1 text-[0.75rem] text-tenue">
+              {proiezione.totale >= (totale ?? 0) ? <TrendingUp className="size-3.5 text-eco" /> : <TrendingDown className="size-3.5 text-pericolo" />}
+              a fine mese
+              <span className={cn("numeri font-semibold", !nascoste && proiezione.totale < 0 ? "text-pericolo" : "text-inchiostro")}>
+                {nascoste ? NASCOSTO : euro(proiezione.totale, false)}
+              </span>
+            </p>
+          ) : null}
+        </div>
+        <div className="rounded-[24px] bg-eco-tenue p-5">
+          <p className="text-[0.8125rem] text-eco">Entrate {nomeMeseCorto}</p>
+          <p className="titolo-normale numeri mt-1 truncate text-[1.875rem] leading-tight">{nascoste ? NASCOSTO : `+${euro(entrate, false)}`}</p>
+        </div>
+        <div className="rounded-[24px] bg-pericolo-tenue p-5">
+          <p className="text-[0.8125rem] text-pericolo">Uscite {nomeMeseCorto}</p>
+          <p className="titolo-normale numeri mt-1 truncate text-[1.875rem] leading-tight">{nascoste ? NASCOSTO : `−${euro(uscite, false)}`}</p>
+        </div>
+        <button onClick={onObiettivi} className="anello-focus rounded-[24px] bg-superficie-2 p-5 text-left transition hover:bg-superficie-3">
+          <p className="flex items-center justify-between text-[0.8125rem] text-tenue">
+            Liberi <ChevronRight className="size-4" />
+          </p>
+          <p className={cn("titolo-normale numeri mt-1 truncate text-[1.875rem] leading-tight", !nascoste && (totale ?? 0) - accantonato < 0 && "text-pericolo")}>
+            {nascoste ? NASCOSTO : euro((totale ?? 0) - accantonato, false)}
+          </p>
+          <p className="mt-1 text-[0.75rem] text-tenue">{nascoste ? NASCOSTO : euro(accantonato, false)} negli obiettivi</p>
+        </button>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6">
+        <div data-giro="residuo" className="lg:flex lg:flex-col lg:gap-6">
+          <div className="lg:hidden">
           <div className="flex items-center gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/casa/salvadanaio.webp" alt="" className="size-16 shrink-0 object-contain drop-shadow-[0_8px_12px_rgba(var(--ombra),0.18)]" />
@@ -511,8 +568,12 @@ function VistaConto({
               <p className="numeri text-[1.125rem] font-semibold text-inchiostro">{nascoste ? NASCOSTO : `−${euro(uscite, false)}`}</p>
             </div>
           </div>
+          </div>
 
-          <div className="mt-4">
+          {/* PC: le uscite giorno per giorno */}
+          <GraficoUscite delMese={delMese} mese={mese} oggi={oggi} nascoste={nascoste} />
+
+          <div className="mt-4 lg:order-last lg:mt-0">
             {allinea ? (
               <ImpostaSaldo
                 etichetta="Saldo vero sul conto oggi"
@@ -532,7 +593,7 @@ function VistaConto({
 
           {/* Le uscite dei prossimi 30 giorni: una riga sola col totale, il dettaglio si apre a richiesta */}
           {inArrivo.length ? (
-            <section className="mt-6 rounded-[18px] bg-superficie-2">
+            <section className="mt-6 rounded-[18px] bg-superficie-2 lg:mt-0 lg:rounded-[24px] lg:p-2">
               <button
                 onClick={() => setTutteInArrivo((t) => !t)}
                 aria-expanded={tutteInArrivo}
@@ -546,12 +607,12 @@ function VistaConto({
                     <span className="text-tenue"> · {inArrivo.length === 1 ? "1 uscita" : `${inArrivo.length} uscite`}</span>
                   </span>
                 </span>
-                <motion.span animate={{ rotate: tutteInArrivo ? 180 : 0 }} className="inline-flex text-tenue">
+                <motion.span animate={{ rotate: tutteInArrivo ? 180 : 0 }} className="inline-flex text-tenue lg:hidden">
                   <ChevronDown className="size-5" />
                 </motion.span>
               </button>
               <AnimatePresence initial={false}>
-                {tutteInArrivo ? (
+                {tutteInArrivo || desktop ? (
                   <motion.ul initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-4">
                     {inArrivo.map((u) => {
                       const quando = new Date(`${u.data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
@@ -572,7 +633,7 @@ function VistaConto({
           ) : null}
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:self-start lg:rounded-[24px] lg:p-6 lg:ring-1 lg:ring-linea">
           <div className="flex items-center gap-1">
             <button onClick={() => setMese((m) => spostaMese(m, -1))} aria-label="Mese precedente" className="anello-focus grid size-9 place-items-center rounded-full hover:bg-superficie-2">
               <ChevronLeft className="size-5" />
@@ -604,6 +665,38 @@ function VistaConto({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Su PC: una barra per ogni giorno del mese con le uscite di quel giorno. */
+function GraficoUscite({ delMese, mese, oggi, nascoste }: { delMese: Occorrenza[]; mese: string; oggi: string; nascoste: boolean }) {
+  const giorni = Number(fineMese(mese).slice(8, 10));
+  const valori = Array.from({ length: giorni }, (_, i) => {
+    const d = `${mese}-${String(i + 1).padStart(2, "0")}`;
+    return { d, n: i + 1, tot: delMese.filter((o) => o.data === d && o.movimento.tipo === "uscita").reduce((t, o) => t + Number(o.movimento.importo), 0) };
+  });
+  const max = Math.max(1, ...valori.map((x) => x.tot));
+  return (
+    <section className="hidden rounded-[24px] p-6 ring-1 ring-linea lg:block">
+      <p className="font-semibold">Uscite per giorno</p>
+      <div className="mt-5 flex h-40 items-end gap-[3px]">
+        {valori.map((x) => (
+          <div key={x.d} className="group relative flex h-full flex-1 flex-col justify-end" title={nascoste ? undefined : `${x.n}: ${euro(x.tot, false)}`}>
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: `${Math.max(x.tot ? 4 : 2, (x.tot / max) * 100)}%` }}
+              transition={{ type: "spring", stiffness: 160, damping: 24 }}
+              className={cn("rounded-t-[4px] rounded-b-[2px]", x.d === oggi ? "bg-becco" : x.tot ? "bg-inchiostro/80 group-hover:bg-becco" : "bg-superficie-3")}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between text-[0.6875rem] text-tenue numeri">
+        <span>1</span>
+        <span>{Math.round(giorni / 2)}</span>
+        <span>{giorni}</span>
+      </div>
+    </section>
   );
 }
 

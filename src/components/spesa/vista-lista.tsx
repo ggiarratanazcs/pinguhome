@@ -10,6 +10,7 @@ import type { MembroCasa } from "@/lib/sessione";
 import { interpretaVoce, UNITA } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
 import { Mascotte } from "@/components/mascotte";
+import { useDesktop } from "@/lib/schermo";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 import { IconaReparto } from "./icona-reparto";
@@ -33,6 +34,7 @@ export function VistaLista({
   const [scheda, setScheda] = useState<string | null>(null);
   const [grande, setGrande] = useState<string | null>(null);
   const foto = useFotoProdotti(dati.prodotti);
+  const desktop = useDesktop();
   const daPrendere = voci.filter((v) => !v.presa);
   const prese = voci.filter((v) => v.presa).sort((a, b) => (b.presa_il ?? "").localeCompare(a.presa_il ?? ""));
 
@@ -55,7 +57,7 @@ export function VistaLista({
   }, [daPrendere, dati.reparti]);
 
   return (
-    <div className="mt-4 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
+    <div className="mt-4 grid gap-12 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
       <div className="min-w-0">
         <AggiuntaRapida dati={dati} voci={voci} onAggiungi={(t) => azioni.aggiungi(t)} onFoto={azioni.aggiungiDaFoto} />
 
@@ -90,6 +92,7 @@ export function VistaLista({
                       azioni={azioni}
                       onApri={() => setScheda(v.id)}
                       onFoto={() => setGrande(v.id)}
+                      selezionata={desktop && scheda === v.id}
                     />
                   ))}
                 </AnimatePresence>
@@ -142,7 +145,7 @@ export function VistaLista({
       </div>
 
       <AnimatePresence>
-        {scheda && voci.some((v) => v.id === scheda) ? (
+        {!desktop && scheda && voci.some((v) => v.id === scheda) ? (
           <SchedaVoce
             key={scheda}
             voce={voci.find((v) => v.id === scheda)!}
@@ -172,15 +175,28 @@ export function VistaLista({
         ) : null}
       </AnimatePresence>
 
-      {/* Colonna laterale: numeri della lista, come fatti scritti */}
+      {/* Su PC: a destra la scheda della voce scelta; senza scelta, i numeri della lista */}
       <aside className="hidden lg:block">
-        <div className="sticky top-10 flex flex-col gap-8">
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
-            <Dato etichetta="da prendere" valore={daPrendere.length} />
-            <Dato etichetta="urgenti" valore={daPrendere.filter((v) => v.urgente).length} accento={daPrendere.some((v) => v.urgente)} />
-            <Dato etichetta="reparti da girare" valore={gruppi.length} />
-            <Dato etichetta="già presi" valore={prese.length} />
-          </dl>
+        <div className="sticky top-8 flex flex-col gap-8">
+          {desktop && scheda && voci.some((v) => v.id === scheda) ? (
+            <SchedaVoce
+              key={scheda}
+              inline
+              voce={voci.find((v) => v.id === scheda)!}
+              foto={foto.di(voci.find((v) => v.id === scheda)!, dati.prodotti)}
+              dati={dati}
+              azioni={azioni}
+              onChiudi={() => setScheda(null)}
+              onFotoGrande={() => setGrande(scheda)}
+            />
+          ) : (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-[24px] bg-superficie-2 p-6">
+              <Dato etichetta="da prendere" valore={daPrendere.length} />
+              <Dato etichetta="urgenti" valore={daPrendere.filter((v) => v.urgente).length} accento={daPrendere.some((v) => v.urgente)} />
+              <Dato etichetta="reparti da girare" valore={gruppi.length} />
+              <Dato etichetta="già presi" valore={prese.length} />
+            </dl>
+          )}
         </div>
       </aside>
     </div>
@@ -462,6 +478,7 @@ function RigaVoce({
   azioni,
   onApri,
   onFoto,
+  selezionata = false,
 }: {
   voce: VoceLista;
   foto: string | null;
@@ -470,6 +487,7 @@ function RigaVoce({
   azioni: AzioniSpesa;
   onApri: () => void;
   onFoto: () => void;
+  selezionata?: boolean;
 }) {
   const chiPresa = membri.find((m) => m.id === voce.presa_da);
   const sotto = voce.presa && chiPresa ? `Presa da ${chiPresa.id === userId ? "te" : chiPresa.nome}` : voce.note;
@@ -493,8 +511,8 @@ function RigaVoce({
         <span className="flex items-center gap-2 text-becco-scuro"><Check className="size-4" /> Nel carrello</span>
         <span className="flex items-center gap-2 text-pericolo">Elimina <Trash2 className="size-4" /></span>
       </div>
-      <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.5} dragSnapToOrigin onDragEnd={trascina} className="relative bg-superficie">
-        <div className="flex min-h-[48px] items-center gap-3 py-1.5">
+      <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.5} dragSnapToOrigin onDragEnd={trascina} className={cn("relative transition-colors", selezionata ? "bg-becco-tenue" : "bg-superficie")}>
+        <div className={cn("flex min-h-[48px] items-center gap-3 py-1.5", selezionata && "lg:-mx-3 lg:px-3")}>
           <button
             onClick={() => azioni.segnaPresa(voce)}
             aria-label={voce.presa ? "Rimetti in lista" : "Segna come presa"}
@@ -546,6 +564,7 @@ function SchedaVoce({
   azioni,
   onChiudi,
   onFotoGrande,
+  inline = false,
 }: {
   voce: VoceLista;
   foto: string | null;
@@ -553,6 +572,8 @@ function SchedaVoce({
   azioni: AzioniSpesa;
   onChiudi: () => void;
   onFotoGrande: () => void;
+  /** Su PC: dentro la colonna di destra, senza velo sopra la pagina */
+  inline?: boolean;
 }) {
   const passo = ["kg", "l"].includes(voce.unita) ? 0.5 : ["g", "ml"].includes(voce.unita) ? 100 : 1;
   const q = Number(voce.quantita);
@@ -589,25 +610,8 @@ function SchedaVoce({
     }
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-dorso/40 p-3 backdrop-blur-md sm:items-center"
-      onClick={chiudi}
-    >
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-label={voce.nome}
-        onClick={(e) => e.stopPropagation()}
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="pb-sicuro w-full max-w-md rounded-[32px] bg-superficie p-5 shadow-2xl"
-      >
+  const contenuto = (
+    <>
         <div className="flex items-start gap-4">
           <div className="relative shrink-0">
             {foto ? (
@@ -707,6 +711,43 @@ function SchedaVoce({
           </button>
           <Pulsante onClick={chiudi}>Fatto</Pulsante>
         </div>
+    </>
+  );
+
+  if (inline) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ type: "spring", stiffness: 420, damping: 36 }}
+        aria-label={voce.nome}
+        className="rounded-[24px] bg-superficie p-5 ring-1 ring-linea shadow-[0_18px_40px_-28px_rgba(var(--ombra),0.5)]"
+      >
+        {contenuto}
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-dorso/40 p-3 backdrop-blur-md sm:items-center"
+      onClick={chiudi}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={voce.nome}
+        onClick={(e) => e.stopPropagation()}
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        className="pb-sicuro w-full max-w-md rounded-[32px] bg-superficie p-5 shadow-2xl"
+      >
+        {contenuto}
       </motion.div>
     </motion.div>
   );

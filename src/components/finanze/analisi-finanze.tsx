@@ -60,7 +60,7 @@ export function AnalisiFinanze({ movimenti, oggi }: { movimenti: Movimento[]; og
   }, [movimenti, mesi, adesso, oggi]);
 
   return (
-    <div className="mt-6 pb-16">
+    <div className="mt-6 pb-16 lg:mt-0">
       <div className="flex gap-2">
         {PERIODI.map((p) => (
           <button

@@ -85,7 +85,7 @@ export function VistaSpese({
           <NuovaSpesa liste={liste} giornoIniziale={giorno} azioni={azioni} daComprare={daComprare} onChiudi={() => setNuova(false)} />
         </div>
       ) : null}
-    <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="mt-8 grid gap-10 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0">
         {/* Mese e totale */}
         <div className="flex flex-wrap items-end justify-between gap-4">

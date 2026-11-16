@@ -82,7 +82,7 @@ export function VistaBudget({
   const totaleSpeso = conBudget.reduce((t, c) => t + (spese[c.id] ?? 0), 0);
 
   return (
-    <div className="mt-6 max-w-3xl pb-16">
+    <div className="mt-6 max-w-3xl pb-16 lg:mt-0 lg:max-w-4xl">
       <div className="flex items-center gap-2">
         <button onClick={() => setMese((m) => spostaMese(m, -1))} aria-label="Mese prima" className="anello-focus grid size-9 place-items-center rounded-full text-tenue hover:bg-superficie-2 hover:text-inchiostro">
           <ChevronLeft className="size-5" />

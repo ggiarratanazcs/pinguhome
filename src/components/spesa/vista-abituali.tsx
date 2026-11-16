@@ -91,7 +91,7 @@ export function VistaAbituali({
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 lg:mt-0">
       <div className="flex items-center gap-3 md:gap-5">
         <label className="flex flex-1 items-center gap-3 border-b-2 border-linea-forte pb-1 focus-within:border-becco">
           <Search className="size-5 text-tenue" />

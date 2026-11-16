@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarCheck, House, LogOut, Settings2, ShoppingBasket, Wallet } from "lucide-react";
+import { CalendarCheck, CreditCard, House, LogOut, PanelLeft, Settings2, ShoppingBasket, Wallet } from "lucide-react";
 import { Mascotte } from "@/components/mascotte";
 import { Marchio } from "@/components/pinguino";
 import { Avatar } from "@/components/ui";
@@ -11,11 +11,13 @@ import { cn } from "@/lib/utils";
 import type { MembroCasa } from "@/lib/sessione";
 
 const VOCI = [
-  { href: "/", nome: "Home", icona: House, attiva: true },
-  { href: "/spesa", nome: "Spesa", icona: ShoppingBasket, attiva: true },
-  { href: "/finanze", nome: "Finanze", icona: Wallet, attiva: true },
-  { href: "/agenda", nome: "Agenda", icona: CalendarCheck, attiva: true },
-  { href: "/impostazioni", nome: "Impostazioni", icona: Settings2, attiva: true },
+  { href: "/", nome: "Home", icona: House, attiva: true, mobile: true },
+  { href: "/spesa", nome: "Spesa", icona: ShoppingBasket, attiva: true, mobile: true },
+  { href: "/finanze", nome: "Finanze", icona: Wallet, attiva: true, mobile: true },
+  { href: "/agenda", nome: "Agenda", icona: CalendarCheck, attiva: true, mobile: true },
+  // Su telefono il Wallet si apre dalla Home
+  { href: "/wallet", nome: "Wallet", icona: CreditCard, attiva: true, mobile: false },
+  { href: "/impostazioni", nome: "Impostazioni", icona: Settings2, attiva: true, mobile: true },
 ] as const;
 
 function corrente(pathname: string, href: string) {
@@ -28,85 +30,75 @@ function corrente(pathname: string, href: string) {
  */
 export function BarraLaterale({ casa, membri }: { casa: string; membri: MembroCasa[] }) {
   const pathname = usePathname();
+  const principali = VOCI.filter((v) => v.href !== "/impostazioni");
+  const impostazioni = VOCI.find((v) => v.href === "/impostazioni")!;
+  const voce = (v: (typeof VOCI)[number]) => {
+    const attiva = corrente(pathname, v.href);
+    const Icona = v.icona;
+    return (
+      <Link
+        key={v.href}
+        href={v.href}
+        title={v.nome}
+        className={cn(
+          "anello-focus group flex h-11 items-center gap-3 rounded-[14px] px-2.5 text-[0.9375rem] transition-colors",
+          attiva ? "bg-dorso-2 font-semibold text-su-dorso" : "text-su-dorso-tenue hover:bg-dorso-2/60 hover:text-su-dorso",
+        )}
+      >
+        <span className={cn("grid size-8 shrink-0 place-items-center rounded-[10px] transition-colors", attiva && "bg-becco text-su-becco")}>
+          <Icona className="size-[18px]" strokeWidth={attiva ? 2.2 : 1.7} />
+        </span>
+        <span className="solo-aperta">{v.nome}</span>
+      </Link>
+    );
+  };
   return (
     <aside className="barra-laterale sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden bg-dorso text-su-dorso lg:flex">
-      {/* Mascotte sulla sua lastra di ghiaccio: apre e chiude la barra */}
-      <div className="relative px-4 pt-6">
+      <div className="flex items-center gap-2 px-4 pt-6">
+        <Link href="/" className="anello-focus flex min-w-0 flex-1 items-center gap-2.5 rounded-[12px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icona-512.png" alt="" draggable={false} className="size-9 shrink-0 rounded-[10px] ring-1 ring-white/10" />
+          <span className="solo-aperta min-w-0">
+            <span className="titolo block text-[1rem] text-su-dorso">uchi</span>
+            <span className="block truncate text-[0.75rem] text-su-dorso-tenue">{casa}</span>
+          </span>
+        </Link>
         <button
           onClick={alternaBarra}
           aria-label="Apri o chiudi la barra laterale"
           title="Apri o chiudi la barra"
-          className="anello-focus group relative mx-auto block rounded-[28px]"
+          className="solo-aperta anello-focus grid size-8 shrink-0 place-items-center rounded-[10px] text-su-dorso-tenue hover:bg-dorso-2 hover:text-su-dorso"
         >
-          <span aria-hidden className="absolute inset-x-[-6px] bottom-[-6px] top-[38%] rounded-[50%] bg-lastra opacity-95" />
-          <Mascotte className="mascotte-barra relative" />
+          <PanelLeft className="size-4" />
         </button>
-        <div className="solo-aperta mt-5 text-center">
-          <Marchio chiaro />
-          <p className="mt-1.5 truncate text-[0.8125rem] text-su-dorso-tenue">{casa}</p>
-        </div>
       </div>
 
-      <nav className="mt-8 flex flex-col gap-0.5 px-3">
-        {VOCI.map((v) => {
-          const attiva = corrente(pathname, v.href);
-          const Icona = v.icona;
-          const contenuto = (
-            <>
-              <span
-                className={cn(
-                  "grid size-10 shrink-0 place-items-center rounded-full transition-colors",
-                  attiva ? "bg-becco text-su-becco" : "text-su-dorso-tenue group-hover:text-su-dorso",
-                )}
-              >
-                <Icona className="size-[19px]" strokeWidth={attiva ? 2.2 : 1.7} />
-              </span>
-              <span className="solo-aperta flex flex-1 items-center justify-between gap-2">
-                {v.nome}
-                {!v.attiva ? <span className="text-[0.75rem] font-normal text-su-dorso-tenue/70">presto</span> : null}
-              </span>
-            </>
-          );
-          if (!v.attiva) {
-            return (
-              <span key={v.href} title={`${v.nome} · presto`} className="flex h-12 items-center gap-3 px-3 text-[0.9375rem] text-su-dorso-tenue/60">
-                {contenuto}
-              </span>
-            );
-          }
-          return (
-            <Link
-              key={v.href}
-              href={v.href}
-              title={v.nome}
-              className={cn(
-                "anello-focus group flex h-12 items-center gap-3 rounded-full px-3 text-[0.9375rem] transition-colors",
-                attiva ? "font-semibold text-su-dorso" : "text-su-dorso-tenue hover:bg-dorso-2 hover:text-su-dorso",
-              )}
-            >
-              {contenuto}
-            </Link>
-          );
-        })}
-      </nav>
+      <nav className="mt-8 flex flex-col gap-1 px-3">{principali.map(voce)}</nav>
 
-      <div className="mt-auto flex flex-col gap-3 px-4 pb-6">
-        <div className="flex items-center gap-2 px-1">
-          <span className="flex -space-x-2">
-            {membri.map((m) => (
-              <Avatar key={m.id} nome={m.nome} colore={m.colore} className="size-8 ring-2 ring-su-dorso/35" />
-            ))}
-          </span>
-          <span className="solo-aperta text-[0.8125rem] text-su-dorso-tenue">
-            {membri.map((m) => m.nome.split(" ")[0]).join(" e ")}
-          </span>
-        </div>
+      <div className="mt-auto flex flex-col gap-1 px-3 pb-5">
+        {voce(impostazioni)}
         <form action="/auth/esci" method="post">
-          <button title="Esci" className="anello-focus flex h-10 w-full items-center gap-3 rounded-full px-3 text-[0.8125rem] text-su-dorso-tenue hover:bg-dorso-2 hover:text-su-dorso">
-            <LogOut className="ml-2.5 size-4 shrink-0" />
+          <button title="Esci" className="anello-focus flex h-11 w-full items-center gap-3 rounded-[14px] px-2.5 text-[0.875rem] text-su-dorso-tenue hover:bg-dorso-2 hover:text-su-dorso">
+            <span className="grid size-8 shrink-0 place-items-center">
+              <LogOut className="size-4" />
+            </span>
             <span className="solo-aperta">Esci</span>
           </button>
         </form>
+        <div className="mt-3 flex items-center gap-2.5 border-t border-white/10 px-1 pt-4">
+          {/* La mascotte riapre la barra quando è chiusa */}
+          <button onClick={alternaBarra} aria-label="Apri o chiudi la barra laterale" className="anello-focus shrink-0 rounded-full">
+            <Mascotte className="w-10" />
+          </button>
+          <span className="solo-aperta flex min-w-0 items-center gap-2">
+            <span className="flex -space-x-2">
+              {membri.map((m) => (
+                <Avatar key={m.id} nome={m.nome} colore={m.colore} className="size-7 ring-2 ring-dorso" />
+              ))}
+            </span>
+            <span className="truncate text-[0.8125rem] text-su-dorso-tenue">{membri.map((m) => m.nome.split(" ")[0]).join(" e ")}</span>
+          </span>
+        </div>
       </div>
     </aside>
   );
@@ -152,7 +144,7 @@ export function TestataMobile({ casa }: { casa: string }) {
 
 export function BarraInferiore() {
   const pathname = usePathname();
-  const voci = VOCI.filter((v) => v.attiva);
+  const voci = VOCI.filter((v) => v.attiva && v.mobile);
   return (
     <nav className="pb-sicuro fixed inset-x-0 bottom-3 z-40 mx-auto w-fit lg:hidden">
       <div className="flex items-center gap-1 rounded-full bg-dorso p-1.5 shadow-[0_18px_40px_-14px_rgba(var(--ombra),0.6)]">

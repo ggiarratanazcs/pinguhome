@@ -60,7 +60,7 @@ export function CorniceFoto({
       className={cn(
         // Su telefono la foto va da bordo a bordo e passa sotto la testata; su schermo grande resta un riquadro
         "relative -mx-4 h-[calc(340px+env(safe-area-inset-top))] overflow-hidden bg-dorso md:-mx-12",
-        "lg:mx-0 lg:aspect-[16/9] lg:h-auto lg:max-w-3xl lg:rounded-[36px]",
+        "lg:mx-0 lg:h-[380px] lg:max-w-none lg:rounded-[28px]",
       )}
     >
       {conFoto ? polaroid ? <Polaroid foto={foto} /> : <Scorrimento foto={foto} /> : null}
@@ -71,7 +71,7 @@ export function CorniceFoto({
       ) : null}
 
       {/* Data e saluto sopra le foto */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-9 text-white lg:px-6 lg:pb-5">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-9 text-white lg:px-8 lg:pb-7">
         <p className="text-[0.8125rem] text-white/85 first-letter:uppercase">{data}</p>
         <p className="titolo mt-0.5 text-[1.5rem] leading-tight md:text-[2rem]">{saluto}</p>
       </div>
