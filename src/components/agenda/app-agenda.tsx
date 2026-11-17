@@ -463,32 +463,26 @@ export function AppAgenda({
 
 type NuovoImpegno = Omit<Impegno, "id" | "creato_il" | "creato_da" | "famiglia_id">;
 
-/** Scadenze: la paghi tu (la spunti) oppure è un addebito automatico (si chiude da sola quel giorno) */
+/** Scadenze: spento la spunti tu; acceso è un addebito automatico e si chiude da sola quel giorno */
 function SceltaPagamento({ valore, onCambia, className }: { valore: boolean; onCambia: (v: boolean) => void; className?: string }) {
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <span>Pagamento</span>
-      <div className="grid grid-cols-2 gap-1 rounded-full bg-superficie-3 p-1 text-[0.8125rem]" role="radiogroup" aria-label="Pagamento">
-        {[
-          { v: false, nome: "Lo segno io" },
-          { v: true, nome: "Addebito automatico" },
-        ].map((o) => (
-          <button
-            key={String(o.v)}
-            type="button"
-            role="radio"
-            aria-checked={valore === o.v}
-            onClick={() => onCambia(o.v)}
-            className={cn(
-              "anello-focus h-8 rounded-full px-2 transition",
-              valore === o.v ? "bg-superficie font-semibold text-inchiostro shadow-[0_1px_3px_rgba(var(--ombra),0.14)]" : "text-tenue hover:text-inchiostro",
-            )}
-          >
-            {o.nome}
-          </button>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={valore}
+      onClick={() => onCambia(!valore)}
+      className={cn("anello-focus flex h-11 items-center gap-3 rounded-[14px] bg-superficie-3/70 px-3 text-left", className)}
+    >
+      <Landmark className={cn("size-4 shrink-0", valore ? "text-becco-scuro" : "text-tenue")} />
+      <span className={cn("flex-1 text-[0.9375rem]", valore ? "font-semibold text-inchiostro" : "text-inchiostro-2")}>Addebito automatico</span>
+      <span className={cn("relative h-6 w-10 shrink-0 rounded-full transition-colors", valore ? "bg-becco" : "bg-linea-forte")}>
+        <motion.span
+          animate={{ x: valore ? 16 : 0 }}
+          transition={{ type: "spring", stiffness: 500, damping: 34 }}
+          className="absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow"
+        />
+      </span>
+    </button>
   );
 }
 
