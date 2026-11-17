@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, Plus, Repeat, Trash2, X } from "lucide-react";
+import { Bell, Check, ChevronDown, ChevronLeft, ChevronRight, Landmark, Plus, Repeat, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Impegno, ImpegnoFatto } from "@/lib/database.types";
 import type { MembroCasa } from "@/lib/sessione";
@@ -463,6 +463,35 @@ export function AppAgenda({
 
 type NuovoImpegno = Omit<Impegno, "id" | "creato_il" | "creato_da" | "famiglia_id">;
 
+/** Scadenze: la paghi tu (la spunti) oppure è un addebito automatico (si chiude da sola quel giorno) */
+function SceltaPagamento({ valore, onCambia, className }: { valore: boolean; onCambia: (v: boolean) => void; className?: string }) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <span>Pagamento</span>
+      <div className="grid grid-cols-2 gap-1 rounded-full bg-superficie-3 p-1 text-[0.8125rem]" role="radiogroup" aria-label="Pagamento">
+        {[
+          { v: false, nome: "Lo segno io" },
+          { v: true, nome: "Addebito automatico" },
+        ].map((o) => (
+          <button
+            key={String(o.v)}
+            type="button"
+            role="radio"
+            aria-checked={valore === o.v}
+            onClick={() => onCambia(o.v)}
+            className={cn(
+              "anello-focus h-8 rounded-full px-2 transition",
+              valore === o.v ? "bg-superficie font-semibold text-inchiostro shadow-[0_1px_3px_rgba(var(--ombra),0.14)]" : "text-tenue hover:text-inchiostro",
+            )}
+          >
+            {o.nome}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MascheraImpegno({
   oggi,
   giornoIniziale,
@@ -483,6 +512,7 @@ function MascheraImpegno({
   const [ora, setOra] = useState("");
   const [categoria, setCategoria] = useState<Impegno["categoria"]>("altro");
   const [importo, setImporto] = useState("");
+  const [addebito, setAddebito] = useState(false);
   const [ricorrenza, setRicorrenza] = useState<Impegno["ricorrenza"]>("nessuna");
   const [perChi, setPerChi] = useState<string | null>(null);
   const [promemoria, setPromemoria] = useState<string>("auto");
@@ -516,6 +546,7 @@ function MascheraImpegno({
       categoria,
       ricorrenza,
       importo: importo.trim() && Number.isFinite(n) ? Math.round(n * 100) / 100 : null,
+      addebito_automatico: categoria === "scadenza" && addebito,
       promemoria: promemoria === "auto" ? promemoriaPredefinito(categoria, oraFinale) : promemoria === "" ? null : Number(promemoria),
     });
   }
@@ -606,6 +637,7 @@ function MascheraImpegno({
               ))}
             </select>
           </label>
+          {categoria === "scadenza" ? <SceltaPagamento valore={addebito} onCambia={setAddebito} className="col-span-2" /> : null}
         </div>
 
         <div className="mt-4 flex items-center gap-3 text-[0.875rem]" role="group" aria-label="Per chi">
@@ -680,10 +712,11 @@ function RigaImpegno({
             <span className="mt-[0.45em] size-2 shrink-0 rounded-full" style={{ background: coloreCategoria(imp.categoria) }} />
             <span className="line-clamp-2 break-words">{imp.titolo}</span>
           </span>
-          {imp.ora || imp.ricorrenza !== "nessuna" || imp.promemoria !== null || imp.note ? (
+          {imp.ora || imp.ricorrenza !== "nessuna" || imp.promemoria !== null || imp.note || imp.addebito_automatico ? (
             <span className="mt-1 flex items-center gap-2 pl-4 text-[0.8125rem] text-tenue">
               {imp.ora ? <span className="numeri font-semibold text-inchiostro-2">{imp.ora.slice(0, 5)}</span> : null}
               {imp.ricorrenza !== "nessuna" ? <Repeat className="size-3.5 shrink-0" aria-label="si ripete" /> : null}
+              {imp.addebito_automatico ? <Landmark className="size-3.5 shrink-0" aria-label="addebito automatico" /> : null}
               {imp.promemoria !== null ? <Bell className="size-3.5 shrink-0" aria-label="con promemoria" /> : null}
               {imp.note ? <span className="min-w-0 truncate">{imp.note}</span> : null}
             </span>
@@ -784,6 +817,9 @@ function RigaImpegno({
                   ) : null}
                 </select>
               </label>
+              {imp.categoria === "scadenza" ? (
+                <SceltaPagamento valore={imp.addebito_automatico} onCambia={(v) => onModifica({ addebito_automatico: v })} className="col-span-2 sm:col-span-3" />
+              ) : null}
               <label className="col-span-2 flex flex-col gap-1 sm:col-span-2">
                 Nota
                 <input defaultValue={imp.note ?? ""} placeholder="Indirizzo, cosa portare…" onBlur={(e) => e.target.value !== (imp.note ?? "") && onModifica({ note: e.target.value || null })} className="campo-linea h-9 text-inchiostro" />
