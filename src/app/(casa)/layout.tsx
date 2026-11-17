@@ -4,6 +4,7 @@ import { SincronizzaTema } from "@/components/sincronizza-tema";
 import { FornitoreMascotte } from "@/components/mascotte";
 import { AvvioServiceWorker } from "@/components/notifiche";
 import { GiroGuidato } from "@/components/giro-guidato";
+import { PuliziaFile } from "@/components/pulizia-file";
 
 export default async function LayoutCasa({ children }: LayoutProps<"/">) {
   const { profilo, famiglia, membri } = await getContesto();
@@ -39,6 +40,7 @@ export default async function LayoutCasa({ children }: LayoutProps<"/">) {
       </div>
       <BarraInferiore />
       <GiroGuidato profiloId={profilo.id} daMostrare={!profilo.tutorial_visto_il} />
+      <PuliziaFile famigliaId={famiglia.id} />
     </div>
     </FornitoreMascotte>
   );

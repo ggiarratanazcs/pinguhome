@@ -9,6 +9,9 @@ import type { Profilo } from "@/lib/database.types";
 import { Pulsante } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
+/** Quante foto può avere una casa (lo stesso limite è anche nel database) */
+export const MAX_FOTO = 30;
+
 export type FotoSalvata = { id: string; path: string; url: string };
 type Stile = Profilo["cornice"];
 
@@ -48,7 +51,8 @@ export function GestioneFoto({
   }
 
   async function carica(e: ChangeEvent<HTMLInputElement>) {
-    const file = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith("image/"));
+    const posti = Math.max(0, MAX_FOTO - foto.length);
+    const file = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith("image/")).slice(0, posti);
     e.target.value = "";
     if (!file.length) return;
     setCarico(file.length);
@@ -118,10 +122,16 @@ export function GestioneFoto({
       </div>
 
       <input ref={input} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} onChange={carica} />
-      <Pulsante variante="secondario" className="mt-6" onClick={() => input.current?.click()} disabled={carico > 0}>
-        {carico ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
-        Aggiungi foto
-      </Pulsante>
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <Pulsante variante="secondario" onClick={() => input.current?.click()} disabled={carico > 0 || foto.length >= MAX_FOTO}>
+          {carico ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+          Aggiungi foto
+        </Pulsante>
+        <span className="numeri text-[0.8125rem] text-tenue">
+          {foto.length} di {MAX_FOTO}
+        </span>
+      </div>
+      {foto.length >= MAX_FOTO ? <p className="mt-2 text-[0.8125rem] text-tenue">Siete a 30 foto: eliminatene una per aggiungerne un&apos;altra.</p> : null}
 
       {foto.length ? (
         <ul className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
