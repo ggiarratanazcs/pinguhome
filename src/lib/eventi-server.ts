@@ -5,7 +5,7 @@ import type { Database } from "@/lib/database.types";
 type Utilizzo = { input_tokens?: number; output_tokens?: number } | undefined;
 
 /** Registra una lettura di Claude (per la console di admin: quante e quanti token, non cosa). */
-export async function registraLettura(supabase: SupabaseClient<Database>, tipo: "scontrino" | "tessera" | "prodotto", uso: Utilizzo) {
+export async function registraLettura(supabase: SupabaseClient<Database>, tipo: "scontrino" | "tessera" | "prodotto" | "inventario", uso: Utilizzo) {
   await supabase.rpc("registra_evento", { p_tipo: tipo, p_ingresso: uso?.input_tokens ?? null, p_uscita: uso?.output_tokens ?? null }).then(
     () => undefined,
     () => undefined,

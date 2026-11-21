@@ -17,7 +17,7 @@ export default async function PaginaLetture() {
     delMese.reduce((t, e) => t + (e.token_ingresso ?? 0), 0),
     delMese.reduce((t, e) => t + (e.token_uscita ?? 0), 0),
   );
-  const perTipo = ["scontrino", "tessera", "prodotto"].map((t) => [t, delMese.filter((e) => e.tipo === t).length] as const);
+  const perTipo = ["scontrino", "tessera", "prodotto", "inventario"].map((t) => [t, delMese.filter((e) => e.tipo === t).length] as const);
 
   return (
     <div className="mx-auto max-w-[1000px]">

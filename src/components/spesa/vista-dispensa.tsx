@@ -6,6 +6,7 @@ import { ArrowLeftRight, ChevronDown, Minus, Plus, ShoppingCart, SlidersHorizont
 import type { Dispensa, Lista } from "@/lib/database.types";
 import { indovinaReparto, interpretaVoce, nomeArticolo, posizioneDaReparto, POSIZIONI, postiAttivi, postoAttivo, UNITA, type Posto } from "@/lib/spesa";
 import { Pulsante } from "@/components/ui";
+import { AssistenteCasa } from "./assistente-casa";
 import { cn, formattaQuantita } from "@/lib/utils";
 import type { AzioniSpesa, DatiSpesa } from "./app-spesa";
 import { IllustrazioneScena, useRapportoScena, type NomeScena } from "@/components/scena-mascotte";
@@ -97,7 +98,8 @@ export function VistaDispensa({
 
   return (
     <div className="mt-8 lg:mt-0">
-      <div className="flex max-w-5xl items-center gap-2">
+      <AssistenteCasa dati={dati} attivi={attivi} lista={lista} azioni={azioni} avvisa={avvisa} />
+      <div className="mt-4 flex max-w-5xl items-center gap-2">
         <AggiuntaCasa dati={dati} attivi={attivi} onMetti={metti} onConfigura={() => setConfigura(true)} />
       </div>
 
